@@ -1,0 +1,11 @@
+[package]
+name = "tptp"
+description = "Read files in the TPTP format"
+version = "0.1.0"
+authors = ["Michael Rawson <michael@rawsons.uk>"]
+license = "MIT"
+homepage = "https://github.com/MichaelRawson/tptp"
+readme = "README.md"
+keywords = ["parser", "tptp"]
+
+[dependencies]
