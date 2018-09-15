@@ -1,6 +1,6 @@
 # tptp
 
-A [crate](crates.io/crates/tptp) for reading files in the [TPTP](tptp.org) format.
+A [crate](https://crates.io/crates/tptp) for reading files in the [TPTP](http://tptp.org) format.
 
 ## Features
 
@@ -21,4 +21,4 @@ In order of urgency:
 
 ## Documentation
 
-See [docs.rs](docs.rs/tptp).
+See [docs.rs](https://docs.rs/tptp).
