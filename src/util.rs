@@ -16,9 +16,9 @@ pub struct LocalFile {
 }
 
 impl LocalFile {
-    pub fn open(path: PathBuf) -> io::Result<Self> {
+    pub fn open(path: &PathBuf) -> io::Result<Self> {
         assert!(path.is_absolute());
-        let file = File::open(&path)?;
+        let file = File::open(path)?;
         let reader = BufReader::new(file);
         let stream = reader.bytes();
 
@@ -49,8 +49,7 @@ impl Iterator for LocalFile {
                         }
                     }
                     (position, byte)
-                })
-                .map_err(Error::IO)
+                }).map_err(Error::IO)
         })
     }
 }
@@ -67,7 +66,7 @@ impl DefaultResolver {
             path
         };
 
-        let file = LocalFile::open(absolute)?;
+        let file = LocalFile::open(&absolute)?;
         Ok(file)
     }
 }

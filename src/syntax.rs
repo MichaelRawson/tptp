@@ -129,9 +129,9 @@ where
         }
     }
 
-    fn expect(&mut self, token: Token) -> Result<()> {
+    fn expect(&mut self, token: &Token) -> Result<()> {
         match self.peek() {
-            Some(next) => if token == next {
+            Some(next) => if token == &next {
                 self.shift()
             } else {
                 self.unexpected()
@@ -231,7 +231,7 @@ where
             Some(LParen) => {
                 self.shift()?;
                 let args = self.fof_arguments()?;
-                self.expect(RParen)?;
+                self.expect(&RParen)?;
                 Ok(Box::new(Functor(name, args)))
             }
             _ => Ok(Box::new(Functor(name, vec![]))),
@@ -284,8 +284,7 @@ where
         Ok(result)
     }
 
-    fn fof_plain_atomic_formula(&mut self, term: Box<FofTerm>) -> Result<Box<FofFormula>> {
-        let term = *term;
+    fn fof_plain_atomic_formula(&mut self, term: FofTerm) -> Result<Box<FofFormula>> {
         Ok(match term {
             Functor(name, args) => Box::new(Predicate(name, args)),
             _ => panic!("bad term"),
@@ -298,7 +297,7 @@ where
                 let term = self.fof_term()?;
                 match self.peek_or_unexpected()? {
                     Equals | NotEquals => self.fof_defined_infix_formula(term),
-                    _ => self.fof_plain_atomic_formula(term),
+                    _ => self.fof_plain_atomic_formula(*term),
                 }
             }
             UpperWord(_) => {
@@ -318,7 +317,7 @@ where
             _ => panic!("bad quantifier"),
         };
         self.shift()?;
-        self.expect(LBrack)?;
+        self.expect(&LBrack)?;
 
         let first = self.fof_bound()?;
         let mut bound = vec![first];
@@ -326,8 +325,8 @@ where
             self.shift()?;
             bound.push(self.fof_bound()?);
         }
-        self.expect(RBrack)?;
-        self.expect(Colon)?;
+        self.expect(&RBrack)?;
+        self.expect(&Colon)?;
 
         let formula = self.fof_unit_formula()?;
         Ok(Box::new(f(bound, formula)))
@@ -349,7 +348,7 @@ where
             LParen => {
                 self.shift()?;
                 let bracketed = self.fof_logic_formula()?;
-                self.expect(RParen)?;
+                self.expect(&RParen)?;
                 Ok(bracketed)
             }
             LowerWord(_) | SingleQuoted(_) | Integer(_) | UpperWord(_) | Defined(_) => {
@@ -423,28 +422,28 @@ where
 
     fn fof(&mut self) -> Result<Statement> {
         self.shift()?;
-        self.expect(LParen)?;
+        self.expect(&LParen)?;
 
         let name = self.name()?;
-        self.expect(Comma)?;
+        self.expect(&Comma)?;
 
         let role = self.formula_role()?;
-        self.expect(Comma)?;
+        self.expect(&Comma)?;
 
         let formula = self.fof_formula()?;
-        self.expect(RParen)?;
-        self.expect(Period)?;
+        self.expect(&RParen)?;
+        self.expect(&Period)?;
 
         Ok(Statement::Fof(name, role, formula))
     }
 
     fn include(&mut self) -> Result<Statement> {
         self.shift()?;
-        self.expect(LParen)?;
+        self.expect(&LParen)?;
 
         let name = self.name()?.as_ref().clone();
-        self.expect(RParen)?;
-        self.expect(Period)?;
+        self.expect(&RParen)?;
+        self.expect(&Period)?;
 
         Ok(Statement::Include(name))
     }
@@ -456,7 +455,7 @@ where
                 "fof" => self.fof(),
                 "include" => self.include(),
                 _ => self.unexpected(),
-            }).map(|x| Some(x)),
+            }).map(Some),
             Some(_) => self.unexpected(),
             _ => Ok(None),
         }

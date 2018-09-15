@@ -14,7 +14,7 @@ impl StringCache {
 
     pub fn intern(&mut self, string: String) -> Arc<String> {
         let item = Arc::new(string);
-        let entry = self.strings.get(&item).map(|x| x.clone());
+        let entry = self.strings.get(&item).cloned();
         match entry {
             Some(interned) => interned,
             None => {

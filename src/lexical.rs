@@ -86,11 +86,8 @@ where
     }
 
     fn record_start(&mut self) {
-        match self.stream.peek() {
-            Some(Ok((position, _))) => {
-                self.start = *position;
-            }
-            _ => {}
+        if let Some(Ok((position, _))) = self.stream.peek() {
+            self.start = *position;
         }
     }
 
@@ -140,17 +137,12 @@ where
     fn alphanumeric(&mut self) -> Result<Arc<String>> {
         let mut bytes = vec![];
 
-        loop {
-            match self.peek() {
-                Some(byte) => if alphanumeric(byte) {
-                    self.shift()?;
-                    bytes.push(byte);
-                } else {
-                    break;
-                },
-                _ => {
-                    break;
-                }
+        while let Some(byte) = self.peek() {
+            if alphanumeric(byte) {
+                self.shift()?;
+                bytes.push(byte);
+            } else {
+                break;
             }
         }
 
