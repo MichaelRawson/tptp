@@ -2,8 +2,8 @@ use std::iter::Peekable;
 use std::sync::Arc;
 use std::vec::Vec;
 
-use super::errors::*;
 use super::errors::SyntacticError::*;
+use super::errors::*;
 use super::lexical::Token;
 use super::lexical::Token::*;
 use super::position::*;
@@ -15,7 +15,7 @@ pub struct Bound(Arc<String>);
 pub enum Name {
     Word(Arc<String>),
     Quoted(Arc<String>),
-    Integer(Arc<String>)
+    Integer(Arc<String>),
 }
 
 impl AsRef<String> for Name {
@@ -24,7 +24,7 @@ impl AsRef<String> for Name {
         match self {
             Word(x) => x.as_ref(),
             Quoted(x) => x.as_ref(),
-            Integer(x) => x.as_ref()
+            Integer(x) => x.as_ref(),
         }
     }
 }
@@ -32,7 +32,7 @@ impl AsRef<String> for Name {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum FofTerm {
     Variable(Bound),
-    Functor(Name, Vec<Box<FofTerm>>)
+    Functor(Name, Vec<Box<FofTerm>>),
 }
 use FofTerm::*;
 
@@ -49,7 +49,7 @@ pub enum FofFormula {
     Implies(Box<FofFormula>, Box<FofFormula>),
     Equivalent(Box<FofFormula>, Box<FofFormula>),
     Forall(Vec<Bound>, Box<FofFormula>),
-    Exists(Vec<Bound>, Box<FofFormula>)
+    Exists(Vec<Bound>, Box<FofFormula>),
 }
 use FofFormula::*;
 
@@ -65,30 +65,31 @@ pub enum FormulaRole {
     Conjecture,
     NegatedConjecture,
     Plain,
-    Unknown
+    Unknown,
 }
 
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum Statement {
     Include(String),
-    Fof(Name, FormulaRole, Box<FofFormula>)
+    Fof(Name, FormulaRole, Box<FofFormula>),
 }
 
 pub struct Parser<T>
-where T: Iterator<Item=Result<(Position, Token)>> {
+where
+    T: Iterator<Item = Result<(Position, Token)>>,
+{
     stream: Peekable<T>,
     start: Position,
 }
 
 impl<T> Parser<T>
-where T: Iterator<Item=Result<(Position, Token)>> {
+where
+    T: Iterator<Item = Result<(Position, Token)>>,
+{
     pub fn new(stream: T) -> Self {
         let stream = stream.peekable();
         let start = Position::default();
-        Parser {
-            stream,
-            start
-        }
+        Parser { stream, start }
     }
 
     fn record_start(&mut self) {
@@ -105,14 +106,14 @@ where T: Iterator<Item=Result<(Position, Token)>> {
     fn peek(&mut self) -> Option<Token> {
         match self.stream.peek() {
             Some(Ok((_, token))) => Some(token.clone()),
-            _ => None
+            _ => None,
         }
     }
 
     fn shift(&mut self) -> Result<()> {
         match self.stream.next() {
             Some(Err(e)) => Err(e),
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 
@@ -122,12 +123,9 @@ where T: Iterator<Item=Result<(Position, Token)>> {
 
     fn unexpected<Any>(&mut self) -> Result<Any> {
         match self.stream.next() {
-            Some(Ok((position, token))) => self.error(UnexpectedToken(
-                position,
-                token.clone()
-            )),
+            Some(Ok((position, token))) => self.error(UnexpectedToken(position, token.clone())),
             Some(Err(e)) => Err(e),
-            None => self.error(UnexpectedEnd)
+            None => self.error(UnexpectedEnd),
         }
     }
 
@@ -138,21 +136,21 @@ where T: Iterator<Item=Result<(Position, Token)>> {
             } else {
                 self.unexpected()
             },
-            None => self.unexpected()
+            None => self.unexpected(),
         }
     }
 
     fn peek_or_unexpected(&mut self) -> Result<Token> {
         match self.peek() {
             Some(next) => Ok(next),
-            None => self.unexpected()
+            None => self.unexpected(),
         }
     }
 
     fn peek_position(&mut self) -> Position {
         match self.stream.peek() {
             Some(Ok((position, _))) => *position,
-            _ => panic!("position requested when in an error state")
+            _ => panic!("position requested when in an error state"),
         }
     }
 
@@ -161,16 +159,16 @@ where T: Iterator<Item=Result<(Position, Token)>> {
             Some(LowerWord(t)) => {
                 self.shift()?;
                 Ok(Name::Word(t))
-            },
+            }
             Some(SingleQuoted(t)) => {
                 self.shift()?;
                 Ok(Name::Quoted(t))
-            },
+            }
             Some(Integer(t)) => {
                 self.shift()?;
                 Ok(Name::Integer(t))
-            },
-            _ => self.unexpected()
+            }
+            _ => self.unexpected(),
         }
     }
 
@@ -196,7 +194,7 @@ where T: Iterator<Item=Result<(Position, Token)>> {
                     self.error(error)
                 }
             },
-            _ => self.unexpected()
+            _ => self.unexpected(),
         }?;
         self.shift()?;
         Ok(result)
@@ -205,7 +203,7 @@ where T: Iterator<Item=Result<(Position, Token)>> {
     fn fof_bound(&mut self) -> Result<Bound> {
         let result = match self.peek_or_unexpected()? {
             UpperWord(x) => Ok(Bound(x.clone())),
-            _ => self.unexpected()
+            _ => self.unexpected(),
         }?;
         self.shift()?;
         Ok(result)
@@ -235,8 +233,8 @@ where T: Iterator<Item=Result<(Position, Token)>> {
                 let args = self.fof_arguments()?;
                 self.expect(RParen)?;
                 Ok(Box::new(Functor(name, args)))
-            },
-            _ => Ok(Box::new(Functor(name, vec![])))
+            }
+            _ => Ok(Box::new(Functor(name, vec![]))),
         }
     }
 
@@ -248,7 +246,7 @@ where T: Iterator<Item=Result<(Position, Token)>> {
         match self.peek_or_unexpected()? {
             LowerWord(_) | SingleQuoted(_) | Integer(_) => self.fof_function_term(),
             UpperWord(_) => self.fof_variable(),
-            _ => self.unexpected()
+            _ => self.unexpected(),
         }
     }
 
@@ -264,8 +262,8 @@ where T: Iterator<Item=Result<(Position, Token)>> {
                     let error = UnknownDefined(position, defined);
                     self.error(error)
                 }
-            }
-            _ => panic!("bad defined term")
+            },
+            _ => panic!("bad defined term"),
         }?;
         self.shift()?;
         Ok(result)
@@ -276,7 +274,7 @@ where T: Iterator<Item=Result<(Position, Token)>> {
         let invert = match op {
             Equals => false,
             NotEquals => true,
-            _ => panic!("bad op")
+            _ => panic!("bad op"),
         };
         self.shift()?;
 
@@ -290,7 +288,7 @@ where T: Iterator<Item=Result<(Position, Token)>> {
         let term = *term;
         Ok(match term {
             Functor(name, args) => Box::new(Predicate(name, args)),
-            _ => panic!("bad term")
+            _ => panic!("bad term"),
         })
     }
 
@@ -300,15 +298,15 @@ where T: Iterator<Item=Result<(Position, Token)>> {
                 let term = self.fof_term()?;
                 match self.peek_or_unexpected()? {
                     Equals | NotEquals => self.fof_defined_infix_formula(term),
-                    _ => self.fof_plain_atomic_formula(term)
+                    _ => self.fof_plain_atomic_formula(term),
                 }
-            },
+            }
             UpperWord(_) => {
                 let term = self.fof_term()?;
                 self.fof_defined_infix_formula(term)
-            },
+            }
             Defined(_) => self.fof_defined_atomic_formula(),
-            _ => self.unexpected()
+            _ => self.unexpected(),
         }
     }
 
@@ -317,7 +315,7 @@ where T: Iterator<Item=Result<(Position, Token)>> {
         let f = match op {
             Exclamation => Forall,
             Question => Exists,
-            _ => panic!("bad quantifier")
+            _ => panic!("bad quantifier"),
         };
         self.shift()?;
         self.expect(LBrack)?;
@@ -341,8 +339,8 @@ where T: Iterator<Item=Result<(Position, Token)>> {
                 self.shift()?;
                 let negated = self.fof_unit_formula()?;
                 Ok(Box::new(Not(negated)))
-            },
-            _ => panic!("called with non-unary operator")
+            }
+            _ => panic!("called with non-unary operator"),
         }
     }
 
@@ -353,17 +351,19 @@ where T: Iterator<Item=Result<(Position, Token)>> {
                 let bracketed = self.fof_logic_formula()?;
                 self.expect(RParen)?;
                 Ok(bracketed)
-            },
-            LowerWord(_) | SingleQuoted(_) | Integer(_) | UpperWord(_) | Defined(_) => self.fof_atomic_formula(),
+            }
+            LowerWord(_) | SingleQuoted(_) | Integer(_) | UpperWord(_) | Defined(_) => {
+                self.fof_atomic_formula()
+            }
             Exclamation | Question => self.fof_quantified_formula(),
-            _ => self.unexpected()
+            _ => self.unexpected(),
         }
     }
 
     fn fof_unit_formula(&mut self) -> Result<Box<FofFormula>> {
         match self.peek_or_unexpected()? {
             Tilde => self.fof_unary_formula(),
-            _ => self.fof_unitary_formula()
+            _ => self.fof_unitary_formula(),
         }
     }
 
@@ -372,7 +372,7 @@ where T: Iterator<Item=Result<(Position, Token)>> {
         let f = match op {
             Ampersand => And,
             Pipe => Or,
-            _ => panic!("bad op")
+            _ => panic!("bad op"),
         };
         let mut children = vec![first];
 
@@ -395,23 +395,25 @@ where T: Iterator<Item=Result<(Position, Token)>> {
             RightArrow => Implies(right, left),
             BothArrow => Equivalent(left, right),
             TildeBothArrow => Not(Box::new(Equivalent(left, right))),
-            _ => panic!("bad op")
+            _ => panic!("bad op"),
         }))
     }
 
     fn fof_logic_formula(&mut self) -> Result<Box<FofFormula>> {
         let first = match self.peek() {
             Some(Tilde) => self.fof_unary_formula(),
-            _ => self.fof_unitary_formula()
+            _ => self.fof_unitary_formula(),
         }?;
 
         match self.peek() {
             Some(t) => match t {
                 Ampersand | Pipe => self.fof_binary_assoc(first),
-                LeftArrow | RightArrow | BothArrow | TildeBothArrow => self.fof_binary_nonassoc(first),
+                LeftArrow | RightArrow | BothArrow | TildeBothArrow => {
+                    self.fof_binary_nonassoc(first)
+                }
                 _ => Ok(first),
             },
-            _ => Ok(first)
+            _ => Ok(first),
         }
     }
 
@@ -456,20 +458,22 @@ where T: Iterator<Item=Result<(Position, Token)>> {
                 _ => self.unexpected(),
             }).map(|x| Some(x)),
             Some(_) => self.unexpected(),
-            _ => Ok(None)
+            _ => Ok(None),
         }
     }
 }
 
 impl<T> Iterator for Parser<T>
-where T: Iterator<Item=Result<(Position, Token)>> {
+where
+    T: Iterator<Item = Result<(Position, Token)>>,
+{
     type Item = Result<(Position, Statement)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.statement() {
             Ok(Some(token)) => Some(Ok((self.start, token))),
             Ok(None) => None,
-            Err(e) => Some(Err(e))
+            Err(e) => Some(Err(e)),
         }
     }
 }

@@ -12,22 +12,9 @@ mod util;
 #[cfg(test)]
 mod tests;
 
-pub use errors::{
-    LexicalError,
-    SyntacticError,
-    IncludeError,
-    Error,
-    Context
-};
-pub use position::{Position};
-pub use reader::{Reader};
-pub use resolve::{Resolve};
-pub use syntax::{
-    Name,
-    Bound,
-    FofTerm,
-    FofFormula,
-    FormulaRole,
-    Statement
-};
-pub use util::{LocalFile, DefaultResolver};
+pub use errors::{Context, Error, IncludeError, LexicalError, SyntacticError};
+pub use position::Position;
+pub use reader::Reader;
+pub use resolve::Resolve;
+pub use syntax::{Bound, FofFormula, FofTerm, FormulaRole, Name, Statement};
+pub use util::{DefaultResolver, LocalFile};

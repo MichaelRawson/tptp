@@ -4,8 +4,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use super::byte::*;
-use super::errors::*;
 use super::errors::LexicalError::*;
+use super::errors::*;
 use super::intern::StringCache;
 use super::position::*;
 
@@ -33,7 +33,7 @@ pub enum Token {
     UpperWord(Arc<String>),
     LowerWord(Arc<String>),
     SingleQuoted(Arc<String>),
-    Integer(Arc<String>)
+    Integer(Arc<String>),
 }
 
 enum Tokenized {
@@ -45,21 +45,25 @@ enum Tokenized {
 use self::Tokenized::*;
 
 pub struct Tokenizer<T>
-where T: Iterator<Item=Result<(Position, u8)>> {
+where
+    T: Iterator<Item = Result<(Position, u8)>>,
+{
     stream: Peekable<T>,
     start: Position,
-    cache: Rc<RefCell<StringCache>>
+    cache: Rc<RefCell<StringCache>>,
 }
 
 impl<T> Tokenizer<T>
-where T: Iterator<Item=Result<(Position, u8)>> {
+where
+    T: Iterator<Item = Result<(Position, u8)>>,
+{
     pub fn new(stream: T, cache: Rc<RefCell<StringCache>>) -> Self {
         let stream = stream.peekable();
         let start = Position::default();
         Tokenizer {
             stream,
             start,
-            cache
+            cache,
         }
     }
 
@@ -70,14 +74,14 @@ where T: Iterator<Item=Result<(Position, u8)>> {
     fn peek(&mut self) -> Option<u8> {
         match self.stream.peek() {
             Some(Ok((_, byte))) => Some(*byte),
-            _ => None
+            _ => None,
         }
     }
 
     fn shift(&mut self) -> Result<()> {
         match self.stream.next() {
             Some(Err(e)) => Err(e),
-            _ => Ok(())
+            _ => Ok(()),
         }
     }
 
@@ -103,8 +107,10 @@ where T: Iterator<Item=Result<(Position, u8)>> {
         loop {
             self.shift()?;
             match self.peek() {
-                Some(b'\n') | None => { return Ok(Again); },
-                Some(_) => {},
+                Some(b'\n') | None => {
+                    return Ok(Again);
+                }
+                Some(_) => {}
             }
         }
     }
@@ -117,15 +123,15 @@ where T: Iterator<Item=Result<(Position, u8)>> {
                     self.shift()?;
                     if self.peek() == Some(b'/') {
                         self.shift()?;
-                        return Ok(Again)
+                        return Ok(Again);
                     }
-                },
+                }
                 Some(_) => {
                     self.shift()?;
-                },
+                }
                 None => {
                     self.shift()?;
-                    return self.error(UnclosedComment(self.start))
+                    return self.error(UnclosedComment(self.start));
                 }
             }
         }
@@ -173,8 +179,8 @@ where T: Iterator<Item=Result<(Position, u8)>> {
                 Some(b'\'') => {
                     self.shift()?;
                     let text = self.intern(String::from_utf8(bytes).unwrap());
-                    return Ok(Next(Token::SingleQuoted(text)))
-                },
+                    return Ok(Next(Token::SingleQuoted(text)));
+                }
                 Some(b'\\') => {
                     self.shift()?;
                     match self.peek() {
@@ -182,20 +188,16 @@ where T: Iterator<Item=Result<(Position, u8)>> {
                             if escaped == b'\'' || escaped == b'\\' {
                                 bytes.push(escaped);
                                 self.shift()?;
+                            } else {
+                                return self.error(BadEscape(self.start, escaped));
                             }
-                            else {
-                                return self.error(BadEscape(
-                                    self.start,
-                                    escaped
-                                ));
-                            }
-                        },
+                        }
                         None => {
                             self.shift()?;
                             return self.error(UnclosedQuote(self.start));
                         }
                     }
-                },
+                }
                 Some(c) => if printable(c) {
                     self.shift()?;
                     bytes.push(c);
@@ -220,7 +222,7 @@ where T: Iterator<Item=Result<(Position, u8)>> {
                     self.shift()?;
                 } else {
                     break;
-                }
+                },
                 None => {
                     self.shift()?;
                     break;
@@ -239,15 +241,15 @@ where T: Iterator<Item=Result<(Position, u8)>> {
                 b' ' | b'\t' | b'\r' | b'\n' => {
                     self.shift()?;
                     Ok(Again)
-                },
+                }
                 b'%' => self.single_comment(),
                 b'/' => {
                     self.shift()?;
                     match self.peek() {
                         Some(b'*') => self.multi_comment(),
-                        _ => self.error(UnknownOperator(self.start))
+                        _ => self.error(UnknownOperator(self.start)),
                     }
-                },
+                }
                 b'(' => self.confirm(Token::LParen),
                 b')' => self.confirm(Token::RParen),
                 b'[' => self.confirm(Token::LBrack),
@@ -263,16 +265,16 @@ where T: Iterator<Item=Result<(Position, u8)>> {
                     self.shift()?;
                     match self.peek() {
                         Some(b'=') => self.confirm(Token::NotEquals),
-                        _ => Ok(Next(Token::Exclamation))
+                        _ => Ok(Next(Token::Exclamation)),
                     }
-                },
+                }
                 b'=' => {
                     self.shift()?;
                     match self.peek() {
                         Some(b'>') => self.confirm(Token::RightArrow),
-                        _ => Ok(Next(Token::Equals))
+                        _ => Ok(Next(Token::Equals)),
                     }
-                },
+                }
                 b'<' => {
                     self.shift()?;
                     match self.peek() {
@@ -280,9 +282,9 @@ where T: Iterator<Item=Result<(Position, u8)>> {
                             self.shift()?;
                             match self.peek() {
                                 Some(b'>') => self.confirm(Token::BothArrow),
-                                _ => Ok(Next(Token::LeftArrow))
+                                _ => Ok(Next(Token::LeftArrow)),
                             }
-                        },
+                        }
                         Some(b'~') => {
                             self.shift()?;
                             match self.peek() {
@@ -293,19 +295,18 @@ where T: Iterator<Item=Result<(Position, u8)>> {
                                     self.error(UnknownOperator(self.start))
                                 }
                             }
-                        },
-                        _ => self.error(UnknownOperator(self.start))
+                        }
+                        _ => self.error(UnknownOperator(self.start)),
                     }
-                },
+                }
                 b'$' => self.defined(),
-                b'A' ... b'Z' => self.upper_word(),
-                b'a' ... b'z' => self.lower_word(),
+                b'A'...b'Z' => self.upper_word(),
+                b'a'...b'z' => self.lower_word(),
                 b'\'' => self.single_quoted(),
-                b'0' ... b'9' => self.integer(),
-                other => self.error(UnknownByte(self.start, other))
+                b'0'...b'9' => self.integer(),
+                other => self.error(UnknownByte(self.start, other)),
             }
-        }
-        else {
+        } else {
             self.shift()?;
             Ok(End)
         }
@@ -318,10 +319,10 @@ where T: Iterator<Item=Result<(Position, u8)>> {
             match attempt {
                 Next(token) => {
                     return Ok(Some((self.start, token)));
-                },
+                }
                 Again => {
                     continue;
-                },
+                }
                 End => {
                     return Ok(None);
                 }
@@ -331,14 +332,16 @@ where T: Iterator<Item=Result<(Position, u8)>> {
 }
 
 impl<T> Iterator for Tokenizer<T>
-where T: Iterator<Item=Result<(Position, u8)>> {
+where
+    T: Iterator<Item = Result<(Position, u8)>>,
+{
     type Item = Result<(Position, Token)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.token() {
             Ok(Some(t)) => Some(Ok(t)),
             Ok(None) => None,
-            Err(e) => Some(Err(e))
+            Err(e) => Some(Err(e)),
         }
     }
 }

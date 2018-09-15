@@ -1,8 +1,9 @@
-use super::position::*;
 use super::errors::Result;
+use super::position::*;
 
 pub trait Resolve {
-    type Source: Iterator<Item=Result<(Position, u8)>>;
+    type Source: Iterator<Item = Result<(Position, u8)>>;
     fn resolve<S>(&mut self, S) -> Result<Self::Source>
-        where S: Into<String>;
+    where
+        S: Into<String>;
 }

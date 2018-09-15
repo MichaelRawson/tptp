@@ -2,13 +2,13 @@ use std::collections::HashSet;
 use std::sync::Arc;
 
 pub struct StringCache {
-    strings: HashSet<Arc<String>>
+    strings: HashSet<Arc<String>>,
 }
 
 impl StringCache {
     pub fn new() -> Self {
         StringCache {
-            strings: HashSet::new()
+            strings: HashSet::new(),
         }
     }
 
