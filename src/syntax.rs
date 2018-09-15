@@ -1,78 +1,14 @@
 use std::iter::Peekable;
-use std::sync::Arc;
 use std::vec::Vec;
 
-use super::errors::SyntacticError::*;
-use super::errors::*;
+use super::ast::FofFormula::*;
+use super::ast::FofTerm::*;
+use super::ast::*;
+use super::error::Syntactic::*;
+use super::error::*;
 use super::lexical::Token;
 use super::lexical::Token::*;
 use super::position::*;
-
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub struct Bound(Arc<String>);
-
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum Name {
-    Word(Arc<String>),
-    Quoted(Arc<String>),
-    Integer(Arc<String>),
-}
-
-impl AsRef<String> for Name {
-    fn as_ref(&self) -> &String {
-        use self::Name::*;
-        match self {
-            Word(x) => x.as_ref(),
-            Quoted(x) => x.as_ref(),
-            Integer(x) => x.as_ref(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofTerm {
-    Variable(Bound),
-    Functor(Name, Vec<Box<FofTerm>>),
-}
-use FofTerm::*;
-
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofFormula {
-    True,
-    False,
-    Equal(Box<FofTerm>, Box<FofTerm>),
-    NotEqual(Box<FofTerm>, Box<FofTerm>),
-    Predicate(Name, Vec<Box<FofTerm>>),
-    Not(Box<FofFormula>),
-    And(Vec<Box<FofFormula>>),
-    Or(Vec<Box<FofFormula>>),
-    Implies(Box<FofFormula>, Box<FofFormula>),
-    Equivalent(Box<FofFormula>, Box<FofFormula>),
-    Forall(Vec<Bound>, Box<FofFormula>),
-    Exists(Vec<Bound>, Box<FofFormula>),
-}
-use FofFormula::*;
-
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FormulaRole {
-    Axiom,
-    Hypothesis,
-    Definition,
-    Assumption,
-    Lemma,
-    Theorem,
-    Corollary,
-    Conjecture,
-    NegatedConjecture,
-    Plain,
-    Unknown,
-}
-
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum Statement {
-    Include(String),
-    Fof(Name, FormulaRole, Box<FofFormula>),
-}
 
 pub struct Parser<T>
 where
@@ -117,8 +53,8 @@ where
         }
     }
 
-    fn error<Any>(&self, error: SyntacticError) -> Result<Any> {
-        Err(Error::Syntactic(error))
+    fn error<Any>(&self, error: Syntactic) -> Result<Any> {
+        Err(Reported::Syntactic(error))
     }
 
     fn unexpected<Any>(&mut self) -> Result<Any> {

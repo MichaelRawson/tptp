@@ -2,12 +2,14 @@ use std::cell::RefCell;
 use std::rc::Rc;
 use std::vec::Vec;
 
-use super::errors::*;
+use super::ast::*;
+use super::error::*;
 use super::intern::StringCache;
 use super::lexical::Tokenizer;
 use super::position::*;
 use super::resolve::Resolve;
-use super::syntax::{Parser, Statement};
+use super::syntax::Parser;
+use super::tracking::Tracking;
 
 pub struct IncludeProcessor<R>
 where
@@ -17,7 +19,7 @@ where
     follow: bool,
     resolver: R,
     name_stack: Vec<String>,
-    stream_stack: Vec<Parser<Tokenizer<R::Source>>>,
+    stream_stack: Vec<Parser<Tokenizer<Tracking<R::Source>>>>,
 }
 
 impl<R> IncludeProcessor<R>
@@ -43,11 +45,12 @@ where
 
     fn push_include(&mut self, name: String, position: Position) -> Result<()> {
         if self.name_stack.contains(&name) {
-            let error = IncludeError::CircularInclude(position, name);
-            return Err(Error::Include(error));
+            let error = Include::Circular(position, name);
+            return Err(Reported::Include(error));
         }
 
-        let stream = self.resolver.resolve(name.clone())?;
+        let stream = self.resolver.resolve(name.clone()).map_err(Reported::IO)?;
+        let stream = Tracking::new(stream);
         let stream = Tokenizer::new(stream, self.cache.clone());
         let stream = Parser::new(stream);
         self.name_stack.push(name);

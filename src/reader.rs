@@ -1,9 +1,10 @@
-use super::errors::Context;
+use super::ast::Statement;
+use super::error::Error;
 use super::include::IncludeProcessor;
 use super::resolve::Resolve;
-use super::syntax::Statement;
 use super::util::DefaultResolver;
 
+/// Configuration state to build a `Reader`, parameterized over a `Resolve` instance.
 pub struct ReaderBuilder<R>
 where
     R: Resolve,
@@ -12,21 +13,36 @@ where
     follow_includes: bool,
 }
 
+impl ReaderBuilder<DefaultResolver> {
+    /// A new builder.
+    /// By default, use a `DefaultResolver` and do not follow includes.
+    pub fn new() -> Self {
+        ReaderBuilder {
+            resolver: DefaultResolver,
+            follow_includes: false,
+        }
+    }
+}
+
 impl<R> ReaderBuilder<R>
 where
     R: Resolve,
 {
+    /// Use a different `Resolve` implementation
     pub fn use_resolver(mut self, resolver: R) -> Self {
         self.resolver = resolver;
         self
     }
 
+    /// Follow `include` directives, possibly recursively
     pub fn follow_includes(mut self) -> Self {
         self.follow_includes = true;
         self
     }
 
-    pub fn read<S>(self, start: S) -> Result<Reader<R>, Context>
+    /// Finalize and create an iterator.
+    /// This might fail if e.g. the starting stream cannot be opened
+    pub fn read<S>(self, start: S) -> Result<Reader<R>, Error>
     where
         S: Into<String>,
     {
@@ -37,14 +53,16 @@ where
                 stream,
                 error: false,
             }),
-            Err(error) => Err(Context {
-                error,
+            Err(reported) => Err(Error {
+                reported,
                 includes: vec![path.clone()],
             }),
         }
     }
 }
 
+/// An iterator over `Statement`s.
+/// If an error is encountered, the error is reported only once, after which the iterator returns `None`.
 pub struct Reader<R>
 where
     R: Resolve,
@@ -53,20 +71,11 @@ where
     error: bool,
 }
 
-impl Reader<DefaultResolver> {
-    pub fn new() -> ReaderBuilder<DefaultResolver> {
-        ReaderBuilder {
-            resolver: DefaultResolver,
-            follow_includes: false,
-        }
-    }
-}
-
 impl<R> Iterator for Reader<R>
 where
     R: Resolve,
 {
-    type Item = Result<Statement, Context>;
+    type Item = Result<Statement, Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.error {
@@ -76,10 +85,10 @@ where
         let next = self.stream.next()?;
         Some(match next {
             Ok(t) => Ok(t),
-            Err(error) => {
+            Err(reported) => {
                 self.error = true;
-                Err(Context {
-                    error,
+                Err(Error {
+                    reported,
                     includes: self.stream.stack().clone(),
                 })
             }

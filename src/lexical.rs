@@ -4,8 +4,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 use super::byte::*;
-use super::errors::LexicalError::*;
-use super::errors::*;
+use super::error::Lexical::*;
+use super::error::*;
 use super::intern::StringCache;
 use super::position::*;
 
@@ -96,8 +96,8 @@ where
         Ok(Next(token))
     }
 
-    fn error<Any>(&self, error: LexicalError) -> Result<Any> {
-        Err(Error::Lexical(error))
+    fn error<Any>(&self, error: Lexical) -> Result<Any> {
+        Err(Reported::Lexical(error))
     }
 
     fn single_comment(&mut self) -> Result<Tokenized> {
