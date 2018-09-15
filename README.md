@@ -1,6 +1,6 @@
 # tptp
 
-A crate for reading TPTP files.
+A crate for reading files in the [TPTP](tptp.org) format.
 
 ## Quickstart
 
