@@ -1,6 +1,6 @@
 # tptp
 
-A [crate](https://crates.io/crates/tptp) for reading files in the [TPTP](http://tptp.org) format.
+A [crate](https://crates.io/crates/tptp) for reading files in the FOF dialect of the [TPTP](http://tptp.org) format.
 
 ## Features
 

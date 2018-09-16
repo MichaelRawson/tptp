@@ -1,4 +1,4 @@
-//! A crate for reading files in the [TPTP](tptp.org) format.
+//! A crate for reading files in the FOF dialect of the TPTP format.
 //!
 //! # Quickstart
 //! ```rust
