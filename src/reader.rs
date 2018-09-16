@@ -24,6 +24,12 @@ impl ReaderBuilder<DefaultResolver> {
     }
 }
 
+impl Default for ReaderBuilder<DefaultResolver> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<R> ReaderBuilder<R>
 where
     R: Resolve,

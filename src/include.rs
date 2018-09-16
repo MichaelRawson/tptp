@@ -76,6 +76,7 @@ where
             match next {
                 Some(Ok((position, statement))) => match statement {
                     Statement::Include(path) => if self.follow {
+                        let path = path.as_ref().clone();
                         match self.push_include(path, position) {
                             Ok(()) => {
                                 continue;

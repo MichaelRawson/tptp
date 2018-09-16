@@ -14,7 +14,6 @@ A [crate](https://crates.io/crates/tptp) for reading files in the [TPTP](http://
 
 In order of urgency:
 
-* `Display` instances
 * More complete FOF parsing
 * CNF support
 * "other" support?

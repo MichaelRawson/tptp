@@ -1,8 +1,12 @@
 use std::iter::Peekable;
 use std::vec::Vec;
 
+use super::ast::FofAssocOp::*;
 use super::ast::FofFormula::*;
+use super::ast::FofNonAssocOp::*;
+use super::ast::FofQuantifier::*;
 use super::ast::FofTerm::*;
+use super::ast::FofUnaryOp::*;
 use super::ast::*;
 use super::error::Syntactic::*;
 use super::error::*;
@@ -190,8 +194,8 @@ where
         let defined = self.peek().expect("called without defined operator");
         let result = match defined {
             Defined(name) => match (*name).as_ref() {
-                "true" => Ok(Box::new(True)),
-                "false" => Ok(Box::new(False)),
+                "true" => Ok(Box::new(Boolean(true))),
+                "false" => Ok(Box::new(Boolean(false))),
                 _ => {
                     let position = self.peek_position();
                     let defined = (*name).clone();
@@ -216,7 +220,11 @@ where
 
         let right = self.fof_term()?;
         let equal = Box::new(Equal(left, right));
-        let result = if invert { Box::new(Not(equal)) } else { equal };
+        let result = if invert {
+            Box::new(Unary(Not, equal))
+        } else {
+            equal
+        };
         Ok(result)
     }
 
@@ -247,7 +255,7 @@ where
 
     fn fof_quantified_formula(&mut self) -> Result<Box<FofFormula>> {
         let op = self.peek().expect("called without quantifier");
-        let f = match op {
+        let quantifier = match op {
             Exclamation => Forall,
             Question => Exists,
             _ => panic!("bad quantifier"),
@@ -265,7 +273,7 @@ where
         self.expect(&Colon)?;
 
         let formula = self.fof_unit_formula()?;
-        Ok(Box::new(f(bound, formula)))
+        Ok(Box::new(Quantified(quantifier, bound, formula)))
     }
 
     fn fof_unary_formula(&mut self) -> Result<Box<FofFormula>> {
@@ -273,7 +281,7 @@ where
             Tilde => {
                 self.shift()?;
                 let negated = self.fof_unit_formula()?;
-                Ok(Box::new(Not(negated)))
+                Ok(Box::new(Unary(Not, negated)))
             }
             _ => panic!("called with non-unary operator"),
         }
@@ -304,7 +312,7 @@ where
 
     fn fof_binary_assoc(&mut self, first: Box<FofFormula>) -> Result<Box<FofFormula>> {
         let op = self.peek().expect("called with no operator");
-        let f = match op {
+        let assoc_op = match op {
             Ampersand => And,
             Pipe => Or,
             _ => panic!("bad op"),
@@ -317,7 +325,7 @@ where
             children.push(next);
         }
 
-        Ok(Box::new(f(children)))
+        Ok(Box::new(Assoc(assoc_op, children)))
     }
 
     fn fof_binary_nonassoc(&mut self, left: Box<FofFormula>) -> Result<Box<FofFormula>> {
@@ -326,10 +334,10 @@ where
         let right = self.fof_unit_formula()?;
 
         Ok(Box::new(match op {
-            LeftArrow => Implies(left, right),
-            RightArrow => Implies(right, left),
-            BothArrow => Equivalent(left, right),
-            TildeBothArrow => Not(Box::new(Equivalent(left, right))),
+            LeftArrow => NonAssoc(Implies, left, right),
+            RightArrow => NonAssoc(Implies, right, left),
+            BothArrow => NonAssoc(Equivalent, left, right),
+            TildeBothArrow => Unary(Not, Box::new(NonAssoc(Equivalent, left, right))),
             _ => panic!("bad op"),
         }))
     }
@@ -377,7 +385,7 @@ where
         self.shift()?;
         self.expect(&LParen)?;
 
-        let name = self.name()?.as_ref().clone();
+        let name = self.name()?;
         self.expect(&RParen)?;
         self.expect(&Period)?;
 

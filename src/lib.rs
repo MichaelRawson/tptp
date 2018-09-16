@@ -19,7 +19,7 @@
 //!         let statement = statement?;
 //!
 //!         // process each statement as you see fit
-//!         println!("{:?}", statement);
+//!         println!("{}", statement);
 //!     }
 //!
 //!     Ok(())
