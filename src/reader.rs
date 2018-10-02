@@ -1,6 +1,9 @@
+use std::sync::Arc;
+
 use super::ast::Statement;
 use super::error::Error;
 use super::include::IncludeProcessor;
+use super::position::Position;
 use super::resolve::Resolve;
 use super::util::DefaultResolver;
 
@@ -61,13 +64,13 @@ where
             }),
             Err(reported) => Err(Error {
                 reported,
-                includes: vec![path.clone()],
+                includes: vec![Arc::new(path.clone())],
             }),
         }
     }
 }
 
-/// An iterator over `Statement`s.
+/// An iterator over `Statement`s, with file location reported.
 /// If an error is encountered, the error is reported only once, after which the iterator returns `None`.
 pub struct Reader<R>
 where
@@ -81,7 +84,7 @@ impl<R> Iterator for Reader<R>
 where
     R: Resolve,
 {
-    type Item = Result<Statement, Error>;
+    type Item = Result<(Arc<String>, Position, Statement), Error>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.error {

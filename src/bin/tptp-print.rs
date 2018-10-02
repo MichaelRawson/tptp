@@ -4,9 +4,12 @@ use tptp::prelude::*;
 fn print(start: &str) -> Result<(), Error> {
     let reader = ReaderBuilder::new().follow_includes().read(start)?;
 
-    for statement in reader {
-        println!("{}", statement?);
+    for item in reader {
+        let (name, position, statement) = item?;
+        println!("{} at {}", name, position);
+        println!("{}\n", statement);
     }
+
     Ok(())
 }
 

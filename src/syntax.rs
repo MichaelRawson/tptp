@@ -398,7 +398,7 @@ where
             Some(LowerWord(word)) => (match (*word).as_ref() {
                 "fof" => self.fof(),
                 "include" => self.include(),
-                _ => self.unexpected(),
+                _ => self.error(UnsupportedDialect(self.start, (*word).clone())),
             }).map(Some),
             Some(_) => self.unexpected(),
             _ => Ok(None),

@@ -1,5 +1,6 @@
 use std::io;
 use std::prelude::v1::Result as Either;
+use std::sync::Arc;
 
 use super::lexical::Token;
 use super::position::Position;
@@ -26,6 +27,8 @@ pub enum Lexical {
 /// Errors raised during the parsing stage
 #[derive(Debug)]
 pub enum Syntactic {
+    /// A TPTP dialect (like TFF) that isn't supported yet
+    UnsupportedDialect(Position, String),
     /// An as-yet unknown TPTP role
     UnknownRole(Position, String),
     /// An as-yet unknown TPTP defined operation
@@ -64,5 +67,5 @@ pub struct Error {
     /// The error that was encountered
     pub reported: Reported,
     /// Chain of `include`s leading up to the error
-    pub includes: Vec<String>,
+    pub includes: Vec<Arc<String>>,
 }
