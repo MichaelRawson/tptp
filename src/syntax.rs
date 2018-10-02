@@ -334,8 +334,8 @@ where
         let right = self.fof_unit_formula()?;
 
         Ok(Box::new(match op {
-            LeftArrow => NonAssoc(Implies, left, right),
-            RightArrow => NonAssoc(Implies, right, left),
+            LeftArrow => NonAssoc(Implies, right, left),
+            RightArrow => NonAssoc(Implies, left, right),
             BothArrow => NonAssoc(Equivalent, left, right),
             TildeBothArrow => Unary(Not, Box::new(NonAssoc(Equivalent, left, right))),
             _ => panic!("bad op"),

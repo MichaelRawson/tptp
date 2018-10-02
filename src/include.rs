@@ -52,6 +52,7 @@ where
             return Err(Reported::Include(error));
         }
 
+        self.name_stack.push(name.clone());
         let stream = self
             .resolver
             .resolve(name.as_ref().clone())
@@ -59,7 +60,6 @@ where
         let stream = Tracking::new(stream);
         let stream = Tokenizer::new(stream, self.cache.clone());
         let stream = Parser::new(stream);
-        self.name_stack.push(name);
         self.stream_stack.push(stream);
         Ok(())
     }
