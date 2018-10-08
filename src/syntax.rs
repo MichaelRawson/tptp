@@ -401,7 +401,12 @@ where
                 _ => self.error(UnsupportedDialect(self.start, (*word).clone())),
             }).map(Some),
             Some(_) => self.unexpected(),
-            _ => Ok(None),
+            None => match self.stream.next() {
+                // check stream is OK
+                Some(Err(e)) => Err(e),
+                Some(Ok(_)) => unreachable!(),
+                None => Ok(None),
+            },
         }
     }
 }
@@ -415,7 +420,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         match self.statement() {
             Ok(Some(token)) => Some(Ok((self.start, token))),
-            Ok(None) => self.stream.peek().map(|_| unreachable!()),
+            Ok(None) => None,
             Err(e) => Some(Err(e)),
         }
     }
