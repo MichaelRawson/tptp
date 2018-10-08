@@ -246,7 +246,10 @@ where
             }
             UpperWord(_) => {
                 let term = self.fof_term()?;
-                self.fof_defined_infix_formula(term)
+                match self.peek_or_unexpected()? {
+                    Equals | NotEquals => self.fof_defined_infix_formula(term),
+                    _ => self.unexpected(),
+                }
             }
             Defined(_) => self.fof_defined_atomic_formula(),
             _ => self.unexpected(),
