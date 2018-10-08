@@ -38,7 +38,7 @@ where
             name_stack: vec![],
             stream_stack: vec![],
         };
-        new.push_include(name, Position::default())?;
+        new.push_include(&name, Position::default())?;
         Ok(new)
     }
 
@@ -46,7 +46,7 @@ where
         &self.name_stack
     }
 
-    fn push_include(&mut self, name: Arc<String>, position: Position) -> Result<()> {
+    fn push_include(&mut self, name: &Arc<String>, position: Position) -> Result<()> {
         if self.name_stack.contains(&name) {
             let error = Include::Circular(position, name.as_ref().clone());
             return Err(Reported::Include(error));
@@ -84,7 +84,7 @@ where
                 Some(Ok((position, statement))) => match statement {
                     Statement::Include(path) => if self.follow {
                         let path = self.cache.borrow_mut().intern(path.as_ref().to_string());
-                        match self.push_include(path, position) {
+                        match self.push_include(&path, position) {
                             Ok(()) => {
                                 continue;
                             }

@@ -415,7 +415,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         match self.statement() {
             Ok(Some(token)) => Some(Ok((self.start, token))),
-            Ok(None) => None,
+            Ok(None) => self.stream.peek().map(|_| unreachable!()),
             Err(e) => Some(Err(e)),
         }
     }
