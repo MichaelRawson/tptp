@@ -24,31 +24,31 @@
 
 /// Errors that might be raised during processing
 pub mod error;
-/// Line/column reporting
-pub mod position;
-/// Lexical tokens
-pub mod token;
-/// Lexical analysis
-pub mod lexer;
-/// Syntax trees
-pub mod syntax;
-/// Parsing
-pub mod parser;
-/// Resolve include() paths according to the TPTP spec
-pub mod resolve;
 /// Follow include directives
 pub mod follow;
+/// Lexical analysis
+pub mod lexer;
+/// Parsing
+pub mod parser;
+/// Line/column reporting
+pub mod position;
+/// Resolve include() paths according to the TPTP spec
+pub mod resolve;
+/// Syntax trees
+pub mod syntax;
+/// Lexical tokens
+pub mod token;
 
 /// Convenient API to stream statements, following include directives recursively
 pub fn stream(
     path: &str,
-) -> Result<impl Iterator<Item = Result<syntax::Statement, error::ErrorWithContext>>, error::ErrorWithContext> {
+) -> Result<impl Iterator<Item = Result<syntax::Statement, error::ErrorInfo>>, error::ErrorInfo> {
     let mut follow = follow::Follow::new(|path| {
         let stream = resolve::resolve(path)?;
         let lexer = lexer::Lexer::new(stream);
         let parser = parser::Parser::new(lexer);
         Ok(parser)
     });
-    follow.include(path.into())?;
+    follow.include(path.into(), None)?;
     Ok(follow)
 }

@@ -1,25 +1,38 @@
 use std::fmt;
 
+fn escape_single_quoted(quoted: &str) -> String {
+    quoted.replace('\\', "\\\\").replace('\'', "\\'")
+}
+
+fn escape_double_quoted(quoted: &str) -> String {
+    quoted.replace('\\', "\\\\").replace('"', "\\\"")
+}
+
 /// One of various types of TPTP identifiers.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum Name {
-    /// An alphanumeric token, like `propositional_fact2`.
-    Word(String),
-    /// A 'quoted string'.
-    Quoted(String),
+    /// An atomic token, like `propositional_fact2` or `'quoted string'`.
+    Atomic(String),
     /// Integral identifiers of arbitrary size.
     Integer(String),
+}
+
+fn alphanumeric(name: &str) -> bool {
+    name.chars().all(|x| match x {
+        'A'...'Z' | 'a'...'z' | '0'...'9' | '_' => true,
+        _ => false,
+    })
 }
 
 impl fmt::Display for Name {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Name::*;
         match self {
-            Word(x) => write!(f, "{}", x),
-            Quoted(x) => {
-                let escaped = x.replace('\\', "\\\\").replace('\'', "\\'");
-                write!(f, "'{}'", escaped)
-            }
+            Atomic(x) => if alphanumeric(&x) {
+                write!(f, "{}", x)
+            } else {
+                write!(f, "'{}'", escape_single_quoted(x))
+            },
             Integer(x) => write!(f, "{}", x),
         }
     }
@@ -33,6 +46,8 @@ pub enum FofTerm {
     /// An application of a name to arguments, `f(t1, t2, ...)`.
     /// Constants `c` are treated as nullary functors `c()`.
     Functor(Name, Vec<Box<FofTerm>>),
+    /// A distinct object, e.g. `"distinct"`
+    DistinctObject(String),
 }
 
 fn fmt_args(f: &mut fmt::Formatter, args: &[Box<FofTerm>]) -> fmt::Result {
@@ -58,20 +73,21 @@ impl fmt::Display for FofTerm {
                 write!(f, "{}", name)?;
                 fmt_args(f, args)
             }
+            DistinctObject(name) => write!(f, "\"{}\"", escape_double_quoted(name)),
         }
     }
 }
 
 /// A unary operator on FOF formulae
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofUnaryOp {
+pub enum FofUnaryConnective {
     /// `~p`
     Not,
 }
 
-impl fmt::Display for FofUnaryOp {
+impl fmt::Display for FofUnaryConnective {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FofUnaryOp::*;
+        use self::FofUnaryConnective::*;
         match self {
             Not => write!(f, "~"),
         }
@@ -80,16 +96,16 @@ impl fmt::Display for FofUnaryOp {
 
 /// An infix binary operator on FOF terms
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofInfixOp {
+pub enum InfixEquality {
     /// `t = s`
     Equal,
     /// `t != s`
     NotEqual,
 }
 
-impl fmt::Display for FofInfixOp {
+impl fmt::Display for InfixEquality {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FofInfixOp::*;
+        use self::InfixEquality::*;
         match self {
             Equal => write!(f, "="),
             NotEqual => write!(f, "!="),
@@ -99,38 +115,47 @@ impl fmt::Display for FofInfixOp {
 
 /// A non-associative binary operator on FOF formulae
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofNonAssocOp {
+pub enum FofNonAssocConnective {
     /// `p => q`
-    Implies,
+    LRImplies,
+    /// `p <= q`
+    RLImplies,
     /// `p <=> q`
     Equivalent,
     /// `p <~> q`
     NotEquivalent,
+    /// `p ~| q`
+    NotOr,
+    /// `p ~& q`
+    NotAnd,
 }
 
-impl fmt::Display for FofNonAssocOp {
+impl fmt::Display for FofNonAssocConnective {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FofNonAssocOp::*;
+        use self::FofNonAssocConnective::*;
         match self {
-            Implies => write!(f, "=>"),
+            LRImplies => write!(f, "=>"),
+            RLImplies => write!(f, "<="),
             Equivalent => write!(f, "<=>"),
             NotEquivalent => write!(f, "<~>"),
+            NotOr => write!(f, "~|"),
+            NotAnd => write!(f, "~&"),
         }
     }
 }
 
 /// An associative binary operator on FOF formulae
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofAssocOp {
+pub enum FofAssocConnective {
     /// `p1 & p2 & ...`
     And,
     /// `p1 | p2 | ...`
     Or,
 }
 
-impl fmt::Display for FofAssocOp {
+impl fmt::Display for FofAssocConnective {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FofAssocOp::*;
+        use self::FofAssocConnective::*;
         match self {
             And => write!(f, "&"),
             Or => write!(f, "|"),
@@ -163,15 +188,15 @@ pub enum FofFormula {
     /// `$true`, `$false`
     Boolean(bool),
     /// `t1 $op t2`
-    Infix(FofInfixOp, Box<FofTerm>, Box<FofTerm>),
+    Infix(InfixEquality, Box<FofTerm>, Box<FofTerm>),
     /// `p(t1, t2, ...)`
     Predicate(Name, Vec<Box<FofTerm>>),
     /// `$op(p)`
-    Unary(FofUnaryOp, Box<FofFormula>),
+    Unary(FofUnaryConnective, Box<FofFormula>),
     /// `(p $op q)`
-    NonAssoc(FofNonAssocOp, Box<FofFormula>, Box<FofFormula>),
+    NonAssoc(FofNonAssocConnective, Box<FofFormula>, Box<FofFormula>),
     /// `p1 $op p2 $op ...`
-    Assoc(FofAssocOp, Vec<Box<FofFormula>>),
+    Assoc(FofAssocConnective, Vec<Box<FofFormula>>),
     /// `$op[X1, X2, ...]: p`
     Quantified(FofQuantifier, Vec<String>, Box<FofFormula>),
 }
@@ -217,6 +242,40 @@ impl fmt::Display for FofFormula {
     }
 }
 
+/// A CNF literal
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum CnfLiteral {
+    /// A literal, e.g. `p(X)`
+    Literal(Box<FofFormula>),
+    /// A negated literal, e.g. `~p(X)`
+    NegatedLiteral(Box<FofFormula>),
+}
+
+impl fmt::Display for CnfLiteral {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::CnfLiteral::*;
+        match self {
+            Literal(fof) => write!(f, "{}", fof),
+            NegatedLiteral(fof) => write!(f, "~{}", fof),
+        }
+    }
+}
+
+/// A CNF formula
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub struct CnfFormula(pub Vec<CnfLiteral>);
+
+impl fmt::Display for CnfFormula {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut literals = self.0.iter();
+        write!(f, "{}", literals.next().unwrap())?;
+        for literal in literals {
+            write!(f, "|{}", literal)?;
+        }
+        Ok(())
+    }
+}
+
 /// A TPTP formula role, such as `axiom` or `negated_conjecture`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum FormulaRole {
@@ -252,19 +311,96 @@ impl fmt::Display for FormulaRole {
     }
 }
 
-/// A top-level TPTP statement, currently `include` or `fof`.
+/// Formula sources for use in annotations
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum Source {
+    Unknown,
+    Dag(Name),
+    File(String, Option<Name>),
+    Inference(Name, Vec<Source>),
+}
+
+impl fmt::Display for Source {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Source::*;
+        match self {
+            Unknown => write!(f, "unknown"),
+            Dag(ref name) => write!(f, "{}", name),
+            File(ref name, None) => write!(f, "file('{}')", escape_single_quoted(name)),
+            File(ref name, Some(info)) => {
+                write!(f, "file('{}',{})", escape_single_quoted(name), info)
+            }
+            Inference(ref rule, ref parents) => {
+                write!(f, "inference({},[],[", rule)?;
+                if !parents.is_empty() {
+                    let mut parents = parents.iter();
+                    write!(f, "{}", parents.next().unwrap())?;
+                    for parent in parents {
+                        write!(f, ",{}", parent)?;
+                    }
+                }
+                write!(f, "])")
+            }
+        }
+    }
+}
+
+/// Formula annotations
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub struct Annotations {
+    pub source: Source,
+}
+
+impl fmt::Display for Annotations {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.source)
+    }
+}
+
+/// A top-level TPTP statement, currently `include`, `cnf`, or `fof`.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum Statement {
-    Include(String),
-    Fof(Name, FormulaRole, Box<FofFormula>),
+    Include(String, Option<Vec<Name>>),
+    Cnf(Name, FormulaRole, CnfFormula, Option<Annotations>),
+    Fof(Name, FormulaRole, Box<FofFormula>, Option<Annotations>),
+}
+
+impl Statement {
+    /// Get the name of a non-`include` statement.
+    pub fn name(&self) -> &Name {
+        use self::Statement::*;
+        match self {
+            Include(_, _) => panic!("include statement has no name"),
+            Cnf(ref name, _, _, _) => name,
+            Fof(ref name, _, _, _) => name,
+        }
+    }
 }
 
 impl fmt::Display for Statement {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Statement::*;
         match self {
-            Include(include) => write!(f, "include('{}').", include),
-            Fof(name, role, formula) => write!(f, "fof({},{},{}).", name, role, formula),
+            Include(include, None) => write!(f, "include('{}').", escape_single_quoted(include)),
+            Include(include, Some(names)) => {
+                write!(f, "include('{}',[", escape_single_quoted(include))?;
+
+                let mut names = names.iter();
+                write!(f, "{}", names.next().unwrap())?;
+                for name in names {
+                    write!(f, ",{}", name)?;
+                }
+
+                write!(f, ").")
+            }
+            Cnf(name, role, formula, None) => write!(f, "cnf({},{},{}).", name, role, formula),
+            Cnf(name, role, formula, Some(annotations)) => {
+                write!(f, "cnf({},{},{},{}).", name, role, formula, annotations)
+            }
+            Fof(name, role, formula, None) => write!(f, "fof({},{},{}).", name, role, formula),
+            Fof(name, role, formula, Some(annotations)) => {
+                write!(f, "fof({},{},{},{}).", name, role, formula, annotations)
+            }
         }
     }
 }

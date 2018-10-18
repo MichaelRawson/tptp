@@ -88,7 +88,7 @@ fof(role_conjecture,conjecture,(
     ? [X] : p(X) )).
 
 %----Include directive
-include('included.p').
+include('examples/fof/included.p').
 
 %----Comments
 /* This

@@ -12,6 +12,7 @@ use token::Token::*;
 enum State {
     Ready,
     Equals,
+    Tilde,
     Less,
     LessEquals,
     LessTilde,
@@ -22,6 +23,8 @@ enum State {
     Defined,
     SingleQuoted,
     SingleQuotedEscape,
+    DoubleQuoted,
+    DoubleQuotedEscape,
     SingleComment,
     MultiCommentStart,
     MultiComment,
@@ -55,12 +58,12 @@ impl<T: Iterator<Item = Result<u8, io::Error>>> Lexer<T> {
         }
     }
 
-    fn error<E: Into<Error>, X>(&mut self, error: E) -> Result<X, Error> {
+    fn error<E: Into<Error>, X>(&mut self, error: E) -> Result<X, (Position, Error)> {
         self.error = true;
-        Err(error.into())
+        Err((self.position, error.into()))
     }
 
-    fn byte(&mut self) -> Result<u8, Error> {
+    fn byte(&mut self) -> Result<u8, (Position, Error)> {
         let read = self.read;
         if read != b'\0' {
             self.read = b'\0';
@@ -87,7 +90,7 @@ impl<T: Iterator<Item = Result<u8, io::Error>>> Lexer<T> {
         unsafe { String::from_utf8_unchecked(buffer) }
     }
 
-    fn step(&mut self, byte: u8) -> Result<Option<Token>, Error> {
+    fn step(&mut self, byte: u8) -> Result<Option<Token>, (Position, Error)> {
         match self.state {
             State::Ready => match byte {
                 b'\0' => Ok(Some(EOF)),
@@ -109,7 +112,10 @@ impl<T: Iterator<Item = Result<u8, io::Error>>> Lexer<T> {
                 b':' => Ok(Some(Colon)),
                 b'&' => Ok(Some(Ampersand)),
                 b'|' => Ok(Some(Pipe)),
-                b'~' => Ok(Some(Tilde)),
+                b'~' => {
+                    self.state = State::Tilde;
+                    Ok(None)
+                }
                 b'=' => {
                     self.state = State::Equals;
                     Ok(None)
@@ -146,7 +152,26 @@ impl<T: Iterator<Item = Result<u8, io::Error>>> Lexer<T> {
                     self.state = State::SingleQuoted;
                     Ok(None)
                 }
+                b'"' => {
+                    self.state = State::DoubleQuoted;
+                    Ok(None)
+                }
                 b => self.error(UnknownByte(b)),
+            },
+            State::Tilde => match byte {
+                b'|' => {
+                    self.state = State::Ready;
+                    Ok(Some(TildePipe))
+                }
+                b'&' => {
+                    self.state = State::Ready;
+                    Ok(Some(TildeAmpersand))
+                }
+                _ => {
+                    self.state = State::Ready;
+                    self.put_back(byte);
+                    Ok(Some(Tilde))
+                }
             },
             State::Equals => match byte {
                 b'>' => {
@@ -249,7 +274,7 @@ impl<T: Iterator<Item = Result<u8, io::Error>>> Lexer<T> {
             },
             State::SingleQuoted => match byte {
                 b'\0' => self.error(UnclosedQuote),
-                b' '...b'~' => match byte {
+                32...126 => match byte {
                     b'\'' => {
                         self.state = State::Ready;
                         let token = SingleQuoted(self.buffered());
@@ -270,6 +295,34 @@ impl<T: Iterator<Item = Result<u8, io::Error>>> Lexer<T> {
                 b'\'' | b'\\' => {
                     self.buffer.push(byte);
                     self.state = State::SingleQuoted;
+                    Ok(None)
+                }
+                b'\0' => self.error(UnclosedQuote),
+                _ => self.error(BadEscape(byte)),
+            },
+            State::DoubleQuoted => match byte {
+                b'\0' => self.error(UnclosedQuote),
+                32...126 => match byte {
+                    b'"' => {
+                        self.state = State::Ready;
+                        let token = DoubleQuoted(self.buffered());
+                        Ok(Some(token))
+                    }
+                    b'\\' => {
+                        self.state = State::DoubleQuotedEscape;
+                        Ok(None)
+                    }
+                    _ => {
+                        self.buffer.push(byte);
+                        Ok(None)
+                    }
+                },
+                _ => self.error(NonPrintable(byte)),
+            },
+            State::DoubleQuotedEscape => match byte {
+                b'"' | b'\\' => {
+                    self.buffer.push(byte);
+                    self.state = State::DoubleQuoted;
                     Ok(None)
                 }
                 b'\0' => self.error(UnclosedQuote),
@@ -310,7 +363,7 @@ impl<T: Iterator<Item = Result<u8, io::Error>>> Lexer<T> {
         }
     }
 
-    fn token(&mut self) -> Result<Token, Error> {
+    fn token(&mut self) -> Result<Token, (Position, Error)> {
         loop {
             let byte = self.byte()?;
             let result = self.step(byte)?;
@@ -322,7 +375,7 @@ impl<T: Iterator<Item = Result<u8, io::Error>>> Lexer<T> {
 }
 
 impl<T: Iterator<Item = Result<u8, io::Error>>> Iterator for Lexer<T> {
-    type Item = Result<(Position, Token), Error>;
+    type Item = Result<(Position, Token), (Position, Error)>;
 
     fn next(&mut self) -> Option<Self::Item> {
         assert!(!self.error, "lexer used while in an error state");

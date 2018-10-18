@@ -1,9 +1,9 @@
 use std::mem;
 use std::vec::Vec;
 
-use error::{Error, ErrorWithContext, IncludeError};
+use error::{Error, ErrorInfo, IncludeError};
 use position::Position;
-use syntax::Statement;
+use syntax::{Name, Statement};
 
 /// Follow include directives by calling a user-specified function.
 /// `stream` could be implemented like so, for example:
@@ -17,18 +17,18 @@ use syntax::Statement;
 ///         let parser = parser::Parser::new(lexer);
 ///         Ok(parser)
 ///     });
-///     follow.include(path.into())?;
+///     follow.include(path.into(), None)?;
 ///     Ok(follow)
 /// }
 ///```
 pub struct Follow<F, T>
 where
     F: FnMut(&str) -> Result<T, Error>,
-    T: Iterator<Item = Result<(Position, Statement), Error>>,
+    T: Iterator<Item = Result<Statement, (Position, Error)>>,
 {
     load: F,
-    file_stack: Vec<String>,
-    position_stack: Vec<Position>,
+    name_stack: Vec<String>,
+    select_stack: Vec<Option<Vec<Name>>>,
     stream_stack: Vec<T>,
     error: bool,
 }
@@ -36,43 +36,45 @@ where
 impl<F, T> Follow<F, T>
 where
     F: FnMut(&str) -> Result<T, Error>,
-    T: Iterator<Item = Result<(Position, Statement), Error>>,
+    T: Iterator<Item = Result<Statement, (Position, Error)>>,
 {
     /// Create a new empty stream which calls `load` when required
     pub fn new(load: F) -> Self {
         Follow {
             load,
-            file_stack: vec![],
-            position_stack: vec![],
+            name_stack: vec![],
+            select_stack: vec![],
             stream_stack: vec![],
             error: false,
         }
     }
 
-    /// Push a new path into the stream
-    pub fn include(&mut self, path: String) -> Result<(), ErrorWithContext> {
-        if self.file_stack.contains(&path) {
+    /// Push a new path into the stream, optionally selecting statements
+    pub fn include(&mut self, path: String, select: Option<Vec<Name>>) -> Result<(), ErrorInfo> {
+        if self.name_stack.contains(&path) {
             let error = IncludeError::Circular(path).into();
-            return Err(self.on_error(error));
+            return Err(self.on_error(Position::default(), error));
         }
 
-        self.file_stack.push(path);
-        self.position_stack.push(Position::default());
-
-        let stream = (self.load)(self.file_stack.last().unwrap()).map_err(|e| self.on_error(e))?;
+        self.name_stack.push(path);
+        self.select_stack.push(select);
+        let stream = (self.load)(self.name_stack.last().unwrap())
+            .map_err(|e| self.on_error(Position::default(), e))?;
         self.stream_stack.push(stream);
+
         Ok(())
     }
 
-    fn on_error(&mut self, error: Error) -> ErrorWithContext {
+    fn on_error(&mut self, position: Position, error: Error) -> ErrorInfo {
         self.error = true;
-        let files = mem::replace(&mut self.file_stack, vec![]);
-        let positions = mem::replace(&mut self.position_stack, vec![]);
-        let location_stack = files.into_iter().zip(positions.into_iter()).collect();
+        let includes = mem::replace(&mut self.name_stack, vec![]);
+        self.select_stack = vec![];
+        self.stream_stack = vec![];
 
-        ErrorWithContext {
+        ErrorInfo {
+            includes,
+            position,
             error,
-            location_stack,
         }
     }
 }
@@ -80,9 +82,9 @@ where
 impl<F, T> Iterator for Follow<F, T>
 where
     F: FnMut(&str) -> Result<T, Error>,
-    T: Iterator<Item = Result<(Position, Statement), Error>>,
+    T: Iterator<Item = Result<Statement, (Position, Error)>>,
 {
-    type Item = Result<Statement, ErrorWithContext>;
+    type Item = Result<Statement, ErrorInfo>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.error {
@@ -91,27 +93,33 @@ where
         loop {
             let next = self.stream_stack.last_mut()?.next();
             match next {
-                Some(Ok((position, statement))) => {
-                    *(self.position_stack.last_mut()?) = position;
+                Some(Ok(statement)) => {
                     use syntax::Statement::Include;
                     match statement {
-                        Include(path) => match self.include(path) {
+                        Include(path, select) => match self.include(path, select) {
                             Ok(()) => {}
                             Err(e) => {
                                 return Some(Err(e));
                             }
                         },
-                        _ => {
-                            return Some(Ok(statement));
-                        }
+                        statement => match self.select_stack.last()? {
+                            None => {
+                                return Some(Ok(statement));
+                            }
+                            Some(names) if names.contains(statement.name()) => {
+                                return Some(Ok(statement));
+                            }
+                            _ => {}
+                        },
                     }
                 }
-                Some(Err(e)) => {
-                    return Some(Err(self.on_error(e)));
+                Some(Err((p, e))) => {
+                    return Some(Err(self.on_error(p, e)));
                 }
                 None => {
+                    self.name_stack.pop();
+                    self.select_stack.pop();
                     self.stream_stack.pop();
-                    self.position_stack.pop();
                 }
             }
         }

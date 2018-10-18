@@ -21,6 +21,10 @@ pub enum Token {
     Pipe,
     /// `~`
     Tilde,
+    /// `~|`
+    TildePipe,
+    /// `~&`
+    TildeAmpersand,
     /// `=>`
     LeftArrow,
     /// `<=`
@@ -45,6 +49,8 @@ pub enum Token {
     Lower(String),
     /// e.g. `'quoted'`
     SingleQuoted(String),
+    /// e.g. `"quoted"`,
+    DoubleQuoted(String),
     /// e.g. `123`
     Integer(String),
     /// (end of file)

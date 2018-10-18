@@ -1,14 +1,17 @@
 extern crate tptp;
 
-fn run() -> Result<(), tptp::error::ErrorWithContext> {
-    for statement in tptp::stream("example.p")? {
-        println!("{:#?}", statement?);
+use std::env::args;
+
+fn run(path: &str) -> Result<(), tptp::error::ErrorInfo> {
+    for statement in tptp::stream(path)? {
+        println!("{}", statement?);
     }
     Ok(())
 }
 
 fn main() {
-    match run() {
+    let path = args().nth(1).expect("need a file to parse");
+    match run(&path) {
         Ok(_) => {}
         Err(e) => {
             eprintln!("{:#?}", e);

@@ -78,11 +78,13 @@ impl From<IncludeError> for Error {
     }
 }
 
-/// An `Error` with location information
+/// An `Error` with position information
 #[derive(Debug)]
-pub struct ErrorWithContext {
-    /// The error raised
+pub struct ErrorInfo {
+    /// A trace of include statements so far
+    pub includes: Vec<String>,
+    /// The position at which the error occurred
+    pub position: Position,
+    /// The error
     pub error: Error,
-    /// The file name (as given to `include()`) and position for each file leading up to the error
-    pub location_stack: Vec<(String, Position)>,
 }
