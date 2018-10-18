@@ -1,11 +1,11 @@
-//! A crate for reading files in the FOF dialect of the TPTP format.
+//! A crate for reading files in the TPTP format.
 //!
 //! # Quickstart
 //! ```rust
 //! extern crate tptp;
 //!
 //! // propagate any errors encountered for handling later
-//! fn example() -> Result<(), tptp::error::ErrorWithContext> {
+//! fn example() -> Result<(), tptp::error::ErrorInfo> {
 //!
 //!     // stream TPTP statements, following include directives
 //!     for statement in tptp::stream("example.p")? {
