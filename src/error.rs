@@ -1,71 +1,88 @@
 use std::io;
-use std::prelude::v1::Result as Either;
-use std::sync::Arc;
+use std::vec::Vec;
 
-use super::lexical::Token;
-use super::position::Position;
+use position::Position;
+use token::Token;
 
-/// Errors raised during the tokenization stage
+/// Errors raised during lexical analysis
 #[derive(Debug)]
-pub enum Lexical {
+pub enum LexicalError {
     /// A byte outside the expected range
-    UnknownByte(Position, u8),
+    UnknownByte(u8),
     /// Operator not (currently) recognised
-    UnknownOperator(Position),
+    UnknownOperator(String),
     /// Runaway multi-line comment
-    UnclosedComment(Position),
+    UnclosedComment,
     /// Non-printable character inside a quoted string
-    NonPrintable(Position, u8),
+    NonPrintable(u8),
     /// Invalid escape character inside a quoted string
-    BadEscape(Position, u8),
+    BadEscape(u8),
     /// Runaway quoted string
-    UnclosedQuote(Position),
-    /// End of iterator mid-token
-    UnexpectedEnd,
+    UnclosedQuote,
 }
 
 /// Errors raised during the parsing stage
 #[derive(Debug)]
-pub enum Syntactic {
+pub enum SyntacticError {
     /// A TPTP dialect (like TFF) that isn't supported yet
-    UnsupportedDialect(Position, String),
-    /// An as-yet unknown TPTP role
-    UnknownRole(Position, String),
+    UnsupportedDialect(String),
+    /// An as-yet unknown TPTP formula role
+    UnknownRole(String),
     /// An as-yet unknown TPTP defined operation
-    UnknownDefined(Position, String),
+    UnknownDefined(String),
     /// Syntax error
-    UnexpectedToken(Position, Token),
-    /// Syntax error: end of iterator mid-statement
-    UnexpectedEnd,
+    UnexpectedToken(Token),
 }
 
 /// Errors raised while processing includes
 #[derive(Debug)]
-pub enum Include {
+pub enum IncludeError {
     /// A circular inclusion occurred
-    Circular(Position, String),
+    Circular(String),
 }
 
 /// Any error that might be encountered
 #[derive(Debug)]
-pub enum Reported {
-    /// IO error on the underlying streams
-    IO(io::Error),
+pub enum Error {
+    /// Propagated error from the host system
+    System(io::Error),
     /// Lexical error
-    Lexical(Lexical),
+    Lexical(LexicalError),
     /// Syntactic error
-    Syntactic(Syntactic),
+    Syntactic(SyntacticError),
     /// Include error
-    Include(Include),
+    Include(IncludeError),
 }
 
-pub(crate) type Result<T> = Either<T, Reported>;
+impl From<io::Error> for Error {
+    fn from(error: io::Error) -> Self {
+        Error::System(error)
+    }
+}
 
-/// A reported error plus some context.
+impl From<LexicalError> for Error {
+    fn from(error: LexicalError) -> Self {
+        Error::Lexical(error)
+    }
+}
+
+impl From<SyntacticError> for Error {
+    fn from(error: SyntacticError) -> Self {
+        Error::Syntactic(error)
+    }
+}
+
+impl From<IncludeError> for Error {
+    fn from(error: IncludeError) -> Self {
+        Error::Include(error)
+    }
+}
+
+/// An `Error` with location information
 #[derive(Debug)]
-pub struct Error {
-    /// The error that was encountered
-    pub reported: Reported,
-    /// Chain of `include`s leading up to the error
-    pub includes: Vec<Arc<String>>,
+pub struct ErrorWithContext {
+    /// The error raised
+    pub error: Error,
+    /// The file name (as given to `include()`) and position for each file leading up to the error
+    pub location_stack: Vec<(String, Position)>,
 }

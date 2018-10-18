@@ -1,430 +1,270 @@
-use std::iter::Peekable;
-use std::vec::Vec;
+use std::fmt;
 
-use super::ast::FofAssocOp::*;
-use super::ast::FofFormula::*;
-use super::ast::FofNonAssocOp::*;
-use super::ast::FofQuantifier::*;
-use super::ast::FofTerm::*;
-use super::ast::FofUnaryOp::*;
-use super::ast::*;
-use super::error::Syntactic::*;
-use super::error::*;
-use super::lexical::Token;
-use super::lexical::Token::*;
-use super::position::*;
-
-pub struct Parser<T>
-where
-    T: Iterator<Item = Result<(Position, Token)>>,
-{
-    stream: Peekable<T>,
-    start: Position,
+/// One of various types of TPTP identifiers.
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum Name {
+    /// An alphanumeric token, like `propositional_fact2`.
+    Word(String),
+    /// A 'quoted string'.
+    Quoted(String),
+    /// Integral identifiers of arbitrary size.
+    Integer(String),
 }
 
-impl<T> Parser<T>
-where
-    T: Iterator<Item = Result<(Position, Token)>>,
-{
-    pub fn new(stream: T) -> Self {
-        let stream = stream.peekable();
-        let start = Position::default();
-        Parser { stream, start }
-    }
-
-    fn record_start(&mut self) {
-        match self.stream.peek() {
-            Some(Ok((position, _))) => {
-                self.start = *position;
+impl fmt::Display for Name {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Name::*;
+        match self {
+            Word(x) => write!(f, "{}", x),
+            Quoted(x) => {
+                let escaped = x.replace('\\', "\\\\").replace('\'', "\\'");
+                write!(f, "'{}'", escaped)
             }
-            _ => {
-                self.start = Position::default();
+            Integer(x) => write!(f, "{}", x),
+        }
+    }
+}
+
+/// A FOF term.
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum FofTerm {
+    /// A bound variable `X`.
+    Variable(String),
+    /// An application of a name to arguments, `f(t1, t2, ...)`.
+    /// Constants `c` are treated as nullary functors `c()`.
+    Functor(Name, Vec<Box<FofTerm>>),
+}
+
+fn fmt_args(f: &mut fmt::Formatter, args: &[Box<FofTerm>]) -> fmt::Result {
+    if args.is_empty() {
+        return Ok(());
+    }
+
+    write!(f, "(")?;
+    let mut args = args.iter();
+    write!(f, "{}", args.next().unwrap())?;
+    for arg in args {
+        write!(f, ",{}", arg)?;
+    }
+    write!(f, ")")
+}
+
+impl fmt::Display for FofTerm {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofTerm::*;
+        match self {
+            Variable(x) => write!(f, "{}", x),
+            Functor(name, args) => {
+                write!(f, "{}", name)?;
+                fmt_args(f, args)
             }
         }
     }
+}
 
-    fn peek(&mut self) -> Option<Token> {
-        match self.stream.peek() {
-            Some(Ok((_, token))) => Some(token.clone()),
-            _ => None,
+/// A unary operator on FOF formulae
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum FofUnaryOp {
+    /// `~p`
+    Not,
+}
+
+impl fmt::Display for FofUnaryOp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofUnaryOp::*;
+        match self {
+            Not => write!(f, "~"),
         }
     }
+}
 
-    fn shift(&mut self) -> Result<()> {
-        match self.stream.next() {
-            Some(Err(e)) => Err(e),
-            _ => Ok(()),
+/// An infix binary operator on FOF terms
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum FofInfixOp {
+    /// `t = s`
+    Equal,
+    /// `t != s`
+    NotEqual,
+}
+
+impl fmt::Display for FofInfixOp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofInfixOp::*;
+        match self {
+            Equal => write!(f, "="),
+            NotEqual => write!(f, "!="),
         }
     }
+}
 
-    fn error<Any>(&self, error: Syntactic) -> Result<Any> {
-        Err(Reported::Syntactic(error))
-    }
+/// A non-associative binary operator on FOF formulae
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum FofNonAssocOp {
+    /// `p => q`
+    Implies,
+    /// `p <=> q`
+    Equivalent,
+    /// `p <~> q`
+    NotEquivalent,
+}
 
-    fn unexpected<Any>(&mut self) -> Result<Any> {
-        match self.stream.next() {
-            Some(Ok((position, token))) => self.error(UnexpectedToken(position, token.clone())),
-            Some(Err(e)) => Err(e),
-            None => self.error(UnexpectedEnd),
+impl fmt::Display for FofNonAssocOp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofNonAssocOp::*;
+        match self {
+            Implies => write!(f, "=>"),
+            Equivalent => write!(f, "<=>"),
+            NotEquivalent => write!(f, "<~>"),
         }
     }
+}
 
-    fn expect(&mut self, token: &Token) -> Result<()> {
-        match self.peek() {
-            Some(next) => if token == &next {
-                self.shift()
-            } else {
-                self.unexpected()
-            },
-            None => self.unexpected(),
+/// An associative binary operator on FOF formulae
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum FofAssocOp {
+    /// `p1 & p2 & ...`
+    And,
+    /// `p1 | p2 | ...`
+    Or,
+}
+
+impl fmt::Display for FofAssocOp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofAssocOp::*;
+        match self {
+            And => write!(f, "&"),
+            Or => write!(f, "|"),
         }
     }
+}
 
-    fn peek_or_unexpected(&mut self) -> Result<Token> {
-        match self.peek() {
-            Some(next) => Ok(next),
-            None => self.unexpected(),
+/// A FOF quantifier
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum FofQuantifier {
+    /// `![X1, X2, ...]: p`
+    Forall,
+    /// `?[X1, X2, ...]: p`
+    Exists,
+}
+
+impl fmt::Display for FofQuantifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofQuantifier::*;
+        match self {
+            Forall => write!(f, "!"),
+            Exists => write!(f, "?"),
         }
     }
+}
 
-    fn peek_position(&mut self) -> Position {
-        match self.stream.peek() {
-            Some(Ok((position, _))) => *position,
-            _ => panic!("position requested when in an error state"),
-        }
-    }
+/// A FOF formula
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum FofFormula {
+    /// `$true`, `$false`
+    Boolean(bool),
+    /// `t1 $op t2`
+    Infix(FofInfixOp, Box<FofTerm>, Box<FofTerm>),
+    /// `p(t1, t2, ...)`
+    Predicate(Name, Vec<Box<FofTerm>>),
+    /// `$op(p)`
+    Unary(FofUnaryOp, Box<FofFormula>),
+    /// `(p $op q)`
+    NonAssoc(FofNonAssocOp, Box<FofFormula>, Box<FofFormula>),
+    /// `p1 $op p2 $op ...`
+    Assoc(FofAssocOp, Vec<Box<FofFormula>>),
+    /// `$op[X1, X2, ...]: p`
+    Quantified(FofQuantifier, Vec<String>, Box<FofFormula>),
+}
 
-    fn name(&mut self) -> Result<Name> {
-        match self.peek() {
-            Some(LowerWord(t)) => {
-                self.shift()?;
-                Ok(Name::Word(t))
+impl fmt::Display for FofFormula {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofFormula::*;
+        match self {
+            Boolean(b) => write!(f, "${}", b),
+            Infix(op, left, right) => write!(f, "{}{}{}", left, op, right),
+            Predicate(name, args) => {
+                write!(f, "{}", name)?;
+                fmt_args(f, args)
             }
-            Some(SingleQuoted(t)) => {
-                self.shift()?;
-                Ok(Name::Quoted(t))
+            Unary(op, sub) => write!(f, "{}({})", op, sub),
+            NonAssoc(op, left, right) => write!(f, "({}{}{})", left, op, right),
+            Assoc(op, args) => {
+                if args.is_empty() {
+                    panic!("displaying empty associative formula");
+                }
+
+                let mut args = args.iter();
+                write!(f, "({}", args.next().unwrap())?;
+                for arg in args {
+                    write!(f, "{}{}", op, arg)?;
+                }
+                write!(f, ")")
             }
-            Some(Integer(t)) => {
-                self.shift()?;
-                Ok(Name::Integer(t))
+            Quantified(op, bound, sub) => {
+                if bound.is_empty() {
+                    panic!("displaying empty quantifier");
+                }
+
+                write!(f, "{}[", op)?;
+                let mut bound = bound.iter();
+                write!(f, "{}", bound.next().unwrap())?;
+                for x in bound {
+                    write!(f, ",{}", x)?;
+                }
+                write!(f, "]:{}", sub)
             }
-            _ => self.unexpected(),
         }
     }
+}
 
-    fn formula_role(&mut self) -> Result<FormulaRole> {
+/// A TPTP formula role, such as `axiom` or `negated_conjecture`
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum FormulaRole {
+    Axiom,
+    Hypothesis,
+    Definition,
+    Assumption,
+    Lemma,
+    Theorem,
+    Corollary,
+    Conjecture,
+    NegatedConjecture,
+    Plain,
+    Unknown,
+}
+
+impl fmt::Display for FormulaRole {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::FormulaRole::*;
-        let result = match self.peek() {
-            Some(LowerWord(role)) => match (*role).as_ref() {
-                "axiom" => Ok(Axiom),
-                "hypothesis" => Ok(Hypothesis),
-                "definition" => Ok(Definition),
-                "assumption" => Ok(Assumption),
-                "lemma" => Ok(Lemma),
-                "theorem" => Ok(Theorem),
-                "corollary" => Ok(Corollary),
-                "conjecture" => Ok(Conjecture),
-                "negated_conjecture" => Ok(NegatedConjecture),
-                "plain" => Ok(Plain),
-                "unknown" => Ok(Unknown),
-                _ => {
-                    let position = self.peek_position();
-                    let role = (*role).clone();
-                    let error = UnknownRole(position, role);
-                    self.error(error)
-                }
-            },
-            _ => self.unexpected(),
-        }?;
-        self.shift()?;
-        Ok(result)
-    }
-
-    fn fof_bound(&mut self) -> Result<Bound> {
-        let result = match self.peek_or_unexpected()? {
-            UpperWord(x) => Ok(Bound(x.clone())),
-            _ => self.unexpected(),
-        }?;
-        self.shift()?;
-        Ok(result)
-    }
-
-    fn fof_arguments(&mut self) -> Result<Vec<Box<FofTerm>>> {
-        let first = self.fof_term()?;
-        let mut args = vec![first];
-        while self.peek() == Some(Comma) {
-            self.shift()?;
-            args.push(self.fof_term()?);
-        }
-        Ok(args)
-    }
-
-    fn fof_variable(&mut self) -> Result<Box<FofTerm>> {
-        let bound = self.fof_bound()?;
-        Ok(Box::new(Variable(bound)))
-    }
-
-    fn fof_plain_term(&mut self) -> Result<Box<FofTerm>> {
-        let name = self.name()?;
-
-        match self.peek() {
-            Some(LParen) => {
-                self.shift()?;
-                let args = self.fof_arguments()?;
-                self.expect(&RParen)?;
-                Ok(Box::new(Functor(name, args)))
-            }
-            _ => Ok(Box::new(Functor(name, vec![]))),
-        }
-    }
-
-    fn fof_function_term(&mut self) -> Result<Box<FofTerm>> {
-        self.fof_plain_term()
-    }
-
-    fn fof_term(&mut self) -> Result<Box<FofTerm>> {
-        match self.peek_or_unexpected()? {
-            LowerWord(_) | SingleQuoted(_) | Integer(_) => self.fof_function_term(),
-            UpperWord(_) => self.fof_variable(),
-            _ => self.unexpected(),
-        }
-    }
-
-    fn fof_defined_atomic_formula(&mut self) -> Result<Box<FofFormula>> {
-        let defined = self.peek().expect("called without defined operator");
-        let result = match defined {
-            Defined(name) => match (*name).as_ref() {
-                "true" => Ok(Box::new(Boolean(true))),
-                "false" => Ok(Box::new(Boolean(false))),
-                _ => {
-                    let position = self.peek_position();
-                    let defined = (*name).clone();
-                    let error = UnknownDefined(position, defined);
-                    self.error(error)
-                }
-            },
-            _ => panic!("bad defined term"),
-        }?;
-        self.shift()?;
-        Ok(result)
-    }
-
-    fn fof_defined_infix_formula(&mut self, left: Box<FofTerm>) -> Result<Box<FofFormula>> {
-        let op = self.peek().expect("called without operator");
-        let invert = match op {
-            Equals => false,
-            NotEquals => true,
-            _ => panic!("bad op"),
-        };
-        self.shift()?;
-
-        let right = self.fof_term()?;
-        let equal = Box::new(Equal(left, right));
-        let result = if invert {
-            Box::new(Unary(Not, equal))
-        } else {
-            equal
-        };
-        Ok(result)
-    }
-
-    fn fof_plain_atomic_formula(&mut self, term: FofTerm) -> Result<Box<FofFormula>> {
-        Ok(match term {
-            Functor(name, args) => Box::new(Predicate(name, args)),
-            _ => panic!("bad term"),
-        })
-    }
-
-    fn fof_atomic_formula(&mut self) -> Result<Box<FofFormula>> {
-        match self.peek_or_unexpected()? {
-            LowerWord(_) | SingleQuoted(_) | Integer(_) => {
-                let term = self.fof_term()?;
-                match self.peek_or_unexpected()? {
-                    Equals | NotEquals => self.fof_defined_infix_formula(term),
-                    _ => self.fof_plain_atomic_formula(*term),
-                }
-            }
-            UpperWord(_) => {
-                let term = self.fof_term()?;
-                match self.peek_or_unexpected()? {
-                    Equals | NotEquals => self.fof_defined_infix_formula(term),
-                    _ => self.unexpected(),
-                }
-            }
-            Defined(_) => self.fof_defined_atomic_formula(),
-            _ => self.unexpected(),
-        }
-    }
-
-    fn fof_quantified_formula(&mut self) -> Result<Box<FofFormula>> {
-        let op = self.peek().expect("called without quantifier");
-        let quantifier = match op {
-            Exclamation => Forall,
-            Question => Exists,
-            _ => panic!("bad quantifier"),
-        };
-        self.shift()?;
-        self.expect(&LBrack)?;
-
-        let first = self.fof_bound()?;
-        let mut bound = vec![first];
-        while self.peek() == Some(Comma) {
-            self.shift()?;
-            bound.push(self.fof_bound()?);
-        }
-        self.expect(&RBrack)?;
-        self.expect(&Colon)?;
-
-        let formula = self.fof_unit_formula()?;
-        Ok(Box::new(Quantified(quantifier, bound, formula)))
-    }
-
-    fn fof_unary_formula(&mut self) -> Result<Box<FofFormula>> {
-        match self.peek_or_unexpected()? {
-            Tilde => {
-                self.shift()?;
-                let negated = self.fof_unit_formula()?;
-                Ok(Box::new(Unary(Not, negated)))
-            }
-            _ => panic!("called with non-unary operator"),
-        }
-    }
-
-    fn fof_unitary_formula(&mut self) -> Result<Box<FofFormula>> {
-        match self.peek_or_unexpected()? {
-            LParen => {
-                self.shift()?;
-                let bracketed = self.fof_logic_formula()?;
-                self.expect(&RParen)?;
-                Ok(bracketed)
-            }
-            LowerWord(_) | SingleQuoted(_) | Integer(_) | UpperWord(_) | Defined(_) => {
-                self.fof_atomic_formula()
-            }
-            Exclamation | Question => self.fof_quantified_formula(),
-            _ => self.unexpected(),
-        }
-    }
-
-    fn fof_unit_formula(&mut self) -> Result<Box<FofFormula>> {
-        match self.peek_or_unexpected()? {
-            Tilde => self.fof_unary_formula(),
-            _ => self.fof_unitary_formula(),
-        }
-    }
-
-    fn fof_binary_assoc(&mut self, first: Box<FofFormula>) -> Result<Box<FofFormula>> {
-        let op = self.peek().expect("called with no operator");
-        let assoc_op = match op {
-            Ampersand => And,
-            Pipe => Or,
-            _ => panic!("bad op"),
-        };
-        let mut children = vec![first];
-
-        while self.peek() == Some(op.clone()) {
-            self.shift()?;
-            let next = self.fof_unit_formula()?;
-            children.push(next);
-        }
-
-        Ok(Box::new(Assoc(assoc_op, children)))
-    }
-
-    fn fof_binary_nonassoc(&mut self, left: Box<FofFormula>) -> Result<Box<FofFormula>> {
-        let op = self.peek().expect("called with no operator");
-        self.shift()?;
-        let right = self.fof_unit_formula()?;
-
-        Ok(Box::new(match op {
-            LeftArrow => NonAssoc(Implies, right, left),
-            RightArrow => NonAssoc(Implies, left, right),
-            BothArrow => NonAssoc(Equivalent, left, right),
-            TildeBothArrow => Unary(Not, Box::new(NonAssoc(Equivalent, left, right))),
-            _ => panic!("bad op"),
-        }))
-    }
-
-    fn fof_logic_formula(&mut self) -> Result<Box<FofFormula>> {
-        let first = match self.peek() {
-            Some(Tilde) => self.fof_unary_formula(),
-            _ => self.fof_unitary_formula(),
-        }?;
-
-        match self.peek() {
-            Some(t) => match t {
-                Ampersand | Pipe => self.fof_binary_assoc(first),
-                LeftArrow | RightArrow | BothArrow | TildeBothArrow => {
-                    self.fof_binary_nonassoc(first)
-                }
-                _ => Ok(first),
-            },
-            _ => Ok(first),
-        }
-    }
-
-    fn fof_formula(&mut self) -> Result<Box<FofFormula>> {
-        self.fof_logic_formula()
-    }
-
-    fn fof(&mut self) -> Result<Statement> {
-        self.shift()?;
-        self.expect(&LParen)?;
-
-        let name = self.name()?;
-        self.expect(&Comma)?;
-
-        let role = self.formula_role()?;
-        self.expect(&Comma)?;
-
-        let formula = self.fof_formula()?;
-        self.expect(&RParen)?;
-        self.expect(&Period)?;
-
-        Ok(Statement::Fof(name, role, formula))
-    }
-
-    fn include(&mut self) -> Result<Statement> {
-        self.shift()?;
-        self.expect(&LParen)?;
-
-        let name = self.name()?;
-        self.expect(&RParen)?;
-        self.expect(&Period)?;
-
-        Ok(Statement::Include(name))
-    }
-
-    fn statement(&mut self) -> Result<Option<Statement>> {
-        self.record_start();
-        match self.peek() {
-            Some(LowerWord(word)) => (match (*word).as_ref() {
-                "fof" => self.fof(),
-                "include" => self.include(),
-                _ => self.error(UnsupportedDialect(self.start, (*word).clone())),
-            }).map(Some),
-            Some(_) => self.unexpected(),
-            None => match self.stream.next() {
-                // check stream is OK
-                Some(Err(e)) => Err(e),
-                Some(Ok(_)) => unreachable!(),
-                None => Ok(None),
-            },
+        match self {
+            Axiom => write!(f, "axiom"),
+            Hypothesis => write!(f, "hypothesis"),
+            Definition => write!(f, "definition"),
+            Assumption => write!(f, "assumption"),
+            Lemma => write!(f, "lemma"),
+            Theorem => write!(f, "theorem"),
+            Corollary => write!(f, "corollary"),
+            Conjecture => write!(f, "conjecture"),
+            NegatedConjecture => write!(f, "negated_conjecture"),
+            Plain => write!(f, "plain"),
+            Unknown => write!(f, "unknown"),
         }
     }
 }
 
-impl<T> Iterator for Parser<T>
-where
-    T: Iterator<Item = Result<(Position, Token)>>,
-{
-    type Item = Result<(Position, Statement)>;
+/// A top-level TPTP statement, currently `include` or `fof`.
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum Statement {
+    Include(String),
+    Fof(Name, FormulaRole, Box<FofFormula>),
+}
 
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.statement() {
-            Ok(Some(token)) => Some(Ok((self.start, token))),
-            Ok(None) => None,
-            Err(e) => Some(Err(e)),
+impl fmt::Display for Statement {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Statement::*;
+        match self {
+            Include(include) => write!(f, "include('{}').", include),
+            Fof(name, role, formula) => write!(f, "fof({},{},{}).", name, role, formula),
         }
     }
 }

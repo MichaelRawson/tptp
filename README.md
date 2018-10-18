@@ -5,10 +5,8 @@ A [crate](https://crates.io/crates/tptp) for reading files in the FOF dialect of
 ## Features
 
 * Streaming parser
-* Flexible `include()` handling with the `Resolve` trait
+* Simplified API for common cases
 * Reasonably complete FOF support
-* Sensible AST
-* String sharing
 
 ## Wishlist
 

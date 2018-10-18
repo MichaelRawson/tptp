@@ -3,54 +3,52 @@
 //! # Quickstart
 //! ```rust
 //! extern crate tptp;
-//! use tptp::prelude::*;
 //!
 //! // propagate any errors encountered for handling later
-//! fn example(start: &str) -> Result<(), Error> {
+//! fn example() -> Result<(), tptp::error::ErrorWithContext> {
 //!
-//!     // configure how to read the TPTP inputs
-//!     // here we just use the defaults
-//!     let reader = ReaderBuilder::new().read(start)?;
-//!     
-//!     // stream TPTP statements
-//!     for statement in reader {
+//!     // stream TPTP statements, following include directives
+//!     for statement in tptp::stream("example.p")? {
 //!
 //!         // reading each statement might involve an error
 //!         let statement = statement?;
 //!
 //!         // process each statement as you see fit
-//!         println!("{}", statement);
+//!         println!("{:#?}", statement);
+//!
 //!     }
 //!
 //!     Ok(())
 //! }
 //! ```
 
-mod byte;
-mod include;
-mod intern;
-mod lexical;
-mod syntax;
-mod tracking;
-
-/// Syntax trees.
-pub mod ast;
-/// Errors that might be raised during processing.
+/// Errors that might be raised during processing
 pub mod error;
-/// Line/column reporting.
+/// Line/column reporting
 pub mod position;
-/// `Reader` API.
-pub mod reader;
-/// Implement custom behaviour for processing include() directives.
+/// Lexical tokens
+pub mod token;
+/// Lexical analysis
+pub mod lexer;
+/// Syntax trees
+pub mod syntax;
+/// Parsing
+pub mod parser;
+/// Resolve include() paths according to the TPTP spec
 pub mod resolve;
-/// Utilities, including `DefaultResolver`.
-pub mod util;
+/// Follow include directives
+pub mod follow;
 
-/// Convenience re-exports.
-pub mod prelude {
-    pub use error::*;
-    pub use position::Position;
-    pub use reader::{Reader, ReaderBuilder};
-    pub use resolve::Resolve;
-    pub use util::{DefaultResolver, LocalFile};
+/// Convenient API to stream statements, following include directives recursively
+pub fn stream(
+    path: &str,
+) -> Result<impl Iterator<Item = Result<syntax::Statement, error::ErrorWithContext>>, error::ErrorWithContext> {
+    let mut follow = follow::Follow::new(|path| {
+        let stream = resolve::resolve(path)?;
+        let lexer = lexer::Lexer::new(stream);
+        let parser = parser::Parser::new(lexer);
+        Ok(parser)
+    });
+    follow.include(path.into())?;
+    Ok(follow)
 }
