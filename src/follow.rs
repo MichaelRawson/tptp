@@ -1,9 +1,9 @@
 use std::mem;
 use std::vec::Vec;
 
-use error::{Error, ErrorInfo, IncludeError};
-use position::Position;
-use syntax::{Name, Statement};
+use crate::error::{Error, ErrorInfo, IncludeError};
+use crate::position::Position;
+use crate::syntax::{Name, Statement};
 
 /// Follow include directives by calling a user-specified function.
 /// `stream` could be implemented like so, for example:
@@ -94,7 +94,7 @@ where
             let next = self.stream_stack.last_mut()?.next();
             match next {
                 Some(Ok(statement)) => {
-                    use syntax::Statement::Include;
+                    use crate::syntax::Statement::Include;
                     match statement {
                         Include(path, select) => match self.include(path, select) {
                             Ok(()) => {}

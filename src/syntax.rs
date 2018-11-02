@@ -28,11 +28,13 @@ impl fmt::Display for Name {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Name::*;
         match self {
-            Atomic(x) => if alphanumeric(&x) {
-                write!(f, "{}", x)
-            } else {
-                write!(f, "'{}'", escape_single_quoted(x))
-            },
+            Atomic(x) => {
+                if alphanumeric(&x) {
+                    write!(f, "{}", x)
+                } else {
+                    write!(f, "'{}'", escape_single_quoted(x))
+                }
+            }
             Integer(x) => write!(f, "{}", x),
         }
     }

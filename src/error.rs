@@ -1,8 +1,8 @@
 use std::io;
 use std::vec::Vec;
 
-use position::Position;
-use token::Token;
+use crate::position::Position;
+use crate::token::Token;
 
 /// Errors raised during lexical analysis
 #[derive(Debug)]

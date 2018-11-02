@@ -2,11 +2,11 @@ use std::io;
 use std::mem;
 use std::vec::Vec;
 
-use error::Error;
-use error::LexicalError::*;
-use position::Position;
-use token::Token;
-use token::Token::*;
+use crate::error::Error;
+use crate::error::LexicalError::*;
+use crate::position::Position;
+use crate::token::Token;
+use crate::token::Token::*;
 
 #[derive(Debug)]
 enum State {

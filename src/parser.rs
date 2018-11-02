@@ -1,13 +1,13 @@
 use std::mem;
 
-use error::Error;
-use error::SyntacticError::*;
-use position::Position;
-use syntax::FofFormula::*;
-use syntax::FofTerm::*;
-use syntax::*;
-use token::Token;
-use token::Token::*;
+use crate::error::Error;
+use crate::error::SyntacticError::*;
+use crate::position::Position;
+use crate::syntax::FofFormula::*;
+use crate::syntax::FofTerm::*;
+use crate::syntax::*;
+use crate::token::Token;
+use crate::token::Token::*;
 
 /// A stream of statements, wrapping an underlying `Token` stream
 ///
@@ -72,7 +72,8 @@ impl<T: Iterator<Item = Result<(Position, Token), (Position, Error)>>> Parser<T>
                 "cnf" => self.cnf(),
                 "fof" => self.fof(),
                 _ => self.error(UnsupportedDialect(w)),
-            }.map(Some),
+            }
+            .map(Some),
             t => self.error(UnexpectedToken(t)),
         }
     }
@@ -222,10 +223,18 @@ impl<T: Iterator<Item = Result<(Position, Token), (Position, Error)>>> Parser<T>
     }
 
     fn cnf_literal(&mut self) -> Result<CnfLiteral, (Position, Error)> {
-        use syntax::CnfLiteral::*;
+        use crate::syntax::CnfLiteral::*;
         match self.token()? {
             Tilde => {
-                let fof = self.fof_atomic_formula()?;
+                let token = self.token()?;
+                let fof = match token {
+                    Lower(_) | SingleQuoted(_) | Upper(_) | Integer(_) | DoubleQuoted(_)
+                    | Defined(_) => {
+                        self.put_back(token);
+                        self.fof_atomic_formula()
+                    }
+                    t => self.error(UnexpectedToken(t)),
+                }?;
                 Ok(NegatedLiteral(fof))
             }
             t => {
@@ -258,7 +267,7 @@ impl<T: Iterator<Item = Result<(Position, Token), (Position, Error)>>> Parser<T>
     }
 
     fn formula_role(&mut self) -> Result<FormulaRole, (Position, Error)> {
-        use syntax::FormulaRole::*;
+        use crate::syntax::FormulaRole::*;
         match self.token()? {
             Lower(role) => match role.as_ref() {
                 "axiom" => Ok(Axiom),
@@ -315,7 +324,7 @@ impl<T: Iterator<Item = Result<(Position, Token), (Position, Error)>>> Parser<T>
         &mut self,
         left: Box<FofFormula>,
     ) -> Result<Box<FofFormula>, (Position, Error)> {
-        use syntax::FofNonAssocConnective::*;
+        use crate::syntax::FofNonAssocConnective::*;
         let op = match self.token()? {
             LeftArrow => RLImplies,
             RightArrow => LRImplies,
@@ -334,7 +343,7 @@ impl<T: Iterator<Item = Result<(Position, Token), (Position, Error)>>> Parser<T>
         first: Box<FofFormula>,
     ) -> Result<Box<FofFormula>, (Position, Error)> {
         let op = self.token()?;
-        use syntax::FofAssocConnective::*;
+        use crate::syntax::FofAssocConnective::*;
         let constructor = match op {
             Ampersand => And,
             Pipe => Or,
@@ -353,7 +362,7 @@ impl<T: Iterator<Item = Result<(Position, Token), (Position, Error)>>> Parser<T>
     }
 
     fn fof_unary_formula(&mut self) -> Result<Box<FofFormula>, (Position, Error)> {
-        use syntax::FofUnaryConnective::*;
+        use crate::syntax::FofUnaryConnective::*;
         match self.token()? {
             Tilde => Ok(Box::new(Unary(Not, self.fof_unit_formula()?))),
             _ => unreachable!(),
@@ -394,7 +403,7 @@ impl<T: Iterator<Item = Result<(Position, Token), (Position, Error)>>> Parser<T>
     }
 
     fn fof_quantified_formula(&mut self) -> Result<Box<FofFormula>, (Position, Error)> {
-        use syntax::FofQuantifier::*;
+        use crate::syntax::FofQuantifier::*;
         let quantifier = match self.token()? {
             Exclamation => Forall,
             Question => Exists,
@@ -471,7 +480,7 @@ impl<T: Iterator<Item = Result<(Position, Token), (Position, Error)>>> Parser<T>
         &mut self,
         left: Box<FofTerm>,
     ) -> Result<Box<FofFormula>, (Position, Error)> {
-        use syntax::InfixEquality::*;
+        use crate::syntax::InfixEquality::*;
         let operator = match self.token()? {
             Equals => Equal,
             NotEquals => NotEqual,

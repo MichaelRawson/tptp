@@ -4,7 +4,7 @@ use std::io;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 
-use error::Error;
+use crate::error::Error;
 
 fn open(path: &Path) -> Result<File, io::Error> {
     let path = path.canonicalize()?;
