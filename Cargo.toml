@@ -1,8 +1,8 @@
 [package]
 name = "tptp"
-description = "Read files in the TPTP format"
+description = "Parse the TPTP format"
 edition = "2018"
-version = "0.6.0"
+version = "0.7.0"
 authors = ["Michael Rawson <michael@rawsons.uk>"]
 license = "MIT"
 homepage = "https://github.com/MichaelRawson/tptp"
@@ -10,3 +10,8 @@ readme = "README.md"
 keywords = ["parser", "tptp"]
 
 [dependencies]
+nom = "4"
+
+[[bench]]
+name = "benchmark"
+harness = false

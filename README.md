@@ -4,9 +4,8 @@ A [crate](https://crates.io/crates/tptp) for reading files in the [TPTP](http://
 
 ## Features
 
-* Streaming parser
-* Simplified API for common cases
-* Reasonably complete CNF/FOF support
+* Streaming zero-copy parser on byte slices
+* Reasonably complete CNF/FOF dialect support
 
 ## Wishlist
 

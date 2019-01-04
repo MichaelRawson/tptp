@@ -1,58 +1,38 @@
 use std::fmt;
 
-fn escape_single_quoted(quoted: &str) -> String {
-    quoted.replace('\\', "\\\\").replace('\'', "\\'")
-}
-
-fn escape_double_quoted(quoted: &str) -> String {
-    quoted.replace('\\', "\\\\").replace('"', "\\\"")
-}
-
 /// One of various types of TPTP identifiers.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum Name {
-    /// An atomic token, like `propositional_fact2` or `'quoted string'`.
-    Atomic(String),
+pub enum Name<'a> {
+    /// An alphanumeric token, like `propositional_fact2`
+    LowerWord(&'a str),
+    /// A `'quoted string'`
+    SingleQuoted(&'a str),
     /// Integral identifiers of arbitrary size.
-    Integer(String),
+    Integer(&'a str),
 }
 
-fn alphanumeric(name: &str) -> bool {
-    name.chars().all(|x| match x {
-        'A'...'Z' | 'a'...'z' | '0'...'9' | '_' => true,
-        _ => false,
-    })
-}
-
-impl fmt::Display for Name {
+impl<'a> fmt::Display for Name<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Name::*;
         match self {
-            Atomic(x) => {
-                if alphanumeric(&x) {
-                    write!(f, "{}", x)
-                } else {
-                    write!(f, "'{}'", escape_single_quoted(x))
-                }
-            }
-            Integer(x) => write!(f, "{}", x),
+            LowerWord(name) => write!(f, "{}", name),
+            SingleQuoted(name) => write!(f, "'{}'", name),
+            Integer(name) => write!(f, "{}", name),
         }
     }
 }
 
 /// A FOF term.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofTerm {
+pub enum FofTerm<'a> {
     /// A bound variable `X`.
-    Variable(String),
+    Variable(&'a str),
     /// An application of a name to arguments, `f(t1, t2, ...)`.
     /// Constants `c` are treated as nullary functors `c()`.
-    Functor(Name, Vec<Box<FofTerm>>),
-    /// A distinct object, e.g. `"distinct"`
-    DistinctObject(String),
+    Functor(Name<'a>, Vec<FofTerm<'a>>),
 }
 
-fn fmt_args(f: &mut fmt::Formatter, args: &[Box<FofTerm>]) -> fmt::Result {
+fn fmt_args(f: &mut fmt::Formatter, args: &[FofTerm]) -> fmt::Result {
     if args.is_empty() {
         return Ok(());
     }
@@ -66,7 +46,7 @@ fn fmt_args(f: &mut fmt::Formatter, args: &[Box<FofTerm>]) -> fmt::Result {
     write!(f, ")")
 }
 
-impl fmt::Display for FofTerm {
+impl<'a> fmt::Display for FofTerm<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::FofTerm::*;
         match self {
@@ -75,21 +55,20 @@ impl fmt::Display for FofTerm {
                 write!(f, "{}", name)?;
                 fmt_args(f, args)
             }
-            DistinctObject(name) => write!(f, "\"{}\"", escape_double_quoted(name)),
         }
     }
 }
 
 /// A unary operator on FOF formulae
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofUnaryConnective {
+pub enum UnaryConnective {
     /// `~p`
     Not,
 }
 
-impl fmt::Display for FofUnaryConnective {
+impl fmt::Display for UnaryConnective {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FofUnaryConnective::*;
+        use self::UnaryConnective::*;
         match self {
             Not => write!(f, "~"),
         }
@@ -117,7 +96,7 @@ impl fmt::Display for InfixEquality {
 
 /// A non-associative binary operator on FOF formulae
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofNonAssocConnective {
+pub enum NonAssocConnective {
     /// `p => q`
     LRImplies,
     /// `p <= q`
@@ -132,9 +111,9 @@ pub enum FofNonAssocConnective {
     NotAnd,
 }
 
-impl fmt::Display for FofNonAssocConnective {
+impl fmt::Display for NonAssocConnective {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FofNonAssocConnective::*;
+        use self::NonAssocConnective::*;
         match self {
             LRImplies => write!(f, "=>"),
             RLImplies => write!(f, "<="),
@@ -148,16 +127,16 @@ impl fmt::Display for FofNonAssocConnective {
 
 /// An associative binary operator on FOF formulae
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofAssocConnective {
+pub enum AssocConnective {
     /// `p1 & p2 & ...`
     And,
     /// `p1 | p2 | ...`
     Or,
 }
 
-impl fmt::Display for FofAssocConnective {
+impl fmt::Display for AssocConnective {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FofAssocConnective::*;
+        use self::AssocConnective::*;
         match self {
             And => write!(f, "&"),
             Or => write!(f, "|"),
@@ -186,24 +165,24 @@ impl fmt::Display for FofQuantifier {
 
 /// A FOF formula
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum FofFormula {
+pub enum FofFormula<'a> {
     /// `$true`, `$false`
     Boolean(bool),
     /// `t1 $op t2`
-    Infix(InfixEquality, Box<FofTerm>, Box<FofTerm>),
+    Infix(InfixEquality, FofTerm<'a>, FofTerm<'a>),
     /// `p(t1, t2, ...)`
-    Predicate(Name, Vec<Box<FofTerm>>),
+    Predicate(Name<'a>, Vec<FofTerm<'a>>),
     /// `$op(p)`
-    Unary(FofUnaryConnective, Box<FofFormula>),
-    /// `(p $op q)`
-    NonAssoc(FofNonAssocConnective, Box<FofFormula>, Box<FofFormula>),
+    Unary(UnaryConnective, Box<FofFormula<'a>>),
+    /// `p $op q`
+    NonAssoc(NonAssocConnective, Box<FofFormula<'a>>, Box<FofFormula<'a>>),
     /// `p1 $op p2 $op ...`
-    Assoc(FofAssocConnective, Vec<Box<FofFormula>>),
+    Assoc(AssocConnective, Vec<FofFormula<'a>>),
     /// `$op[X1, X2, ...]: p`
-    Quantified(FofQuantifier, Vec<String>, Box<FofFormula>),
+    Quantified(FofQuantifier, Vec<&'a str>, Box<FofFormula<'a>>),
 }
 
-impl fmt::Display for FofFormula {
+impl<'a> fmt::Display for FofFormula<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::FofFormula::*;
         match self {
@@ -246,14 +225,14 @@ impl fmt::Display for FofFormula {
 
 /// A CNF literal
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum CnfLiteral {
+pub enum CnfLiteral<'a> {
     /// A literal, e.g. `p(X)`
-    Literal(Box<FofFormula>),
+    Literal(FofFormula<'a>),
     /// A negated literal, e.g. `~p(X)`
-    NegatedLiteral(Box<FofFormula>),
+    NegatedLiteral(FofFormula<'a>),
 }
 
-impl fmt::Display for CnfLiteral {
+impl<'a> fmt::Display for CnfLiteral<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::CnfLiteral::*;
         match self {
@@ -265,9 +244,9 @@ impl fmt::Display for CnfLiteral {
 
 /// A CNF formula
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub struct CnfFormula(pub Vec<CnfLiteral>);
+pub struct CnfFormula<'a>(pub Vec<CnfLiteral<'a>>);
 
-impl fmt::Display for CnfFormula {
+impl<'a> fmt::Display for CnfFormula<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut literals = self.0.iter();
         write!(f, "{}", literals.next().unwrap())?;
@@ -313,25 +292,18 @@ impl fmt::Display for FormulaRole {
     }
 }
 
-/// Formula sources for use in annotations
+/// DAG formula sources
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum Source {
-    Unknown,
-    Dag(Name),
-    File(String, Option<Name>),
-    Inference(Name, Vec<Source>),
+pub enum DagSource<'a> {
+    Name(Name<'a>),
+    Inference(&'a str, Vec<Source<'a>>),
 }
 
-impl fmt::Display for Source {
+impl<'a> fmt::Display for DagSource<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Source::*;
+        use self::DagSource::*;
         match self {
-            Unknown => write!(f, "unknown"),
-            Dag(ref name) => write!(f, "{}", name),
-            File(ref name, None) => write!(f, "file('{}')", escape_single_quoted(name)),
-            File(ref name, Some(info)) => {
-                write!(f, "file('{}',{})", escape_single_quoted(name), info)
-            }
+            Name(ref name) => write!(f, "{}", name),
             Inference(ref rule, ref parents) => {
                 write!(f, "inference({},[],[", rule)?;
                 if !parents.is_empty() {
@@ -347,13 +319,77 @@ impl fmt::Display for Source {
     }
 }
 
-/// Formula annotations
+/// Internal formula sources
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub struct Annotations {
-    pub source: Source,
+pub enum InternalSource {}
+
+impl fmt::Display for InternalSource {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "")
+    }
 }
 
-impl fmt::Display for Annotations {
+/// External formula sources
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum ExternalSource<'a> {
+    File(&'a str, Option<Name<'a>>),
+}
+
+impl<'a> fmt::Display for ExternalSource<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::ExternalSource::*;
+        match self {
+            File(ref name, None) => write!(f, "file('{}')", name),
+            File(ref name, Some(info)) => write!(f, "file('{}',{})", name, info),
+        }
+    }
+}
+
+/// Formula sources for use in annotations
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub enum Source<'a> {
+    /// `unknown`
+    Unknown,
+    /// A DAG source - either a name or an inference record
+    Dag(DagSource<'a>),
+    /// An internal source
+    Internal(InternalSource),
+    /// An external source
+    External(ExternalSource<'a>),
+    /// Multiple sources
+    Sources(Vec<Source<'a>>),
+}
+
+impl<'a> fmt::Display for Source<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::Source::*;
+        match self {
+            Unknown => write!(f, "unknown"),
+            Dag(ref dag) => write!(f, "{}", dag),
+            Internal(ref internal) => write!(f, "{}", internal),
+            External(ref external) => write!(f, "{}", external),
+            Sources(ref sources) => {
+                write!(f, "[",)?;
+                if !sources.is_empty() {
+                    let mut sources = sources.iter();
+                    write!(f, "{}", sources.next().unwrap())?;
+                    for source in sources {
+                        write!(f, ",{}", source)?;
+                    }
+                }
+                write!(f, "]")
+            }
+        }
+    }
+}
+
+/// Formula annotations
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+pub struct Annotations<'a> {
+    pub source: Source<'a>,
+}
+
+impl<'a> fmt::Display for Annotations<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", self.source)
     }
@@ -361,31 +397,29 @@ impl fmt::Display for Annotations {
 
 /// A top-level TPTP statement, currently `include`, `cnf`, or `fof`.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
-pub enum Statement {
-    Include(String, Option<Vec<Name>>),
-    Cnf(Name, FormulaRole, CnfFormula, Option<Annotations>),
-    Fof(Name, FormulaRole, Box<FofFormula>, Option<Annotations>),
+pub enum Statement<'a> {
+    Include(&'a str, Option<Vec<Name<'a>>>),
+    Cnf(
+        Name<'a>,
+        FormulaRole,
+        CnfFormula<'a>,
+        Option<Annotations<'a>>,
+    ),
+    Fof(
+        Name<'a>,
+        FormulaRole,
+        FofFormula<'a>,
+        Option<Annotations<'a>>,
+    ),
 }
 
-impl Statement {
-    /// Get the name of a non-`include` statement.
-    pub fn name(&self) -> &Name {
-        use self::Statement::*;
-        match self {
-            Include(_, _) => panic!("include statement has no name"),
-            Cnf(ref name, _, _, _) => name,
-            Fof(ref name, _, _, _) => name,
-        }
-    }
-}
-
-impl fmt::Display for Statement {
+impl<'a> fmt::Display for Statement<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Statement::*;
         match self {
-            Include(include, None) => write!(f, "include('{}').", escape_single_quoted(include)),
+            Include(include, None) => write!(f, "include('{}').", include),
             Include(include, Some(names)) => {
-                write!(f, "include('{}',[", escape_single_quoted(include))?;
+                write!(f, "include('{}',[", include)?;
 
                 let mut names = names.iter();
                 write!(f, "{}", names.next().unwrap())?;
