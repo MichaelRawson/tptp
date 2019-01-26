@@ -1,3 +1,4 @@
+use std::convert::AsRef;
 use std::fmt;
 
 /// One of various types of TPTP identifiers.
@@ -5,20 +6,26 @@ use std::fmt;
 pub enum Name<'a> {
     /// An alphanumeric token, like `propositional_fact2`
     LowerWord(&'a str),
-    /// A `'quoted string'`
+    /// A `'quoted string'`, quotes included
     SingleQuoted(&'a str),
     /// Integral identifiers of arbitrary size.
     Integer(&'a str),
 }
 
-impl<'a> fmt::Display for Name<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<'a> AsRef<str> for Name<'a> {
+    fn as_ref(&self) -> &str {
         use self::Name::*;
         match self {
-            LowerWord(name) => write!(f, "{}", name),
-            SingleQuoted(name) => write!(f, "'{}'", name),
-            Integer(name) => write!(f, "{}", name),
+            LowerWord(name) => name,
+            SingleQuoted(name) => name,
+            Integer(name) => name
         }
+    }
+}
+
+impl<'a> fmt::Display for Name<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_ref())
     }
 }
 

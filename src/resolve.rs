@@ -14,12 +14,9 @@ fn open_tptp(path: &Path) -> Result<File, io::Error> {
     open(&tptp)
 }
 
-/// Resolve a TPTP include directive to a stream of bytes
+/// Resolve a TPTP include directive to a `File`.
 ///
-/// This has the following behaviour:
-///  * If the input is absolute, open that.
-///  * If the input is relative, try to open relative to the current directory.
-///  * Then try to open relative to the `TPTP` environment variable.
+/// Files are opened read-only and relative to the current directory, or if that fails, relative to the `TPTP` environment variable.
 pub fn resolve_include(input: &str) -> Result<File, io::Error> {
     let path = Path::new(input);
     open(&path).or_else(|_| open_tptp(&path))

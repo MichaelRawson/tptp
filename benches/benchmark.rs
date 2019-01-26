@@ -1,7 +1,7 @@
 use std::time::Instant;
 use tptp::parse;
 
-const ITERATIONS: usize = 25_000;
+const ITERATIONS: usize = 100_000;
 const FOF: &[u8] = include_bytes!("SYN000+1.p");
 
 fn synthetic_fof() {
