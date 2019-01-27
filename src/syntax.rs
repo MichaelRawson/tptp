@@ -1,5 +1,6 @@
 use std::convert::AsRef;
 use std::fmt;
+use std::path::{Path, PathBuf};
 
 /// One of various types of TPTP identifiers.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
@@ -18,7 +19,7 @@ impl<'a> AsRef<str> for Name<'a> {
         match self {
             LowerWord(name) => name,
             SingleQuoted(name) => name,
-            Integer(name) => name
+            Integer(name) => name,
         }
     }
 }
@@ -405,7 +406,7 @@ impl<'a> fmt::Display for Annotations<'a> {
 /// A top-level TPTP statement, currently `include`, `cnf`, or `fof`.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
 pub enum Statement<'a> {
-    Include(&'a str, Option<Vec<Name<'a>>>),
+    Include(PathBuf, Option<Vec<Name<'a>>>),
     Cnf(
         Name<'a>,
         FormulaRole,
@@ -420,13 +421,20 @@ pub enum Statement<'a> {
     ),
 }
 
+fn escape_include_path(p: &Path) -> String {
+    p.to_str()
+        .unwrap()
+        .replace('\\', "\\\\")
+        .replace('\'', "\\'")
+}
+
 impl<'a> fmt::Display for Statement<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Statement::*;
         match self {
-            Include(include, None) => write!(f, "include('{}').", include),
+            Include(include, None) => write!(f, "include('{}').", escape_include_path(include)),
             Include(include, Some(names)) => {
-                write!(f, "include('{}',[", include)?;
+                write!(f, "include('{}',[", escape_include_path(include))?;
 
                 let mut names = names.iter();
                 write!(f, "{}", names.next().unwrap())?;

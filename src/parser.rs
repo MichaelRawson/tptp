@@ -1,5 +1,6 @@
 use nom::types::CompleteByteSlice as Input;
 use nom::*;
+use std::path::PathBuf;
 use std::str;
 
 use crate::syntax::*;
@@ -374,12 +375,25 @@ named!(annotations<Input, Annotations>, map!(
     }
 ));
 
+named!(include_path<Input, PathBuf>, map!(
+    delimited!(
+        char!('\''),
+        escaped!(take_while1!(is_sq_char), '\\', one_of!("\\'")),
+        char!('\'')
+    ),
+    |w| {
+        let escaped = unsafe {to_str(&w)};
+        let unescaped = escaped.replace("\\\\", "\\").replace("\\'", "'");
+        PathBuf::from(unescaped)
+    }
+));
+
 named!(include<Input, Statement>, do_parse!(
     tag!("include") >>
     ignored >>
     char!('(') >>
     ignored >>
-    included: single_quoted >>
+    included: include_path >>
     selection: opt!(do_parse!(
         ignored >>
         char!(',') >>
@@ -901,16 +915,22 @@ mod tests {
     }
 
     #[test]
+    fn test_include_path() {
+        parses!(include_path, b"'test'", PathBuf::from("test"));
+        parses!(include_path, b"'\\\\\\''", PathBuf::from("\\'"));
+    }
+
+    #[test]
     fn test_include() {
         parses!(
             include,
             b"include ( 'test' )",
-            Statement::Include("'test'", None)
+            Statement::Include(PathBuf::from("test"), None)
         );
         parses!(
             include,
             b"include( 'test', [ test ])",
-            Statement::Include("'test'", Some(vec![Name::LowerWord("test")]))
+            Statement::Include(PathBuf::from("test"), Some(vec![Name::LowerWord("test")]))
         );
     }
 
@@ -971,7 +991,7 @@ mod tests {
         parses!(
             tptp_input,
             b"include ( 'test' ) .",
-            Statement::Include("'test'", None)
+            Statement::Include(PathBuf::from("test"), None)
         );
         parses!(
             tptp_input,
@@ -1000,7 +1020,7 @@ mod tests {
         parses!(
             tptp_input_or_eof,
             b"include('test').",
-            Some(Statement::Include("'test'", None))
+            Some(Statement::Include(PathBuf::from("test"), None))
         );
         parses!(tptp_input_or_eof, b"", None);
     }
