@@ -1,9 +1,9 @@
 use std::convert::AsRef;
 use std::fmt;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 /// One of various types of TPTP identifiers.
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum Name<'a> {
     /// An alphanumeric token, like `propositional_fact2`
     LowerWord(&'a str),
@@ -31,7 +31,7 @@ impl<'a> fmt::Display for Name<'a> {
 }
 
 /// A FOF term.
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum FofTerm<'a> {
     /// A bound variable `X`.
     Variable(&'a str),
@@ -68,7 +68,7 @@ impl<'a> fmt::Display for FofTerm<'a> {
 }
 
 /// A unary operator on FOF formulae
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum UnaryConnective {
     /// `~p`
     Not,
@@ -84,7 +84,7 @@ impl fmt::Display for UnaryConnective {
 }
 
 /// An infix binary operator on FOF terms
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum InfixEquality {
     /// `t = s`
     Equal,
@@ -103,7 +103,7 @@ impl fmt::Display for InfixEquality {
 }
 
 /// A non-associative binary operator on FOF formulae
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum NonAssocConnective {
     /// `p => q`
     LRImplies,
@@ -134,7 +134,7 @@ impl fmt::Display for NonAssocConnective {
 }
 
 /// An associative binary operator on FOF formulae
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum AssocConnective {
     /// `p1 & p2 & ...`
     And,
@@ -153,7 +153,7 @@ impl fmt::Display for AssocConnective {
 }
 
 /// A FOF quantifier
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum FofQuantifier {
     /// `![X1, X2, ...]: p`
     Forall,
@@ -172,7 +172,7 @@ impl fmt::Display for FofQuantifier {
 }
 
 /// A FOF formula
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum FofFormula<'a> {
     /// `$true`, `$false`
     Boolean(bool),
@@ -232,7 +232,7 @@ impl<'a> fmt::Display for FofFormula<'a> {
 }
 
 /// A CNF literal
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum CnfLiteral<'a> {
     /// A literal, e.g. `p(X)`
     Literal(FofFormula<'a>),
@@ -251,7 +251,7 @@ impl<'a> fmt::Display for CnfLiteral<'a> {
 }
 
 /// A CNF formula
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct CnfFormula<'a>(pub Vec<CnfLiteral<'a>>);
 
 impl<'a> fmt::Display for CnfFormula<'a> {
@@ -266,7 +266,7 @@ impl<'a> fmt::Display for CnfFormula<'a> {
 }
 
 /// A TPTP formula role, such as `axiom` or `negated_conjecture`
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum FormulaRole {
     Axiom,
     Hypothesis,
@@ -301,7 +301,7 @@ impl fmt::Display for FormulaRole {
 }
 
 /// DAG formula sources
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum DagSource<'a> {
     Name(Name<'a>),
     Inference(&'a str, Vec<Source<'a>>),
@@ -328,7 +328,7 @@ impl<'a> fmt::Display for DagSource<'a> {
 }
 
 /// Internal formula sources
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum InternalSource {}
 
 impl fmt::Display for InternalSource {
@@ -338,7 +338,7 @@ impl fmt::Display for InternalSource {
 }
 
 /// External formula sources
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum ExternalSource<'a> {
     File(&'a str, Option<Name<'a>>),
 }
@@ -348,13 +348,15 @@ impl<'a> fmt::Display for ExternalSource<'a> {
         use self::ExternalSource::*;
         match self {
             File(ref name, None) => write!(f, "file('{}')", name),
-            File(ref name, Some(info)) => write!(f, "file('{}',{})", name, info),
+            File(ref name, Some(info)) => {
+                write!(f, "file('{}',{})", name, info)
+            }
         }
     }
 }
 
 /// Formula sources for use in annotations
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum Source<'a> {
     /// `unknown`
     Unknown,
@@ -392,7 +394,7 @@ impl<'a> fmt::Display for Source<'a> {
 }
 
 /// Formula annotations
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub struct Annotations<'a> {
     pub source: Source<'a>,
 }
@@ -403,10 +405,26 @@ impl<'a> fmt::Display for Annotations<'a> {
     }
 }
 
+/// An include path, not including outer quotes
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+pub struct Included<'a>(pub &'a str);
+
+impl<'a> fmt::Display for Included<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl<'a> From<Included<'a>> for PathBuf {
+    fn from(included: Included<'a>) -> Self {
+        included.0.replace("\\\\", "\\").replace("\\'", "'").into()
+    }
+}
+
 /// A top-level TPTP statement, currently `include`, `cnf`, or `fof`.
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum Statement<'a> {
-    Include(PathBuf, Option<Vec<Name<'a>>>),
+    Include(Included<'a>, Option<Vec<Name<'a>>>),
     Cnf(
         Name<'a>,
         FormulaRole,
@@ -421,20 +439,13 @@ pub enum Statement<'a> {
     ),
 }
 
-fn escape_include_path(p: &Path) -> String {
-    p.to_str()
-        .unwrap()
-        .replace('\\', "\\\\")
-        .replace('\'', "\\'")
-}
-
 impl<'a> fmt::Display for Statement<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Statement::*;
         match self {
-            Include(include, None) => write!(f, "include('{}').", escape_include_path(include)),
+            Include(include, None) => write!(f, "include({}).", include),
             Include(include, Some(names)) => {
-                write!(f, "include('{}',[", escape_include_path(include))?;
+                write!(f, "include({},[", include)?;
 
                 let mut names = names.iter();
                 write!(f, "{}", names.next().unwrap())?;
@@ -444,14 +455,29 @@ impl<'a> fmt::Display for Statement<'a> {
 
                 write!(f, ").")
             }
-            Cnf(name, role, formula, None) => write!(f, "cnf({},{},{}).", name, role, formula),
+            Cnf(name, role, formula, None) => {
+                write!(f, "cnf({},{},{}).", name, role, formula)
+            }
             Cnf(name, role, formula, Some(annotations)) => {
                 write!(f, "cnf({},{},{},{}).", name, role, formula, annotations)
             }
-            Fof(name, role, formula, None) => write!(f, "fof({},{},{}).", name, role, formula),
+            Fof(name, role, formula, None) => {
+                write!(f, "fof({},{},{}).", name, role, formula)
+            }
             Fof(name, role, formula, Some(annotations)) => {
                 write!(f, "fof({},{},{},{}).", name, role, formula, annotations)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_included_from() {
+        assert_eq!(PathBuf::from(Included("test")), PathBuf::from("test"));
+        assert_eq!(PathBuf::from(Included("\\\\\\'")), PathBuf::from("\\\'"));
     }
 }

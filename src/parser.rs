@@ -1,6 +1,5 @@
 use nom::types::CompleteByteSlice as Input;
 use nom::*;
-use std::path::PathBuf;
 use std::str;
 
 use crate::syntax::*;
@@ -18,7 +17,10 @@ fn is_upper_alpha(c: u8) -> bool {
 }
 
 fn is_alphanumeric(c: u8) -> bool {
-    (c >= b'a' && c <= b'z') || (c >= b'A' && c <= b'Z') || (c >= b'0' && c <= b'9') || (c == b'_')
+    (c >= b'a' && c <= b'z')
+        || (c >= b'A' && c <= b'Z')
+        || (c >= b'0' && c <= b'9')
+        || (c == b'_')
 }
 
 fn is_visible(c: u8) -> bool {
@@ -375,17 +377,13 @@ named!(annotations<Input, Annotations>, map!(
     }
 ));
 
-named!(include_path<Input, PathBuf>, map!(
+named!(include_path<Input, Included>, map!(
     delimited!(
         char!('\''),
         escaped!(take_while1!(is_sq_char), '\\', one_of!("\\'")),
         char!('\'')
     ),
-    |w| {
-        let escaped = unsafe {to_str(&w)};
-        let unescaped = escaped.replace("\\\\", "\\").replace("\\'", "'");
-        PathBuf::from(unescaped)
-    }
+    |w| Included(unsafe {to_str(&w)})
 ));
 
 named!(include<Input, Statement>, do_parse!(
@@ -507,7 +505,9 @@ impl<'a> Iterator for Statements<'a> {
 ///
 /// In order to parse larger files, memory-mapped files may be employed.
 /// A syntax error in the stream will re-occur indefinitely.
-pub fn parse(bytes: &[u8]) -> impl Iterator<Item = Result<Statement, SyntaxError>> {
+pub fn parse(
+    bytes: &[u8],
+) -> impl Iterator<Item = Result<Statement, SyntaxError>> {
     Statements {
         start: Input(bytes),
     }
@@ -631,7 +631,10 @@ mod tests {
         parses!(
             fof_plain_term,
             b"f ( X )",
-            FofTerm::Functor(Name::LowerWord("f"), vec![FofTerm::Variable("X")])
+            FofTerm::Functor(
+                Name::LowerWord("f"),
+                vec![FofTerm::Variable("X")]
+            )
         );
         parses!(
             fof_plain_term,
@@ -640,7 +643,10 @@ mod tests {
                 Name::LowerWord("f"),
                 vec![
                     FofTerm::Variable("X"),
-                    FofTerm::Functor(Name::LowerWord("g"), vec![FofTerm::Variable("Y")])
+                    FofTerm::Functor(
+                        Name::LowerWord("g"),
+                        vec![FofTerm::Variable("Y")]
+                    )
                 ]
             )
         );
@@ -651,7 +657,10 @@ mod tests {
         parses!(
             fof_function_term,
             b"f(X)",
-            FofTerm::Functor(Name::LowerWord("f"), vec![FofTerm::Variable("X")])
+            FofTerm::Functor(
+                Name::LowerWord("f"),
+                vec![FofTerm::Variable("X")]
+            )
         );
     }
 
@@ -660,7 +669,10 @@ mod tests {
         parses!(
             fof_term,
             b"f(X)",
-            FofTerm::Functor(Name::LowerWord("f"), vec![FofTerm::Variable("X")])
+            FofTerm::Functor(
+                Name::LowerWord("f"),
+                vec![FofTerm::Variable("X")]
+            )
         );
         parses!(fof_term, b"X", FofTerm::Variable("X"));
     }
@@ -693,14 +705,20 @@ mod tests {
             b"f(X) = Y",
             FofFormula::Infix(
                 InfixEquality::Equal,
-                FofTerm::Functor(Name::LowerWord("f"), vec![FofTerm::Variable("X")]),
+                FofTerm::Functor(
+                    Name::LowerWord("f"),
+                    vec![FofTerm::Variable("X")]
+                ),
                 FofTerm::Variable("Y")
             )
         );
         parses!(
             fof_atomic_formula,
             b"p(X)",
-            FofFormula::Predicate(Name::LowerWord("p"), vec![FofTerm::Variable("X")])
+            FofFormula::Predicate(
+                Name::LowerWord("p"),
+                vec![FofTerm::Variable("X")]
+            )
         );
         parses!(
             fof_atomic_formula,
@@ -755,7 +773,10 @@ mod tests {
         parses!(
             fof_unary_formula,
             b"~ $true",
-            FofFormula::Unary(UnaryConnective::Not, Box::new(FofFormula::Boolean(true)))
+            FofFormula::Unary(
+                UnaryConnective::Not,
+                Box::new(FofFormula::Boolean(true))
+            )
         );
     }
 
@@ -765,7 +786,10 @@ mod tests {
         parses!(
             fof_unit_formula,
             b"~$true",
-            FofFormula::Unary(UnaryConnective::Not, Box::new(FofFormula::Boolean(true)))
+            FofFormula::Unary(
+                UnaryConnective::Not,
+                Box::new(FofFormula::Boolean(true))
+            )
         );
     }
 
@@ -797,7 +821,10 @@ mod tests {
         parses!(
             fof_logic_formula,
             b"p | q | r",
-            FofFormula::Assoc(AssocConnective::Or, vec![p.clone(), q.clone(), r.clone()])
+            FofFormula::Assoc(
+                AssocConnective::Or,
+                vec![p.clone(), q.clone(), r.clone()]
+            )
         );
         parses!(fof_logic_formula, b"p", p.clone());
     }
@@ -812,9 +839,18 @@ mod tests {
 
     #[test]
     fn test_disjunction() {
-        let p = CnfLiteral::Literal(FofFormula::Predicate(Name::LowerWord("p"), vec![]));
-        let q = CnfLiteral::NegatedLiteral(FofFormula::Predicate(Name::LowerWord("q"), vec![]));
-        let r = CnfLiteral::Literal(FofFormula::Predicate(Name::LowerWord("r"), vec![]));
+        let p = CnfLiteral::Literal(FofFormula::Predicate(
+            Name::LowerWord("p"),
+            vec![],
+        ));
+        let q = CnfLiteral::NegatedLiteral(FofFormula::Predicate(
+            Name::LowerWord("q"),
+            vec![],
+        ));
+        let r = CnfLiteral::Literal(FofFormula::Predicate(
+            Name::LowerWord("r"),
+            vec![],
+        ));
 
         parses!(disjunction, b"p", vec![p.clone()]);
         parses!(disjunction, b"p | ~q", vec![p.clone(), q.clone()]);
@@ -827,7 +863,10 @@ mod tests {
 
     #[test]
     fn test_cnf_formula() {
-        let p = CnfLiteral::Literal(FofFormula::Predicate(Name::LowerWord("p"), vec![]));
+        let p = CnfLiteral::Literal(FofFormula::Predicate(
+            Name::LowerWord("p"),
+            vec![],
+        ));
 
         parses!(cnf_formula, b"p", CnfFormula(vec![p.clone()]));
         parses!(cnf_formula, b"( p )", CnfFormula(vec![p.clone()]));
@@ -916,8 +955,8 @@ mod tests {
 
     #[test]
     fn test_include_path() {
-        parses!(include_path, b"'test'", PathBuf::from("test"));
-        parses!(include_path, b"'\\\\\\''", PathBuf::from("\\'"));
+        parses!(include_path, b"'test'", Included("test"));
+        parses!(include_path, b"'\\\\\\''", Included("\\\\\\'"));
     }
 
     #[test]
@@ -925,12 +964,15 @@ mod tests {
         parses!(
             include,
             b"include ( 'test' )",
-            Statement::Include(PathBuf::from("test"), None)
+            Statement::Include(Included("test"), None)
         );
         parses!(
             include,
             b"include( 'test', [ test ])",
-            Statement::Include(PathBuf::from("test"), Some(vec![Name::LowerWord("test")]))
+            Statement::Include(
+                Included("test"),
+                Some(vec![Name::LowerWord("test")])
+            )
         );
     }
 
@@ -968,7 +1010,9 @@ mod tests {
             Statement::Cnf(
                 Name::LowerWord("test"),
                 FormulaRole::Axiom,
-                CnfFormula(vec![CnfLiteral::Literal(FofFormula::Boolean(true))]),
+                CnfFormula(vec![CnfLiteral::Literal(FofFormula::Boolean(
+                    true
+                ))]),
                 None
             )
         );
@@ -978,7 +1022,9 @@ mod tests {
             Statement::Cnf(
                 Name::LowerWord("test"),
                 FormulaRole::Axiom,
-                CnfFormula(vec![CnfLiteral::Literal(FofFormula::Boolean(true))]),
+                CnfFormula(vec![CnfLiteral::Literal(FofFormula::Boolean(
+                    true
+                ))]),
                 Some(Annotations {
                     source: Source::Unknown
                 })
@@ -991,7 +1037,7 @@ mod tests {
         parses!(
             tptp_input,
             b"include ( 'test' ) .",
-            Statement::Include(PathBuf::from("test"), None)
+            Statement::Include(Included("test"), None)
         );
         parses!(
             tptp_input,
@@ -1009,7 +1055,9 @@ mod tests {
             Statement::Cnf(
                 Name::LowerWord("test"),
                 FormulaRole::Axiom,
-                CnfFormula(vec![CnfLiteral::Literal(FofFormula::Boolean(true))]),
+                CnfFormula(vec![CnfLiteral::Literal(FofFormula::Boolean(
+                    true
+                ))]),
                 None
             )
         );
@@ -1020,7 +1068,7 @@ mod tests {
         parses!(
             tptp_input_or_eof,
             b"include('test').",
-            Some(Statement::Include(PathBuf::from("test"), None))
+            Some(Statement::Include(Included("test"), None))
         );
         parses!(tptp_input_or_eof, b"", None);
     }
