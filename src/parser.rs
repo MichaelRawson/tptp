@@ -249,11 +249,9 @@ named_args!(fof_binary_assoc<'a>(first: FofFormula<'a>)<Input<'a>, FofFormula<'a
 ));
 
 fn fof_logic_formula(input: Input) -> IResult<Input, FofFormula> {
-    if let Ok((input, formula)) = fof_unary_formula(input) {
-        return Ok((input, formula));
-    }
+    let (after_first_input, first) =
+        fof_unary_formula(input).or_else(|_| fof_unit_formula(input))?;
 
-    let (after_first_input, first) = fof_unit_formula(input)?;
     let (input, _) = ignored(after_first_input)?;
 
     if nonassoc_connective(input).is_ok() {
@@ -828,6 +826,18 @@ mod tests {
             )
         );
         parses!(fof_logic_formula, b"p", p.clone());
+        parses!(
+            fof_logic_formula,
+            b"~p => q",
+            FofFormula::NonAssoc(
+                NonAssocConnective::LRImplies,
+                Box::new(FofFormula::Unary(
+                    UnaryConnective::Not,
+                    Box::new(p.clone())
+                )),
+                Box::new(q.clone())
+            )
+        );
     }
 
     #[test]
@@ -908,7 +918,10 @@ mod tests {
         parses!(
             external_source,
             b"file ( 'file' , name )",
-            ExternalSource::File("'file'".into(), Some(Name::LowerWord("name".into())))
+            ExternalSource::File(
+                "'file'".into(),
+                Some(Name::LowerWord("name".into()))
+            )
         );
     }
 
