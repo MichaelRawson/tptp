@@ -1,5 +1,6 @@
 use nom::types::CompleteByteSlice as Input;
 use nom::*;
+use std::borrow::Cow;
 use std::str;
 
 use crate::syntax::*;
@@ -51,9 +52,9 @@ named_attr!(#[inline], upper_alpha<Input, Input>, take_while1!(is_upper_alpha));
 
 named_attr!(#[inline], alphanumeric<Input, Input>, take_while!(is_alphanumeric));
 
-named!(upper_word<Input, &str>, map!(
+named!(upper_word<Input, Cow<str>>, map!(
     recognize!(preceded!(upper_alpha, alphanumeric)),
-    |w| unsafe {to_str(&w)}
+    |w| Cow::Borrowed(unsafe {to_str(&w)})
 ));
 
 named!(dollar_word<Input, &str>, map!(
@@ -61,28 +62,28 @@ named!(dollar_word<Input, &str>, map!(
     |w| unsafe {to_str(&w)}
 ));
 
-named!(lower_word<Input, &str>, map!(
+named!(lower_word<Input, Cow<str>>, map!(
     recognize!(preceded!(lower_alpha, alphanumeric)),
-    |w| unsafe {to_str(&w)}
+    |w| Cow::Borrowed(unsafe {to_str(&w)})
 ));
 
-named!(single_quoted<Input, &str>, map!(
+named!(single_quoted<Input, Cow<str>>, map!(
     recognize!(delimited!(
         char!('\''),
         escaped!(take_while1!(is_sq_char), '\\', one_of!("\\'")),
         char!('\'')
     )),
-    |w| unsafe {to_str(&w)}
+    |w| Cow::Borrowed(unsafe {to_str(&w)})
 ));
 
-named_attr!(#[inline], atomic_word<Input, &str>, alt!(lower_word | single_quoted));
+named_attr!(#[inline], atomic_word<Input, Cow<str>>, alt!(lower_word | single_quoted));
 
-named!(integer<Input, &str>, map!(
+named!(integer<Input, Cow<str>>, map!(
     recognize!(preceded!(opt!(one_of!("+-")), alt!(
         tag!("0") |
         preceded!(one_of!("123456789"), digit0)
     ))),
-    |w| unsafe {to_str(&w)}
+    |w| Cow::Borrowed(unsafe {to_str(&w)})
 ));
 
 named!(name<Input, Name>, alt!(
@@ -553,49 +554,49 @@ mod tests {
 
     #[test]
     fn test_upper_word() {
-        parses!(upper_word, b"X", "X");
-        parses!(upper_word, b"Aa123", "Aa123");
+        parses!(upper_word, b"X", "X".into());
+        parses!(upper_word, b"Aa123", "Aa123".into());
     }
 
     #[test]
     fn test_lower_word() {
-        parses!(lower_word, b"x", "x");
-        parses!(lower_word, b"aA123", "aA123");
+        parses!(lower_word, b"x", "x".into());
+        parses!(lower_word, b"aA123", "aA123".into());
     }
 
     #[test]
     fn test_dollar_word() {
-        parses!(dollar_word, b"$test", "$test");
+        parses!(dollar_word, b"$test", "$test".into());
     }
 
     #[test]
     fn test_integer() {
-        parses!(integer, b"0", "0");
-        parses!(integer, b"123", "123");
-        parses!(integer, b"-123", "-123");
+        parses!(integer, b"0", "0".into());
+        parses!(integer, b"123", "123".into());
+        parses!(integer, b"-123", "-123".into());
     }
 
     #[test]
     fn test_atomic_word() {
-        parses!(atomic_word, b"x", "x");
-        parses!(single_quoted, b"'single quoted'", "'single quoted'");
+        parses!(atomic_word, b"x", "x".into());
+        parses!(single_quoted, b"'single quoted'", "'single quoted'".into());
     }
 
     #[test]
     fn test_single_quoted() {
-        parses!(single_quoted, b"'single quoted'", "'single quoted'");
-        parses!(single_quoted, b"'\\'\\\\'", "'\\'\\\\'");
+        parses!(single_quoted, b"'single quoted'", "'single quoted'".into());
+        parses!(single_quoted, b"'\\'\\\\'", "'\\'\\\\'".into());
     }
 
     #[test]
     fn test_name() {
-        parses!(name, b"lower_word2", Name::LowerWord("lower_word2"));
+        parses!(name, b"lower_word2", Name::LowerWord("lower_word2".into()));
         parses!(
             name,
             b"'single quoted'",
-            Name::SingleQuoted("'single quoted'")
+            Name::SingleQuoted("'single quoted'".into())
         );
-        parses!(name, b"123", Name::Integer("123"));
+        parses!(name, b"123", Name::Integer("123".into()));
     }
 
     #[test]
@@ -604,16 +605,16 @@ mod tests {
             name_list,
             b"[ name , 'name' , 123 ]",
             vec![
-                Name::LowerWord("name"),
-                Name::SingleQuoted("'name'"),
-                Name::Integer("123")
+                Name::LowerWord("name".into()),
+                Name::SingleQuoted("'name'".into()),
+                Name::Integer("123".into())
             ]
         );
     }
 
     #[test]
     fn test_variable() {
-        parses!(variable, b"X", FofTerm::Variable("X"));
+        parses!(variable, b"X", FofTerm::Variable("X".into()));
     }
 
     #[test]
@@ -621,31 +622,31 @@ mod tests {
         parses!(
             fof_plain_term,
             b"c",
-            FofTerm::Functor(Name::LowerWord("c"), vec![])
+            FofTerm::Functor(Name::LowerWord("c".into()), vec![])
         );
         parses!(
             fof_plain_term,
             b"f ( )",
-            FofTerm::Functor(Name::LowerWord("f"), vec![])
+            FofTerm::Functor(Name::LowerWord("f".into()), vec![])
         );
         parses!(
             fof_plain_term,
             b"f ( X )",
             FofTerm::Functor(
-                Name::LowerWord("f"),
-                vec![FofTerm::Variable("X")]
+                Name::LowerWord("f".into()),
+                vec![FofTerm::Variable("X".into())]
             )
         );
         parses!(
             fof_plain_term,
             b"f ( X, g ( Y ) )",
             FofTerm::Functor(
-                Name::LowerWord("f"),
+                Name::LowerWord("f".into()),
                 vec![
-                    FofTerm::Variable("X"),
+                    FofTerm::Variable("X".into()),
                     FofTerm::Functor(
-                        Name::LowerWord("g"),
-                        vec![FofTerm::Variable("Y")]
+                        Name::LowerWord("g".into()),
+                        vec![FofTerm::Variable("Y".into())]
                     )
                 ]
             )
@@ -658,8 +659,8 @@ mod tests {
             fof_function_term,
             b"f(X)",
             FofTerm::Functor(
-                Name::LowerWord("f"),
-                vec![FofTerm::Variable("X")]
+                Name::LowerWord("f".into()),
+                vec![FofTerm::Variable("X".into())]
             )
         );
     }
@@ -670,11 +671,11 @@ mod tests {
             fof_term,
             b"f(X)",
             FofTerm::Functor(
-                Name::LowerWord("f"),
-                vec![FofTerm::Variable("X")]
+                Name::LowerWord("f".into()),
+                vec![FofTerm::Variable("X".into())]
             )
         );
-        parses!(fof_term, b"X", FofTerm::Variable("X"));
+        parses!(fof_term, b"X", FofTerm::Variable("X".into()));
     }
 
     #[test]
@@ -706,18 +707,18 @@ mod tests {
             FofFormula::Infix(
                 InfixEquality::Equal,
                 FofTerm::Functor(
-                    Name::LowerWord("f"),
-                    vec![FofTerm::Variable("X")]
+                    Name::LowerWord("f".into()),
+                    vec![FofTerm::Variable("X".into())]
                 ),
-                FofTerm::Variable("Y")
+                FofTerm::Variable("Y".into())
             )
         );
         parses!(
             fof_atomic_formula,
             b"p(X)",
             FofFormula::Predicate(
-                Name::LowerWord("p"),
-                vec![FofTerm::Variable("X")]
+                Name::LowerWord("p".into()),
+                vec![FofTerm::Variable("X".into())]
             )
         );
         parses!(
@@ -725,8 +726,8 @@ mod tests {
             b"X != Y",
             FofFormula::Infix(
                 InfixEquality::NotEqual,
-                FofTerm::Variable("X"),
-                FofTerm::Variable("Y")
+                FofTerm::Variable("X".into()),
+                FofTerm::Variable("Y".into())
             )
         );
     }
@@ -738,7 +739,7 @@ mod tests {
             b"! [ X ] : $true",
             FofFormula::Quantified(
                 FofQuantifier::Forall,
-                vec!["X"],
+                vec!["X".into()],
                 Box::new(FofFormula::Boolean(true))
             )
         );
@@ -747,7 +748,7 @@ mod tests {
             b"? [ X , Y, Z ] : $true",
             FofFormula::Quantified(
                 FofQuantifier::Exists,
-                vec!["X", "Y", "Z"],
+                vec!["X".into(), "Y".into(), "Z".into()],
                 Box::new(FofFormula::Boolean(true))
             )
         );
@@ -762,7 +763,7 @@ mod tests {
             b"![X]: $true",
             FofFormula::Quantified(
                 FofQuantifier::Forall,
-                vec!["X"],
+                vec!["X".into()],
                 Box::new(FofFormula::Boolean(true))
             )
         );
@@ -795,9 +796,9 @@ mod tests {
 
     #[test]
     fn test_fof_logic_formula() {
-        let p = FofFormula::Predicate(Name::LowerWord("p"), vec![]);
-        let q = FofFormula::Predicate(Name::LowerWord("q"), vec![]);
-        let r = FofFormula::Predicate(Name::LowerWord("r"), vec![]);
+        let p = FofFormula::Predicate(Name::LowerWord("p".into()), vec![]);
+        let q = FofFormula::Predicate(Name::LowerWord("q".into()), vec![]);
+        let r = FofFormula::Predicate(Name::LowerWord("r".into()), vec![]);
 
         parses!(
             fof_logic_formula,
@@ -831,7 +832,7 @@ mod tests {
 
     #[test]
     fn test_literal() {
-        let p = FofFormula::Predicate(Name::LowerWord("p"), vec![]);
+        let p = FofFormula::Predicate(Name::LowerWord("p".into()), vec![]);
 
         parses!(literal, b"p", CnfLiteral::Literal(p.clone()));
         parses!(literal, b"~ p", CnfLiteral::NegatedLiteral(p));
@@ -840,15 +841,15 @@ mod tests {
     #[test]
     fn test_disjunction() {
         let p = CnfLiteral::Literal(FofFormula::Predicate(
-            Name::LowerWord("p"),
+            Name::LowerWord("p".into()),
             vec![],
         ));
         let q = CnfLiteral::NegatedLiteral(FofFormula::Predicate(
-            Name::LowerWord("q"),
+            Name::LowerWord("q".into()),
             vec![],
         ));
         let r = CnfLiteral::Literal(FofFormula::Predicate(
-            Name::LowerWord("r"),
+            Name::LowerWord("r".into()),
             vec![],
         ));
 
@@ -864,7 +865,7 @@ mod tests {
     #[test]
     fn test_cnf_formula() {
         let p = CnfLiteral::Literal(FofFormula::Predicate(
-            Name::LowerWord("p"),
+            Name::LowerWord("p".into()),
             vec![],
         ));
 
@@ -888,12 +889,12 @@ mod tests {
         parses!(
             dag_source,
             b"name",
-            DagSource::Name(Name::LowerWord("name"))
+            DagSource::Name(Name::LowerWord("name".into()))
         );
         parses!(
             dag_source,
             b"inference ( deduction , [ ] , [] )",
-            DagSource::Inference("deduction", vec![])
+            DagSource::Inference("deduction".into(), vec![])
         );
     }
 
@@ -902,12 +903,12 @@ mod tests {
         parses!(
             external_source,
             b"file ( 'file' )",
-            ExternalSource::File("'file'", None)
+            ExternalSource::File("'file'".into(), None)
         );
         parses!(
             external_source,
             b"file ( 'file' , name )",
-            ExternalSource::File("'file'", Some(Name::LowerWord("name")))
+            ExternalSource::File("'file'".into(), Some(Name::LowerWord("name".into())))
         );
     }
 
@@ -928,12 +929,12 @@ mod tests {
         parses!(
             source,
             b"file ( 'file' )",
-            Source::External(ExternalSource::File("'file'", None))
+            Source::External(ExternalSource::File("'file'".into(), None))
         );
         parses!(
             source,
             b"name",
-            Source::Dag(DagSource::Name(Name::LowerWord("name")))
+            Source::Dag(DagSource::Name(Name::LowerWord("name".into())))
         );
         parses!(
             source,
@@ -955,7 +956,7 @@ mod tests {
 
     #[test]
     fn test_include_path() {
-        parses!(include_path, b"'test'", Included("test"));
+        parses!(include_path, b"'test'", Included("test".into()));
         parses!(include_path, b"'\\\\\\''", Included("\\\\\\'"));
     }
 
@@ -964,14 +965,14 @@ mod tests {
         parses!(
             include,
             b"include ( 'test' )",
-            Statement::Include(Included("test"), None)
+            Statement::Include(Included("test".into()), None)
         );
         parses!(
             include,
             b"include( 'test', [ test ])",
             Statement::Include(
-                Included("test"),
-                Some(vec![Name::LowerWord("test")])
+                Included("test".into()),
+                Some(vec![Name::LowerWord("test".into())])
             )
         );
     }
@@ -982,7 +983,7 @@ mod tests {
             fof_annotated,
             b"fof ( test , axiom , $true )",
             Statement::Fof(
-                Name::LowerWord("test"),
+                Name::LowerWord("test".into()),
                 FormulaRole::Axiom,
                 FofFormula::Boolean(true),
                 None
@@ -992,7 +993,7 @@ mod tests {
             fof_annotated,
             b"fof ( test , axiom , $true , unknown )",
             Statement::Fof(
-                Name::LowerWord("test"),
+                Name::LowerWord("test".into()),
                 FormulaRole::Axiom,
                 FofFormula::Boolean(true),
                 Some(Annotations {
@@ -1008,7 +1009,7 @@ mod tests {
             cnf_annotated,
             b"cnf ( test , axiom , $true )",
             Statement::Cnf(
-                Name::LowerWord("test"),
+                Name::LowerWord("test".into()),
                 FormulaRole::Axiom,
                 CnfFormula(vec![CnfLiteral::Literal(FofFormula::Boolean(
                     true
@@ -1020,7 +1021,7 @@ mod tests {
             cnf_annotated,
             b"cnf ( test , axiom , $true , unknown )",
             Statement::Cnf(
-                Name::LowerWord("test"),
+                Name::LowerWord("test".into()),
                 FormulaRole::Axiom,
                 CnfFormula(vec![CnfLiteral::Literal(FofFormula::Boolean(
                     true
@@ -1037,13 +1038,13 @@ mod tests {
         parses!(
             tptp_input,
             b"include ( 'test' ) .",
-            Statement::Include(Included("test"), None)
+            Statement::Include(Included("test".into()), None)
         );
         parses!(
             tptp_input,
             b"fof ( test , axiom , $true ) .",
             Statement::Fof(
-                Name::LowerWord("test"),
+                Name::LowerWord("test".into()),
                 FormulaRole::Axiom,
                 FofFormula::Boolean(true),
                 None
@@ -1053,7 +1054,7 @@ mod tests {
             tptp_input,
             b"cnf ( test , axiom , $true ) .",
             Statement::Cnf(
-                Name::LowerWord("test"),
+                Name::LowerWord("test".into()),
                 FormulaRole::Axiom,
                 CnfFormula(vec![CnfLiteral::Literal(FofFormula::Boolean(
                     true
@@ -1068,7 +1069,7 @@ mod tests {
         parses!(
             tptp_input_or_eof,
             b"include('test').",
-            Some(Statement::Include(Included("test"), None))
+            Some(Statement::Include(Included("test".into()), None))
         );
         parses!(tptp_input_or_eof, b"", None);
     }

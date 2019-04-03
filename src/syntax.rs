@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::convert::AsRef;
 use std::fmt;
 use std::path::PathBuf;
@@ -6,11 +7,11 @@ use std::path::PathBuf;
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum Name<'a> {
     /// An alphanumeric token, like `propositional_fact2`
-    LowerWord(&'a str),
+    LowerWord(Cow<'a, str>),
     /// A `'quoted string'`, quotes included
-    SingleQuoted(&'a str),
+    SingleQuoted(Cow<'a, str>),
     /// Integral identifiers of arbitrary size.
-    Integer(&'a str),
+    Integer(Cow<'a, str>),
 }
 
 impl<'a> AsRef<str> for Name<'a> {
@@ -34,7 +35,7 @@ impl<'a> fmt::Display for Name<'a> {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum FofTerm<'a> {
     /// A bound variable `X`.
-    Variable(&'a str),
+    Variable(Cow<'a, str>),
     /// An application of a name to arguments, `f(t1, t2, ...)`.
     /// Constants `c` are treated as nullary functors `c()`.
     Functor(Name<'a>, Vec<FofTerm<'a>>),
@@ -187,7 +188,7 @@ pub enum FofFormula<'a> {
     /// `p1 $op p2 $op ...`
     Assoc(AssocConnective, Vec<FofFormula<'a>>),
     /// `$op[X1, X2, ...]: p`
-    Quantified(FofQuantifier, Vec<&'a str>, Box<FofFormula<'a>>),
+    Quantified(FofQuantifier, Vec<Cow<'a, str>>, Box<FofFormula<'a>>),
 }
 
 impl<'a> fmt::Display for FofFormula<'a> {
@@ -304,7 +305,7 @@ impl fmt::Display for FormulaRole {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum DagSource<'a> {
     Name(Name<'a>),
-    Inference(&'a str, Vec<Source<'a>>),
+    Inference(Cow<'a, str>, Vec<Source<'a>>),
 }
 
 impl<'a> fmt::Display for DagSource<'a> {
@@ -340,7 +341,7 @@ impl fmt::Display for InternalSource {
 /// External formula sources
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum ExternalSource<'a> {
-    File(&'a str, Option<Name<'a>>),
+    File(Cow<'a, str>, Option<Name<'a>>),
 }
 
 impl<'a> fmt::Display for ExternalSource<'a> {
@@ -422,6 +423,7 @@ impl<'a> From<Included<'a>> for PathBuf {
 }
 
 /// A top-level TPTP statement, currently `include`, `cnf`, or `fof`.
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum Statement<'a> {
     Include(Included<'a>, Option<Vec<Name<'a>>>),

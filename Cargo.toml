@@ -2,7 +2,7 @@
 name = "tptp"
 description = "Parse the TPTP format"
 edition = "2018"
-version = "0.8.1"
+version = "0.9.0"
 authors = ["Michael Rawson <michael@rawsons.uk>"]
 license = "MIT"
 homepage = "https://github.com/MichaelRawson/tptp"
