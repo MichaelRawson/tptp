@@ -32,25 +32,25 @@ fn is_sq_char(c: u8) -> bool {
     is_visible(c) && c != b'\'' && c != b'\\'
 }
 
-named_attr!(#[inline], whitespace<Input, ()>, value!((), multispace));
+named!(whitespace<Input, ()>, value!((), multispace));
 
-named_attr!(#[inline], comment_line<Input, ()>, value!((),
+named!(comment_line<Input, ()>, value!((),
     preceded!(char!('%'), take_until_and_consume!("\n"))
 ));
 
-named_attr!(#[inline], comment_block<Input, ()>, value!((),
+named!(comment_block<Input, ()>, value!((),
     preceded!(tag!("/*"), take_until_and_consume!("*/"))
 ));
 
-named_attr!(#[inline], ignored<Input, ()>, value!((),
+named!(ignored<Input, ()>, value!((),
     many0!(alt!(whitespace | comment_line | comment_block))
 ));
 
-named_attr!(#[inline], lower_alpha<Input, Input>, take_while1!(is_lower_alpha));
+named!(lower_alpha<Input, Input>, take_while1!(is_lower_alpha));
 
-named_attr!(#[inline], upper_alpha<Input, Input>, take_while1!(is_upper_alpha));
+named!(upper_alpha<Input, Input>, take_while1!(is_upper_alpha));
 
-named_attr!(#[inline], alphanumeric<Input, Input>, take_while!(is_alphanumeric));
+named!(alphanumeric<Input, Input>, take_while!(is_alphanumeric));
 
 named!(upper_word<Input, Cow<str>>, map!(
     recognize!(preceded!(upper_alpha, alphanumeric)),
@@ -76,7 +76,7 @@ named!(single_quoted<Input, Cow<str>>, map!(
     |w| Cow::Borrowed(unsafe {to_str(&w)})
 ));
 
-named_attr!(#[inline], atomic_word<Input, Cow<str>>, alt!(lower_word | single_quoted));
+named!(atomic_word<Input, Cow<str>>, alt!(lower_word | single_quoted));
 
 named!(integer<Input, Cow<str>>, map!(
     recognize!(preceded!(opt!(one_of!("+-")), alt!(
@@ -116,7 +116,7 @@ named!(fof_arguments<Input, Vec<FofTerm>>, do_parse!(
     (args.unwrap_or_default())
 ));
 
-named_attr!(#[inline], variable<Input, FofTerm>, map!(upper_word, FofTerm::Variable));
+named!(variable<Input, Variable>, map!(upper_word, Variable));
 
 named!(fof_plain_term<Input, FofTerm>, do_parse!(
     name: name >>
@@ -125,16 +125,16 @@ named!(fof_plain_term<Input, FofTerm>, do_parse!(
     (FofTerm::Functor(name, arguments.unwrap_or_default()))
 ));
 
-named_attr!(#[inline], fof_function_term<Input, FofTerm>, alt!(fof_plain_term));
+named!(fof_function_term<Input, FofTerm>, alt!(fof_plain_term));
 
-named_attr!(#[inline], fof_term<Input, FofTerm>, alt!(fof_function_term | variable));
+named!(fof_term<Input, FofTerm>, alt!(fof_function_term | map!(variable, FofTerm::Variable)));
 
 named!(fof_defined_atomic_formula<Input, FofFormula>, switch!(dollar_word,
     "$true" => value!(FofFormula::Boolean(true)) |
     "$false" => value!(FofFormula::Boolean(false))
 ));
 
-named_attr!(#[inline], infix_equality<Input, InfixEquality>, alt!(
+named!(infix_equality<Input, InfixEquality>, alt!(
     value!(InfixEquality::Equal, tag!("=")) |
     value!(InfixEquality::NotEqual, tag!("!="))
 ));
@@ -178,7 +178,7 @@ named!(fof_quantified_formula<Input, FofFormula>, do_parse!(
     ignored >>
     bound: separated_nonempty_list!(
         delimited!(ignored, char!(','), ignored),
-        upper_word
+        variable
     ) >>
     ignored >>
     char!(']') >>
@@ -206,7 +206,7 @@ named!(fof_unary_formula<Input, FofFormula>, do_parse!(
     (FofFormula::Unary(UnaryConnective::Not, Box::new(formula)))
 ));
 
-named_attr!(#[inline], fof_unit_formula<Input, FofFormula>, alt!(fof_unary_formula | fof_unitary_formula));
+named!(fof_unit_formula<Input, FofFormula>, alt!(fof_unary_formula | fof_unitary_formula));
 
 named!(nonassoc_connective<Input, NonAssocConnective>, alt!(
     value!(NonAssocConnective::LRImplies, tag!("=>")) |
@@ -217,7 +217,7 @@ named!(nonassoc_connective<Input, NonAssocConnective>, alt!(
     value!(NonAssocConnective::NotOr, tag!("~|"))
 ));
 
-named_attr!(#[inline], assoc_connective<Input, AssocConnective>, alt!(
+named!(assoc_connective<Input, AssocConnective>, alt!(
     value!(AssocConnective::And, char!('&')) |
     value!(AssocConnective::Or, char!('|'))
 ));
@@ -263,7 +263,7 @@ fn fof_logic_formula(input: Input) -> IResult<Input, FofFormula> {
     }
 }
 
-named_attr!(#[inline], fof_formula<Input, FofFormula>, alt!(fof_logic_formula));
+named!(fof_formula<Input, FofFormula>, alt!(fof_logic_formula));
 
 named!(literal<Input, CnfLiteral>, alt!(
     do_parse!(
@@ -612,7 +612,7 @@ mod tests {
 
     #[test]
     fn test_variable() {
-        parses!(variable, b"X", FofTerm::Variable("X".into()));
+        parses!(variable, b"X", "X".into());
     }
 
     #[test]

@@ -31,11 +31,33 @@ impl<'a> fmt::Display for Name<'a> {
     }
 }
 
+/// A variable name, `X`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+pub struct Variable<'a>(pub Cow<'a, str>);
+
+impl<'a> AsRef<str> for Variable<'a> {
+    fn as_ref(&self) -> &str {
+        self.0.as_ref()
+    }
+}
+
+impl<'a> From<&'a str> for Variable<'a> {
+    fn from(x: &'a str) -> Self {
+        Variable(Cow::Borrowed(x))
+    }
+}
+
+impl<'a> fmt::Display for Variable<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_ref())
+    }
+}
+
 /// A FOF term.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 pub enum FofTerm<'a> {
-    /// A bound variable `X`.
-    Variable(Cow<'a, str>),
+    /// A bound variable
+    Variable(Variable<'a>),
     /// An application of a name to arguments, `f(t1, t2, ...)`.
     /// Constants `c` are treated as nullary functors `c()`.
     Functor(Name<'a>, Vec<FofTerm<'a>>),
@@ -188,7 +210,7 @@ pub enum FofFormula<'a> {
     /// `p1 $op p2 $op ...`
     Assoc(AssocConnective, Vec<FofFormula<'a>>),
     /// `$op[X1, X2, ...]: p`
-    Quantified(FofQuantifier, Vec<Cow<'a, str>>, Box<FofFormula<'a>>),
+    Quantified(FofQuantifier, Vec<Variable<'a>>, Box<FofFormula<'a>>),
 }
 
 impl<'a> fmt::Display for FofFormula<'a> {
