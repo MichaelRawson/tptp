@@ -22,5 +22,8 @@ pub mod syntax;
 mod parser;
 mod resolve;
 
+#[cfg(test)]
+mod tests;
+
 pub use crate::parser::*;
 pub use crate::resolve::*;
