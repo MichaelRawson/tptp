@@ -1,0 +1,29 @@
+---
+created: "2019-06-11T12:13:10.575537166Z"
+creator: insta@0.8.1
+source: src/tests.rs
+expression: parsed
+---
+Assoc(
+    Or,
+    [
+        Predicate(
+            LowerWord(
+                "p"
+            ),
+            []
+        ),
+        Predicate(
+            LowerWord(
+                "q"
+            ),
+            []
+        ),
+        Predicate(
+            LowerWord(
+                "r"
+            ),
+            []
+        )
+    ]
+)

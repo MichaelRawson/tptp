@@ -1,0 +1,16 @@
+---
+created: "2019-06-11T12:13:10.530242506Z"
+creator: insta@0.8.1
+source: src/tests.rs
+expression: parsed
+---
+[
+    Literal(
+        Predicate(
+            LowerWord(
+                "p"
+            ),
+            []
+        )
+    )
+]

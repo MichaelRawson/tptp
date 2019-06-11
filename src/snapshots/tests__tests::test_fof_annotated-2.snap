@@ -1,0 +1,20 @@
+---
+created: "2019-06-11T12:13:10.550324249Z"
+creator: insta@0.8.1
+source: src/tests.rs
+expression: parsed
+---
+Fof(
+    LowerWord(
+        "test"
+    ),
+    Axiom,
+    Boolean(
+        true
+    ),
+    Some(
+        Annotations {
+            source: Unknown
+        }
+    )
+)

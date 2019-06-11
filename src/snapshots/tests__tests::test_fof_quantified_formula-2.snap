@@ -1,0 +1,23 @@
+---
+created: "2019-06-11T12:13:10.563529400Z"
+creator: insta@0.8.1
+source: src/tests.rs
+expression: parsed
+---
+Quantified(
+    Exists,
+    [
+        Variable(
+            "X"
+        ),
+        Variable(
+            "Y"
+        ),
+        Variable(
+            "Z"
+        )
+    ],
+    Boolean(
+        true
+    )
+)

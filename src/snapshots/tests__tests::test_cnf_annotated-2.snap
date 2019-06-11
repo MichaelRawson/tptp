@@ -1,0 +1,26 @@
+---
+created: "2019-06-11T12:13:10.542949252Z"
+creator: insta@0.8.1
+source: src/tests.rs
+expression: parsed
+---
+Cnf(
+    LowerWord(
+        "test"
+    ),
+    Axiom,
+    CnfFormula(
+        [
+            Literal(
+                Boolean(
+                    true
+                )
+            )
+        ]
+    ),
+    Some(
+        Annotations {
+            source: Unknown
+        }
+    )
+)

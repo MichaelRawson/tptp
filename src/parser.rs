@@ -1,3 +1,6 @@
+use std::error;
+use std::fmt;
+
 use crate::syntax::Statement;
 
 pub(in crate) mod parsers {
@@ -385,7 +388,7 @@ pub(in crate) mod parsers {
             escaped!(take_while1!(is_sq_char), '\\', one_of!("\\'")),
             char!('\'')
         ),
-        |w| Included(unsafe {to_str(&w)})
+        |w| Included(unsafe {to_str(&w)}.into())
     ));
 
     named!(pub include<Input, Statement>, do_parse!(
@@ -470,17 +473,28 @@ pub(in crate) mod parsers {
         value!(None, eof!())
     ));
 
-    pub fn parse_step(input: Input) -> Result<(Input, Option<Statement>), Input> {
+    pub fn parse_step(
+        input: Input,
+    ) -> Result<(Input, Option<Statement>), Input> {
         let (input, _) = ignored(input).expect("ignored cannot fail");
         tptp_input_or_eof(input).map_err(|_| input)
     }
 }
 
 /// A syntax error (or an unsupported feature) occurred
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SyntaxError<'a> {
     /// The slice at the beginning of the erroneous statement
     pub position: &'a [u8],
+}
+
+impl<'a> fmt::Display for SyntaxError<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "TPTP syntax error")
+    }
+}
+
+impl<'a> error::Error for SyntaxError<'a> {
 }
 
 struct Statements<'a> {

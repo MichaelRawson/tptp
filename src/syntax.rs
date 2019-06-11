@@ -1,3 +1,5 @@
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::convert::AsRef;
 use std::fmt;
@@ -5,6 +7,7 @@ use std::path::PathBuf;
 
 /// One of various types of TPTP identifiers.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Name<'a> {
     /// An alphanumeric token, like `propositional_fact2`
     LowerWord(Cow<'a, str>),
@@ -33,17 +36,12 @@ impl<'a> fmt::Display for Name<'a> {
 
 /// A variable name, `X`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Variable<'a>(pub Cow<'a, str>);
 
 impl<'a> AsRef<str> for Variable<'a> {
     fn as_ref(&self) -> &str {
         self.0.as_ref()
-    }
-}
-
-impl<'a> From<&'a str> for Variable<'a> {
-    fn from(x: &'a str) -> Self {
-        Variable(Cow::Borrowed(x))
     }
 }
 
@@ -55,6 +53,7 @@ impl<'a> fmt::Display for Variable<'a> {
 
 /// A FOF term.
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofTerm<'a> {
     /// A bound variable
     Variable(Variable<'a>),
@@ -92,6 +91,7 @@ impl<'a> fmt::Display for FofTerm<'a> {
 
 /// A unary operator on FOF formulae
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum UnaryConnective {
     /// `~p`
     Not,
@@ -108,6 +108,7 @@ impl fmt::Display for UnaryConnective {
 
 /// An infix binary operator on FOF terms
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum InfixEquality {
     /// `t = s`
     Equal,
@@ -127,6 +128,7 @@ impl fmt::Display for InfixEquality {
 
 /// A non-associative binary operator on FOF formulae
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum NonAssocConnective {
     /// `p => q`
     LRImplies,
@@ -158,6 +160,7 @@ impl fmt::Display for NonAssocConnective {
 
 /// An associative binary operator on FOF formulae
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum AssocConnective {
     /// `p1 & p2 & ...`
     And,
@@ -177,6 +180,7 @@ impl fmt::Display for AssocConnective {
 
 /// A FOF quantifier
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofQuantifier {
     /// `![X1, X2, ...]: p`
     Forall,
@@ -196,6 +200,7 @@ impl fmt::Display for FofQuantifier {
 
 /// A FOF formula
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofFormula<'a> {
     /// `$true`, `$false`
     Boolean(bool),
@@ -256,6 +261,7 @@ impl<'a> fmt::Display for FofFormula<'a> {
 
 /// A CNF literal
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum CnfLiteral<'a> {
     /// A literal, e.g. `p(X)`
     Literal(FofFormula<'a>),
@@ -275,6 +281,7 @@ impl<'a> fmt::Display for CnfLiteral<'a> {
 
 /// A CNF formula
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CnfFormula<'a>(pub Vec<CnfLiteral<'a>>);
 
 impl<'a> fmt::Display for CnfFormula<'a> {
@@ -290,6 +297,7 @@ impl<'a> fmt::Display for CnfFormula<'a> {
 
 /// A TPTP formula role, such as `axiom` or `negated_conjecture`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FormulaRole {
     Axiom,
     Hypothesis,
@@ -325,6 +333,7 @@ impl fmt::Display for FormulaRole {
 
 /// DAG formula sources
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum DagSource<'a> {
     Name(Name<'a>),
     Inference(Cow<'a, str>, Vec<Source<'a>>),
@@ -352,6 +361,7 @@ impl<'a> fmt::Display for DagSource<'a> {
 
 /// Internal formula sources
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum InternalSource {}
 
 impl fmt::Display for InternalSource {
@@ -362,6 +372,7 @@ impl fmt::Display for InternalSource {
 
 /// External formula sources
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum ExternalSource<'a> {
     File(Cow<'a, str>, Option<Name<'a>>),
 }
@@ -380,6 +391,7 @@ impl<'a> fmt::Display for ExternalSource<'a> {
 
 /// Formula sources for use in annotations
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Source<'a> {
     /// `unknown`
     Unknown,
@@ -418,6 +430,7 @@ impl<'a> fmt::Display for Source<'a> {
 
 /// Formula annotations
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Annotations<'a> {
     pub source: Source<'a>,
 }
@@ -430,7 +443,8 @@ impl<'a> fmt::Display for Annotations<'a> {
 
 /// An include path, not including outer quotes
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-pub struct Included<'a>(pub &'a str);
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Included<'a>(pub Cow<'a, str>);
 
 impl<'a> fmt::Display for Included<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -447,6 +461,7 @@ impl<'a> From<Included<'a>> for PathBuf {
 /// A top-level TPTP statement, currently `include`, `cnf`, or `fof`.
 #[allow(clippy::large_enum_variant)]
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Statement<'a> {
     Include(Included<'a>, Option<Vec<Name<'a>>>),
     Cnf(
@@ -492,16 +507,5 @@ impl<'a> fmt::Display for Statement<'a> {
                 write!(f, "fof({},{},{},{}).", name, role, formula, annotations)
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_included_from() {
-        assert_eq!(PathBuf::from(Included("test")), PathBuf::from("test"));
-        assert_eq!(PathBuf::from(Included("\\\\\\'")), PathBuf::from("\\\'"));
     }
 }

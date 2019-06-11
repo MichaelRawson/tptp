@@ -1,0 +1,24 @@
+---
+created: "2019-06-11T12:13:10.589998100Z"
+creator: insta@0.8.1
+source: src/tests.rs
+expression: parsed
+---
+NonAssoc(
+    LRImplies,
+    Unary(
+        Not,
+        Predicate(
+            LowerWord(
+                "p"
+            ),
+            []
+        )
+    ),
+    Predicate(
+        LowerWord(
+            "q"
+        ),
+        []
+    )
+)

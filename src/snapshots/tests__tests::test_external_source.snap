@@ -1,0 +1,10 @@
+---
+created: "2019-06-11T12:13:10.538192263Z"
+creator: insta@0.8.1
+source: src/tests.rs
+expression: parsed
+---
+File(
+    "\'file\'",
+    None
+)
