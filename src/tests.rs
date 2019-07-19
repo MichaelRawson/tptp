@@ -4,10 +4,10 @@ use crate::parser::parsers::*;
 
 macro_rules! check_parse {
     ($parser:expr, $input:expr) => {
-        let result = $parser(Input($input));
+        let result = $parser($input);
         assert!(result.is_ok(), "parse error");
         let (remaining, parsed) = result.unwrap();
-        assert_eq!(remaining, Input(b""), "parsed, but bytes remaining");
+        assert!(remaining.is_empty(), "parsed, but bytes remaining");
         assert_debug_snapshot_matches!(parsed);
     };
 }
@@ -34,12 +34,6 @@ fn test_ignored() {
 }
 
 #[test]
-fn test_nonassoc_connective() {
-    check_parse!(nonassoc_connective, b"<=>");
-    check_parse!(nonassoc_connective, b"<=");
-}
-
-#[test]
 fn test_upper_word() {
     check_parse!(upper_word, b"X");
     check_parse!(upper_word, b"Aa123");
@@ -52,15 +46,9 @@ fn test_lower_word() {
 }
 
 #[test]
-fn test_dollar_word() {
-    check_parse!(dollar_word, b"$test");
-}
-
-#[test]
-fn test_integer() {
-    check_parse!(integer, b"0");
-    check_parse!(integer, b"123");
-    check_parse!(integer, b"-123");
+fn test_single_quoted() {
+    check_parse!(single_quoted, b"'single quoted'");
+    check_parse!(single_quoted, b"'\\'\\\\'");
 }
 
 #[test]
@@ -70,9 +58,10 @@ fn test_atomic_word() {
 }
 
 #[test]
-fn test_single_quoted() {
-    check_parse!(single_quoted, b"'single quoted'");
-    check_parse!(single_quoted, b"'\\'\\\\'");
+fn test_integer() {
+    check_parse!(integer, b"0");
+    check_parse!(integer, b"123");
+    check_parse!(integer, b"-123");
 }
 
 #[test]
@@ -153,6 +142,22 @@ fn test_fof_unary_formula() {
 fn test_fof_unit_formula() {
     check_parse!(fof_unit_formula, b"($true)");
     check_parse!(fof_unit_formula, b"~$true");
+}
+
+#[test]
+fn test_nonassoc_connective() {
+    check_parse!(nonassoc_connective, b"<=");
+    check_parse!(nonassoc_connective, b"<=>");
+    check_parse!(nonassoc_connective, b"=>");
+    check_parse!(nonassoc_connective, b"<~>");
+    check_parse!(nonassoc_connective, b"~&");
+    check_parse!(nonassoc_connective, b"~|");
+}
+
+#[test]
+fn test_assoc_connective() {
+    check_parse!(assoc_connective, b"&");
+    check_parse!(assoc_connective, b"|");
 }
 
 #[test]

@@ -57,8 +57,9 @@ impl<'a> fmt::Display for Variable<'a> {
 pub enum FofTerm<'a> {
     /// A bound variable
     Variable(Variable<'a>),
+    /// A constant `c`
+    Constant(Name<'a>),
     /// An application of a name to arguments, `f(t1, t2, ...)`.
-    /// Constants `c` are treated as nullary functors `c()`.
     Functor(Name<'a>, Vec<FofTerm<'a>>),
 }
 
@@ -81,6 +82,7 @@ impl<'a> fmt::Display for FofTerm<'a> {
         use self::FofTerm::*;
         match self {
             Variable(x) => write!(f, "{}", x),
+            Constant(c) => write!(f, "{}", c),
             Functor(name, args) => {
                 write!(f, "{}", name)?;
                 fmt_args(f, args)
@@ -206,6 +208,8 @@ pub enum FofFormula<'a> {
     Boolean(bool),
     /// `t1 $op t2`
     Infix(InfixEquality, FofTerm<'a>, FofTerm<'a>),
+    /// `p`
+    Proposition(Name<'a>),
     /// `p(t1, t2, ...)`
     Predicate(Name<'a>, Vec<FofTerm<'a>>),
     /// `$op(p)`
@@ -224,6 +228,7 @@ impl<'a> fmt::Display for FofFormula<'a> {
         match self {
             Boolean(b) => write!(f, "${}", b),
             Infix(op, left, right) => write!(f, "{}{}{}", left, op, right),
+            Proposition(name) => write!(f, "{}", name),
             Predicate(name, args) => {
                 write!(f, "{}", name)?;
                 fmt_args(f, args)

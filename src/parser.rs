@@ -4,12 +4,21 @@ use std::fmt;
 use crate::syntax::Statement;
 
 pub(in crate) mod parsers {
-    pub use nom::types::CompleteByteSlice as Input;
-    use nom::*;
+    use nom::branch::alt;
+    use nom::bytes::complete::{
+        escaped, tag, take_until, take_while, take_while1,
+    };
+    use nom::character::complete::{digit0, multispace1, one_of};
+    use nom::combinator::{map, opt, recognize, value};
+    use nom::multi::{many0, separated_list, separated_nonempty_list};
+    use nom::sequence::{delimited, pair, preceded, terminated, tuple};
+    use nom::Err::Failure;
     use std::borrow::Cow;
     use std::str;
 
     use crate::syntax::*;
+
+    type Parsed<'a, T> = nom::IResult<&'a [u8], T, ()>;
 
     unsafe fn to_str(bytes: &[u8]) -> &str {
         str::from_utf8_unchecked(bytes)
@@ -38,446 +47,472 @@ pub(in crate) mod parsers {
         is_visible(c) && c != b'\'' && c != b'\\'
     }
 
-    named!(pub whitespace<Input, ()>, value!((), multispace));
+    pub fn whitespace(x: &[u8]) -> Parsed<()> {
+        value((), multispace1)(x)
+    }
 
-    named!(pub comment_line<Input, ()>, value!((),
-        preceded!(char!('%'), take_until_and_consume!("\n"))
-    ));
+    pub fn comment_line(x: &[u8]) -> Parsed<()> {
+        value((), tuple((tag("%"), take_until("\n"), tag("\n"))))(x)
+    }
 
-    named!(pub comment_block<Input, ()>, value!((),
-        preceded!(tag!("/*"), take_until_and_consume!("*/"))
-    ));
+    pub fn comment_block(x: &[u8]) -> Parsed<()> {
+        value((), tuple((tag("/*"), take_until("*/"), tag("*/"))))(x)
+    }
 
-    named!(pub ignored<Input, ()>, value!((),
-        many0!(alt!(whitespace | comment_line | comment_block))
-    ));
+    pub fn ignored(x: &[u8]) -> Parsed<()> {
+        value((), many0(alt((whitespace, comment_line, comment_block))))(x)
+    }
 
-    named!(pub lower_alpha<Input, Input>, take_while1!(is_lower_alpha));
+    fn lower_alpha(x: &[u8]) -> Parsed<&[u8]> {
+        take_while1(is_lower_alpha)(x)
+    }
 
-    named!(pub upper_alpha<Input, Input>, take_while1!(is_upper_alpha));
+    fn upper_alpha(x: &[u8]) -> Parsed<&[u8]> {
+        take_while1(is_upper_alpha)(x)
+    }
 
-    named!(pub alphanumeric<Input, Input>, take_while!(is_alphanumeric));
+    fn alphanumeric(x: &[u8]) -> Parsed<&[u8]> {
+        take_while(is_alphanumeric)(x)
+    }
 
-    named!(pub upper_word<Input, Cow<str>>, map!(
-        recognize!(preceded!(upper_alpha, alphanumeric)),
-        |w| Cow::Borrowed(unsafe {to_str(&w)})
-    ));
+    pub fn lower_word(x: &[u8]) -> Parsed<Cow<str>> {
+        map(recognize(preceded(lower_alpha, alphanumeric)), |w| {
+            Cow::Borrowed(unsafe { to_str(w) })
+        })(x)
+    }
 
-    named!(pub dollar_word<Input, &str>, map!(
-        recognize!(preceded!(char!('$'), lower_alpha)),
-        |w| unsafe {to_str(&w)}
-    ));
+    pub fn upper_word(x: &[u8]) -> Parsed<Cow<str>> {
+        map(recognize(preceded(upper_alpha, alphanumeric)), |w| {
+            Cow::Borrowed(unsafe { to_str(w) })
+        })(x)
+    }
 
-    named!(pub lower_word<Input, Cow<str>>, map!(
-        recognize!(preceded!(lower_alpha, alphanumeric)),
-        |w| Cow::Borrowed(unsafe {to_str(&w)})
-    ));
+    fn dollar_word(x: &[u8]) -> Parsed<&str> {
+        map(recognize(preceded(tag("$"), lower_alpha)), |w| unsafe {
+            to_str(w)
+        })(x)
+    }
 
-    named!(pub single_quoted<Input, Cow<str>>, map!(
-        recognize!(delimited!(
-            char!('\''),
-            escaped!(take_while1!(is_sq_char), '\\', one_of!("\\'")),
-            char!('\'')
-        )),
-        |w| Cow::Borrowed(unsafe {to_str(&w)})
-    ));
+    pub fn single_quoted(x: &[u8]) -> Parsed<Cow<str>> {
+        map(
+            recognize(delimited(
+                tag("\'"),
+                escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
+                tag("\'"),
+            )),
+            |w| Cow::Borrowed(unsafe { to_str(w) }),
+        )(x)
+    }
 
-    named!(pub atomic_word<Input, Cow<str>>, alt!(lower_word | single_quoted));
+    pub fn atomic_word(x: &[u8]) -> Parsed<Cow<str>> {
+        alt((lower_word, single_quoted))(x)
+    }
 
-    named!(pub integer<Input, Cow<str>>, map!(
-        recognize!(preceded!(opt!(one_of!("+-")), alt!(
-            tag!("0") |
-            preceded!(one_of!("123456789"), digit0)
-        ))),
-        |w| Cow::Borrowed(unsafe {to_str(&w)})
-    ));
+    pub fn integer(x: &[u8]) -> Parsed<Cow<str>> {
+        map(
+            recognize(preceded(
+                opt(one_of("+-")),
+                alt((tag("0"), preceded(one_of("123456789"), digit0))),
+            )),
+            |w| Cow::Borrowed(unsafe { to_str(w) }),
+        )(x)
+    }
 
-    named!(pub name<Input, Name>, alt!(
-        map!(lower_word, Name::LowerWord) |
-        map!(integer, Name::Integer) |
-        map!(single_quoted, Name::SingleQuoted)
-    ));
+    pub fn name(x: &[u8]) -> Parsed<Name> {
+        alt((
+            map(lower_word, Name::LowerWord),
+            map(integer, Name::Integer),
+            map(single_quoted, Name::SingleQuoted),
+        ))(x)
+    }
 
-    named!(pub name_list<Input, Vec<Name>>, do_parse!(
-        char!('[') >>
-        ignored >>
-        names: separated_list!(
-            delimited!(ignored, char!(','), ignored),
-            name
-        ) >>
-        ignored >>
-        char!(']') >>
-        (names)
-    ));
+    pub fn name_list(x: &[u8]) -> Parsed<Vec<Name>> {
+        delimited(
+            pair(tag("["), ignored),
+            separated_list(tuple((ignored, tag(","), ignored)), name),
+            pair(ignored, tag("]")),
+        )(x)
+    }
 
-    named!(pub fof_arguments<Input, Vec<FofTerm>>, do_parse!(
-        char!('(') >>
-        ignored >>
-        args: opt!(separated_list!(
-            delimited!(ignored, char!(','), ignored),
-            fof_term
-        )) >>
-        ignored >>
-        char!(')') >>
-        (args.unwrap_or_default())
-    ));
+    fn fof_arguments(x: &[u8]) -> Parsed<Vec<FofTerm>> {
+        delimited(
+            pair(tag("("), ignored),
+            separated_list(tuple((ignored, tag(","), ignored)), fof_term),
+            pair(ignored, tag(")")),
+        )(x)
+    }
 
-    named!(pub variable<Input, Variable>, map!(upper_word, Variable));
+    pub fn variable(x: &[u8]) -> Parsed<Variable> {
+        map(upper_word, Variable)(x)
+    }
 
-    named!(pub fof_plain_term<Input, FofTerm>, do_parse!(
-        name: name >>
-        ignored >>
-        arguments: opt!(fof_arguments) >>
-        (FofTerm::Functor(name, arguments.unwrap_or_default()))
-    ));
+    pub fn fof_plain_term(x: &[u8]) -> Parsed<FofTerm> {
+        map(
+            pair(name, preceded(ignored, opt(fof_arguments))),
+            |(name, args)| match args {
+                Some(args) => FofTerm::Functor(name, args),
+                None => FofTerm::Constant(name),
+            },
+        )(x)
+    }
 
-    named!(pub fof_function_term<Input, FofTerm>, alt!(fof_plain_term));
+    pub fn fof_function_term(x: &[u8]) -> Parsed<FofTerm> {
+        fof_plain_term(x)
+    }
 
-    named!(pub fof_term<Input, FofTerm>, alt!(fof_function_term | map!(variable, FofTerm::Variable)));
+    pub fn fof_term(x: &[u8]) -> Parsed<FofTerm> {
+        alt((fof_function_term, map(variable, FofTerm::Variable)))(x)
+    }
 
-    named!(pub fof_defined_atomic_formula<Input, FofFormula>, switch!(dollar_word,
-        "$true" => value!(FofFormula::Boolean(true)) |
-        "$false" => value!(FofFormula::Boolean(false))
-    ));
+    pub fn fof_defined_atomic_formula(x: &[u8]) -> Parsed<FofFormula> {
+        let (x, word) = dollar_word(x)?;
+        let result = match word {
+            "$true" => Ok(FofFormula::Boolean(true)),
+            "$false" => Ok(FofFormula::Boolean(false)),
+            _ => Err(Failure(())),
+        }?;
+        Ok((x, result))
+    }
 
-    named!(pub infix_equality<Input, InfixEquality>, alt!(
-        value!(InfixEquality::Equal, tag!("=")) |
-        value!(InfixEquality::NotEqual, tag!("!="))
-    ));
+    pub fn infix_equality(x: &[u8]) -> Parsed<InfixEquality> {
+        alt((
+            value(InfixEquality::Equal, tag("=")),
+            value(InfixEquality::NotEqual, tag("!=")),
+        ))(x)
+    }
 
-    named!(pub fof_atomic_formula<Input, FofFormula>, alt!(
-        fof_defined_atomic_formula |
-        do_parse!(
-            left: fof_plain_term >>
-            rest: opt!(do_parse!(
-                ignored >>
-                op: infix_equality >>
-                ignored >>
-                right: fof_term >>
-                (op, right)
-            )) >>
-            (match rest {
-                Some((op, right)) => FofFormula::Infix(op, left, right),
-                None => match left {
-                    FofTerm::Functor(name, args) => FofFormula::Predicate(name, args),
-                    _ => unreachable!()
+    pub fn fof_atomic_formula(x: &[u8]) -> Parsed<FofFormula> {
+        fn predicate_or_infix(x: &[u8]) -> Parsed<FofFormula> {
+            let (x, (term, rest)) = pair(
+                fof_term,
+                opt(pair(
+                    preceded(ignored, infix_equality),
+                    preceded(ignored, fof_term),
+                )),
+            )(x)?;
+            let result = match (term, rest) {
+                (left, Some((op, right))) => {
+                    Ok(FofFormula::Infix(op, left, right))
                 }
-            })
-        ) |
-        do_parse!(
-            left: fof_term >>
-            ignored >>
-            op: infix_equality >>
-            ignored >>
-            right: fof_term >>
-            (FofFormula::Infix(op, left, right))
-        )
-    ));
+                (FofTerm::Constant(name), None) => {
+                    Ok(FofFormula::Proposition(name))
+                }
+                (FofTerm::Functor(name, args), None) => {
+                    Ok(FofFormula::Predicate(name, args))
+                }
+                (FofTerm::Variable(_), None) => Err(Failure(())),
+            }?;
+            Ok((x, result))
+        }
 
-    named!(pub fof_quantified_formula<Input, FofFormula>, do_parse!(
-        quantifier: alt!(
-            value!(FofQuantifier::Forall, char!('!')) |
-            value!(FofQuantifier::Exists, char!('?'))
-        ) >>
-        ignored >>
-        char!('[') >>
-        ignored >>
-        bound: separated_nonempty_list!(
-            delimited!(ignored, char!(','), ignored),
-            variable
-        ) >>
-        ignored >>
-        char!(']') >>
-        ignored >>
-        char!(':') >>
-        ignored >>
-        formula: fof_unit_formula >>
-        (FofFormula::Quantified(quantifier, bound, Box::new(formula)))
-    ));
+        alt((fof_defined_atomic_formula, predicate_or_infix))(x)
+    }
 
-    named!(pub fof_unitary_formula<Input, FofFormula>, alt!(
-        delimited!(
-            terminated!(char!('('), ignored),
-            fof_logic_formula,
-            preceded!(ignored, char!(')'))
-        ) |
-        fof_atomic_formula |
-        fof_quantified_formula
-    ));
+    pub fn fof_quantified_formula(x: &[u8]) -> Parsed<FofFormula> {
+        map(
+            tuple((
+                alt((
+                    value(FofQuantifier::Forall, tag("!")),
+                    value(FofQuantifier::Exists, tag("?")),
+                )),
+                preceded(
+                    tuple((ignored, tag("["), ignored)),
+                    separated_nonempty_list(
+                        tuple((ignored, tag(","), ignored)),
+                        variable,
+                    ),
+                ),
+                preceded(
+                    tuple((ignored, tag("]"), ignored, tag(":"), ignored)),
+                    fof_unit_formula,
+                ),
+            )),
+            |(quantifier, bound, formula)| {
+                FofFormula::Quantified(quantifier, bound, Box::new(formula))
+            },
+        )(x)
+    }
 
-    named!(pub fof_unary_formula<Input, FofFormula>, do_parse!(
-        char!('~') >>
-        ignored >>
-        formula: fof_unit_formula >>
-        (FofFormula::Unary(UnaryConnective::Not, Box::new(formula)))
-    ));
-
-    named!(pub fof_unit_formula<Input, FofFormula>, alt!(fof_unary_formula | fof_unitary_formula));
-
-    named!(pub nonassoc_connective<Input, NonAssocConnective>, alt!(
-        value!(NonAssocConnective::LRImplies, tag!("=>")) |
-        value!(NonAssocConnective::Equivalent, tag!("<=>")) |
-        value!(NonAssocConnective::RLImplies, tag!("<=")) |
-        value!(NonAssocConnective::NotEquivalent, tag!("<~>")) |
-        value!(NonAssocConnective::NotAnd, tag!("~&")) |
-        value!(NonAssocConnective::NotOr, tag!("~|"))
-    ));
-
-    named!(pub assoc_connective<Input, AssocConnective>, alt!(
-        value!(AssocConnective::And, char!('&')) |
-        value!(AssocConnective::Or, char!('|'))
-    ));
-
-    named_args!(fof_binary_nonassoc<'a>(left: FofFormula<'a>)<Input<'a>, FofFormula<'a>>, do_parse!(
-        op: nonassoc_connective >>
-        ignored >>
-        right: fof_unit_formula >>
-        (FofFormula::NonAssoc(op, Box::new(left), Box::new(right)))
-    ));
-
-    named_args!(fof_binary_assoc<'a>(first: FofFormula<'a>)<Input<'a>, FofFormula<'a>>, do_parse!(
-        op: assoc_connective >>
-        op_char: value!(match op {
-            AssocConnective::And => '&',
-            AssocConnective::Or => '|',
-        }) >>
-        ignored >>
-        second: fof_unit_formula >>
-        list: fold_many0!(
-            preceded!(
-                delimited!(ignored, char!(op_char), ignored),
-                fof_unit_formula
+    pub fn fof_unitary_formula(x: &[u8]) -> Parsed<FofFormula> {
+        alt((
+            delimited(
+                pair(tag("("), ignored),
+                fof_logic_formula,
+                pair(ignored, tag(")")),
             ),
-            vec![first, second],
-            |mut list: Vec<_>, item| {list.push(item); list}
-        ) >>
-        (FofFormula::Assoc(op, list))
-    ));
+            fof_atomic_formula,
+            fof_quantified_formula,
+        ))(x)
+    }
 
-    pub fn fof_logic_formula(input: Input) -> IResult<Input, FofFormula> {
-        let (after_first_input, first) =
-            fof_unary_formula(input).or_else(|_| fof_unit_formula(input))?;
+    pub fn fof_unary_formula(x: &[u8]) -> Parsed<FofFormula> {
+        map(
+            preceded(pair(tag("~"), ignored), fof_unit_formula),
+            |formula| {
+                FofFormula::Unary(UnaryConnective::Not, Box::new(formula))
+            },
+        )(x)
+    }
 
-        let (input, _) = ignored(after_first_input)?;
+    pub fn fof_unit_formula(x: &[u8]) -> Parsed<FofFormula> {
+        alt((fof_unary_formula, fof_unitary_formula))(x)
+    }
 
-        if nonassoc_connective(input).is_ok() {
-            fof_binary_nonassoc(input, first)
-        } else if assoc_connective(input).is_ok() {
-            fof_binary_assoc(input, first)
+    pub fn nonassoc_connective(x: &[u8]) -> Parsed<NonAssocConnective> {
+        alt((
+            value(NonAssocConnective::LRImplies, tag("=>")),
+            value(NonAssocConnective::Equivalent, tag("<=>")),
+            value(NonAssocConnective::RLImplies, tag("<=")),
+            value(NonAssocConnective::NotEquivalent, tag("<~>")),
+            value(NonAssocConnective::NotAnd, tag("~&")),
+            value(NonAssocConnective::NotOr, tag("~|")),
+        ))(x)
+    }
+
+    pub fn assoc_connective(x: &[u8]) -> Parsed<AssocConnective> {
+        alt((
+            value(AssocConnective::And, tag("&")),
+            value(AssocConnective::Or, tag("|")),
+        ))(x)
+    }
+
+    pub fn fof_logic_formula(x: &[u8]) -> Parsed<FofFormula> {
+        let (x, first) =
+            terminated(alt((fof_unary_formula, fof_unit_formula)), ignored)(x)?;
+
+        if let Ok((x, op)) = nonassoc_connective(x) {
+            let (x, second) = preceded(ignored, fof_unit_formula)(x)?;
+            Ok((
+                x,
+                FofFormula::NonAssoc(op, Box::new(first), Box::new(second)),
+            ))
+        } else if let Ok((x, op)) = assoc_connective(x) {
+            let (mut x, second) = preceded(ignored, fof_unit_formula)(x)?;
+            let mut formulae = vec![first, second];
+            while let Ok((after, (check_op, formula))) = pair(
+                preceded(ignored, assoc_connective),
+                preceded(ignored, fof_unit_formula),
+            )(x)
+            {
+                if op == check_op {
+                    formulae.push(formula);
+                    x = after;
+                } else {
+                    return Err(Failure(()));
+                }
+            }
+
+            Ok((x, FofFormula::Assoc(op, formulae)))
         } else {
-            Ok((after_first_input, first))
+            Ok((x, first))
         }
     }
 
-    named!(pub fof_formula<Input, FofFormula>, alt!(fof_logic_formula));
+    pub fn fof_formula(x: &[u8]) -> Parsed<FofFormula> {
+        fof_logic_formula(x)
+    }
 
-    named!(pub literal<Input, CnfLiteral>, alt!(
-        do_parse!(
-            char!('~') >>
-            ignored >>
-            formula: fof_atomic_formula >>
-            (CnfLiteral::NegatedLiteral(formula))
-        ) |
-        map!(fof_atomic_formula, CnfLiteral::Literal)
-    ));
+    pub fn literal(x: &[u8]) -> Parsed<CnfLiteral> {
+        alt((
+            map(
+                preceded(pair(tag("~"), ignored), fof_atomic_formula),
+                CnfLiteral::NegatedLiteral,
+            ),
+            map(fof_atomic_formula, CnfLiteral::Literal),
+        ))(x)
+    }
 
-    named!(pub disjunction<Input, Vec<CnfLiteral> >, separated_nonempty_list!(
-        delimited!(ignored, char!('|'), ignored),
-        literal
-    ));
+    pub fn disjunction(x: &[u8]) -> Parsed<Vec<CnfLiteral>> {
+        separated_nonempty_list(tuple((ignored, tag("|"), ignored)), literal)(x)
+    }
 
-    named!(pub cnf_formula<Input, CnfFormula>, map!(
-        alt!(
-            delimited!(
-                char!('('),
-                delimited!(ignored, disjunction, ignored),
-                char!(')')
-            ) |
-            disjunction
-        ),
-        CnfFormula
-    ));
+    pub fn cnf_formula(x: &[u8]) -> Parsed<CnfFormula> {
+        map(
+            alt((
+                delimited(
+                    pair(tag("("), ignored),
+                    disjunction,
+                    pair(ignored, tag(")")),
+                ),
+                disjunction,
+            )),
+            CnfFormula,
+        )(x)
+    }
 
-    named!(pub formula_role<Input, FormulaRole>, alt!(
-        value!(FormulaRole::Axiom, tag!("axiom")) |
-        value!(FormulaRole::Hypothesis, tag!("hypothesis")) |
-        value!(FormulaRole::Definition, tag!("definition")) |
-        value!(FormulaRole::Assumption, tag!("assumption")) |
-        value!(FormulaRole::Lemma, tag!("lemma")) |
-        value!(FormulaRole::Theorem, tag!("theorem")) |
-        value!(FormulaRole::Corollary, tag!("corollary")) |
-        value!(FormulaRole::Conjecture, tag!("conjecture")) |
-        value!(FormulaRole::NegatedConjecture, tag!("negated_conjecture")) |
-        value!(FormulaRole::Plain, tag!("plain")) |
-        value!(FormulaRole::Unknown, tag!("unknown"))
-    ));
+    pub fn formula_role(x: &[u8]) -> Parsed<FormulaRole> {
+        alt((
+            value(FormulaRole::Axiom, tag("axiom")),
+            value(FormulaRole::Hypothesis, tag("hypothesis")),
+            value(FormulaRole::Definition, tag("definition")),
+            value(FormulaRole::Assumption, tag("assumption")),
+            value(FormulaRole::Lemma, tag("lemma")),
+            value(FormulaRole::Theorem, tag("theorem")),
+            value(FormulaRole::Corollary, tag("corollary")),
+            value(FormulaRole::Conjecture, tag("conjecture")),
+            value(FormulaRole::NegatedConjecture, tag("negated_conjecture")),
+            value(FormulaRole::Plain, tag("plain")),
+            value(FormulaRole::Unknown, tag("unknown")),
+        ))(x)
+    }
 
-    named!(pub unknown_source<Input, Source>, value!(Source::Unknown, tag!("unknown")));
+    pub fn unknown_source(x: &[u8]) -> Parsed<Source> {
+        value(Source::Unknown, tag("unknown"))(x)
+    }
 
-    named!(pub dag_source<Input, DagSource>, alt!(
-        do_parse!(
-            tag!("inference") >>
-            ignored >>
-            char!('(') >>
-            ignored >>
-            rule: atomic_word >>
-            ignored >>
-            char!(',') >>
-            ignored >>
-            char!('[') >>
-            ignored >>
-            char!(']') >>
-            ignored >>
-            char!(',') >>
-            ignored >>
-            parents: sources >>
-            ignored >>
-            char!(')') >>
-            (DagSource::Inference(rule, parents))
-        ) |
-        map!(name, DagSource::Name)
-    ));
+    pub fn dag_source(x: &[u8]) -> Parsed<DagSource> {
+        alt((
+            map(
+                pair(
+                    preceded(
+                        tuple((tag("inference"), ignored, tag("("), ignored)),
+                        atomic_word,
+                    ),
+                    delimited(
+                        tuple((
+                            ignored,
+                            tag(","),
+                            ignored,
+                            tag("["),
+                            ignored,
+                            tag("]"),
+                            ignored,
+                            tag(","),
+                            ignored,
+                        )),
+                        sources,
+                        pair(ignored, tag(")")),
+                    ),
+                ),
+                |(rule, parents)| DagSource::Inference(rule, parents),
+            ),
+            map(name, DagSource::Name),
+        ))(x)
+    }
 
-    named!(pub external_source<Input, ExternalSource>, do_parse!(
-        tag!("file") >>
-        ignored >>
-        char!('(') >>
-        ignored >>
-        file: single_quoted >>
-        info: opt!(do_parse!(
-            ignored >>
-            char!(',') >>
-            ignored >>
-            name: name >>
-            (name)
-        )) >>
-        ignored >>
-        char!(')') >>
-        (ExternalSource::File(file, info))
-    ));
+    pub fn external_source(x: &[u8]) -> Parsed<ExternalSource> {
+        map(
+            delimited(
+                tuple((tag("file"), ignored, tag("("), ignored)),
+                pair(
+                    single_quoted,
+                    opt(preceded(tuple((ignored, tag(","), ignored)), name)),
+                ),
+                pair(ignored, tag(")")),
+            ),
+            |(file, info)| ExternalSource::File(file, info),
+        )(x)
+    }
 
-    named!(pub sources<Input, Vec<Source> >, do_parse!(
-        char!('[') >>
-        ignored >>
-        sources: separated_list!(
-            delimited!(ignored, char!(','), ignored),
-            source
-        ) >>
-        ignored >>
-        char!(']') >>
-        (sources)
-    ));
+    pub fn sources(x: &[u8]) -> Parsed<Vec<Source>> {
+        delimited(
+            pair(tag("["), ignored),
+            separated_list(tuple((ignored, tag(","), ignored)), source),
+            pair(ignored, tag("]")),
+        )(x)
+    }
 
-    named!(pub source<Input, Source>, alt!(
-        unknown_source |
-        map!(external_source, Source::External) |
-        map!(dag_source, Source::Dag) |
-        map!(sources, Source::Sources)
-    ));
+    pub fn source(x: &[u8]) -> Parsed<Source> {
+        alt((
+            unknown_source,
+            map(external_source, Source::External),
+            map(dag_source, Source::Dag),
+            map(sources, Source::Sources),
+        ))(x)
+    }
 
-    named!(pub annotations<Input, Annotations>, map!(
-        source,
-        |source| Annotations {
-            source
+    pub fn annotations(x: &[u8]) -> Parsed<Annotations> {
+        map(source, |source| Annotations { source })(x)
+    }
+
+    pub fn include_path(x: &[u8]) -> Parsed<Included> {
+        map(
+            delimited(
+                tag("'"),
+                escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
+                tag("'"),
+            ),
+            |w| Included(unsafe { to_str(w) }.into()),
+        )(x)
+    }
+
+    pub fn include(x: &[u8]) -> Parsed<Statement> {
+        map(
+            delimited(
+                tuple((tag("include"), ignored, tag("("), ignored)),
+                pair(
+                    include_path,
+                    opt(preceded(
+                        tuple((ignored, tag(","), ignored)),
+                        name_list,
+                    )),
+                ),
+                pair(ignored, tag(")")),
+            ),
+            |(included, selection)| Statement::Include(included, selection),
+        )(x)
+    }
+
+    pub fn fof_annotated(x: &[u8]) -> Parsed<Statement> {
+        map(
+            delimited(
+                tuple((tag("fof"), ignored, tag("("), ignored)),
+                tuple((
+                    name,
+                    preceded(tuple((ignored, tag(","), ignored)), formula_role),
+                    preceded(tuple((ignored, tag(","), ignored)), fof_formula),
+                    opt(preceded(
+                        tuple((ignored, tag(","), ignored)),
+                        annotations,
+                    )),
+                )),
+                pair(ignored, tag(")")),
+            ),
+            |(name, role, formula, annotations)| {
+                Statement::Fof(name, role, formula, annotations)
+            },
+        )(x)
+    }
+
+    pub fn cnf_annotated(x: &[u8]) -> Parsed<Statement> {
+        map(
+            delimited(
+                tuple((tag("cnf"), ignored, tag("("), ignored)),
+                tuple((
+                    name,
+                    preceded(tuple((ignored, tag(","), ignored)), formula_role),
+                    preceded(tuple((ignored, tag(","), ignored)), cnf_formula),
+                    opt(preceded(
+                        tuple((ignored, tag(","), ignored)),
+                        annotations,
+                    )),
+                )),
+                pair(ignored, tag(")")),
+            ),
+            |(name, role, formula, annotations)| {
+                Statement::Cnf(name, role, formula, annotations)
+            },
+        )(x)
+    }
+
+    pub fn tptp_input(x: &[u8]) -> Parsed<Statement> {
+        terminated(
+            alt((include, fof_annotated, cnf_annotated)),
+            pair(ignored, tag(".")),
+        )(x)
+    }
+
+    pub fn tptp_input_or_eof(x: &[u8]) -> Parsed<Option<Statement>> {
+        if x.is_empty() {
+            Ok((x, None))
+        } else {
+            map(tptp_input, Some)(x)
         }
-    ));
+    }
 
-    named!(pub include_path<Input, Included>, map!(
-        delimited!(
-            char!('\''),
-            escaped!(take_while1!(is_sq_char), '\\', one_of!("\\'")),
-            char!('\'')
-        ),
-        |w| Included(unsafe {to_str(&w)}.into())
-    ));
-
-    named!(pub include<Input, Statement>, do_parse!(
-        tag!("include") >>
-        ignored >>
-        char!('(') >>
-        ignored >>
-        included: include_path >>
-        selection: opt!(do_parse!(
-            ignored >>
-            char!(',') >>
-            ignored >>
-            names: name_list >>
-            (names)
-        )) >>
-        ignored >>
-        char!(')') >>
-        (Statement::Include(included, selection))
-    ));
-
-    named!(pub fof_annotated<Input, Statement>, do_parse!(
-        tag!("fof") >>
-        ignored >>
-        char!('(') >>
-        ignored >>
-        name: name >>
-        ignored >>
-        char!(',') >>
-        ignored >>
-        role: formula_role >>
-        ignored >>
-        char!(',') >>
-        ignored >>
-        formula: fof_formula >>
-        annotations: opt!(do_parse!(
-            ignored >>
-            char!(',') >>
-            ignored >>
-            annotations: annotations >>
-            (annotations)
-        )) >>
-        ignored >>
-        char!(')') >>
-        (Statement::Fof(name, role, formula, annotations))
-    ));
-
-    named!(pub cnf_annotated<Input, Statement>, do_parse!(
-        tag!("cnf") >>
-        ignored >>
-        char!('(') >>
-        ignored >>
-        name: name >>
-        ignored >>
-        char!(',') >>
-        ignored >>
-        role: formula_role >>
-        ignored >>
-        char!(',') >>
-        ignored >>
-        formula: cnf_formula >>
-        annotations: opt!(do_parse!(
-            ignored >>
-            char!(',') >>
-            ignored >>
-            annotations: annotations >>
-            (annotations)
-        )) >>
-        ignored >>
-        char!(')') >>
-        (Statement::Cnf(name, role, formula, annotations))
-    ));
-
-    named!(pub tptp_input<Input, Statement>, do_parse!(
-        statement: alt!(include | fof_annotated | cnf_annotated) >>
-        ignored >>
-        char!('.') >>
-        (statement)
-    ));
-
-    named!(pub tptp_input_or_eof<Input, Option<Statement> >, alt!(
-        map!(tptp_input, Some) |
-        value!(None, eof!())
-    ));
-
-    pub fn parse_step(
-        input: Input,
-    ) -> Result<(Input, Option<Statement>), Input> {
-        let (input, _) = ignored(input).expect("ignored cannot fail");
-        tptp_input_or_eof(input).map_err(|_| input)
+    pub fn parse_step(x: &[u8]) -> Result<(&[u8], Option<Statement>), &[u8]> {
+        let (x, _) = ignored(x).expect("ignored cannot fail");
+        tptp_input_or_eof(x).map_err(|_| x)
     }
 }
 
@@ -494,11 +529,10 @@ impl<'a> fmt::Display for SyntaxError<'a> {
     }
 }
 
-impl<'a> error::Error for SyntaxError<'a> {
-}
+impl<'a> error::Error for SyntaxError<'a> {}
 
 struct Statements<'a> {
-    start: parsers::Input<'a>,
+    start: &'a [u8],
 }
 
 impl<'a> Iterator for Statements<'a> {
@@ -525,7 +559,5 @@ impl<'a> Iterator for Statements<'a> {
 pub fn parse(
     bytes: &[u8],
 ) -> impl Iterator<Item = Result<Statement, SyntaxError>> {
-    Statements {
-        start: parsers::Input(bytes),
-    }
+    Statements { start: bytes }
 }

@@ -1,24 +1,22 @@
 ---
-created: "2019-06-11T12:13:10.539397529Z"
+created: "2019-07-19T14:55:36.656174266Z"
 creator: insta@0.8.1
 source: src/tests.rs
 expression: parsed
 ---
 [
     Literal(
-        Predicate(
+        Proposition(
             LowerWord(
                 "p"
-            ),
-            []
+            )
         )
     ),
     NegatedLiteral(
-        Predicate(
+        Proposition(
             LowerWord(
                 "q"
-            ),
-            []
+            )
         )
     )
 ]

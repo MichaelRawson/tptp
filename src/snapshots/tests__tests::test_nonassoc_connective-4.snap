@@ -1,7 +1,7 @@
 ---
-created: "2019-07-19T14:20:33.949445040Z"
+created: "2019-07-19T14:22:27.550645390Z"
 creator: insta@0.8.1
 source: src/tests.rs
 expression: parsed
 ---
-RLImplies
+NotEquivalent

@@ -1,14 +1,13 @@
 ---
-created: "2019-06-11T12:13:10.583915844Z"
+created: "2019-07-19T14:53:15.893770493Z"
 creator: insta@0.8.1
 source: src/tests.rs
 expression: parsed
 ---
 Literal(
-    Predicate(
+    Proposition(
         LowerWord(
             "p"
-        ),
-        []
+        )
     )
 )

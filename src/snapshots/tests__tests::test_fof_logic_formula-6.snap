@@ -1,5 +1,5 @@
 ---
-created: "2019-06-11T12:13:10.589998100Z"
+created: "2019-07-19T14:49:24.745955304Z"
 creator: insta@0.8.1
 source: src/tests.rs
 expression: parsed
@@ -8,17 +8,15 @@ NonAssoc(
     LRImplies,
     Unary(
         Not,
-        Predicate(
+        Proposition(
             LowerWord(
                 "p"
-            ),
-            []
+            )
         )
     ),
-    Predicate(
+    Proposition(
         LowerWord(
             "q"
-        ),
-        []
+        )
     )
 )

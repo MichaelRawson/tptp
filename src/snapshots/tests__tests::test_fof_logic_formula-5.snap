@@ -1,12 +1,11 @@
 ---
-created: "2019-06-11T12:13:10.583484492Z"
+created: "2019-07-19T14:49:24.740147936Z"
 creator: insta@0.8.1
 source: src/tests.rs
 expression: parsed
 ---
-Predicate(
+Proposition(
     LowerWord(
         "p"
-    ),
-    []
+    )
 )

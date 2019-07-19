@@ -1,5 +1,5 @@
 ---
-created: "2019-06-11T12:13:10.575537166Z"
+created: "2019-07-19T14:49:24.723473118Z"
 creator: insta@0.8.1
 source: src/tests.rs
 expression: parsed
@@ -7,23 +7,20 @@ expression: parsed
 Assoc(
     Or,
     [
-        Predicate(
+        Proposition(
             LowerWord(
                 "p"
-            ),
-            []
+            )
         ),
-        Predicate(
+        Proposition(
             LowerWord(
                 "q"
-            ),
-            []
+            )
         ),
-        Predicate(
+        Proposition(
             LowerWord(
                 "r"
-            ),
-            []
+            )
         )
     ]
 )
