@@ -2,4 +2,8 @@
 source: src/tests.rs
 expression: parsed
 ---
-()
+[
+    32,
+    9,
+    10,
+]

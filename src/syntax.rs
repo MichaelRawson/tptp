@@ -273,7 +273,7 @@ pub enum Literal<'a> {
     /// A negated literal, e.g. `~p(X)`
     NegatedLiteral(FofFormula<'a>),
     /// Equality literals, `t = s` or `t != s`
-    EqualityLiteral(FofFormula<'a>)
+    EqualityLiteral(FofFormula<'a>),
 }
 
 impl<'a> fmt::Display for Literal<'a> {

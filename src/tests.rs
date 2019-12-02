@@ -1,6 +1,6 @@
 use insta::assert_debug_snapshot;
 
-use crate::parser::parsers::*;
+use crate::parsers::*;
 
 macro_rules! check_parse {
     ($parser:expr, $input:expr) => {
