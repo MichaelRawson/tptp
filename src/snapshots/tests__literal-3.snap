@@ -1,0 +1,26 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+EqualityLiteral(
+    Infix(
+        Equal,
+        Functor(
+            LowerWord(
+                "f",
+            ),
+            [
+                Variable(
+                    Variable(
+                        "X",
+                    ),
+                ),
+            ],
+        ),
+        Constant(
+            LowerWord(
+                "c",
+            ),
+        ),
+    ),
+)

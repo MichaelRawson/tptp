@@ -174,6 +174,7 @@ fn test_fof_logic_formula() {
 fn test_literal() {
     check_parse!(literal, b"p");
     check_parse!(literal, b"~ p");
+    check_parse!(literal, b"f(X) = c");
 }
 
 #[test]

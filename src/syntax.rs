@@ -267,19 +267,22 @@ impl<'a> fmt::Display for FofFormula<'a> {
 /// A CNF literal
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum CnfLiteral<'a> {
+pub enum Literal<'a> {
     /// A literal, e.g. `p(X)`
     Literal(FofFormula<'a>),
     /// A negated literal, e.g. `~p(X)`
     NegatedLiteral(FofFormula<'a>),
+    /// Equality literals, `t = s` or `t != s`
+    EqualityLiteral(FofFormula<'a>)
 }
 
-impl<'a> fmt::Display for CnfLiteral<'a> {
+impl<'a> fmt::Display for Literal<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::CnfLiteral::*;
+        use self::Literal::*;
         match self {
             Literal(fof) => write!(f, "{}", fof),
             NegatedLiteral(fof) => write!(f, "~{}", fof),
+            EqualityLiteral(fof) => write!(f, "{}", fof),
         }
     }
 }
@@ -287,7 +290,7 @@ impl<'a> fmt::Display for CnfLiteral<'a> {
 /// A CNF formula
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct CnfFormula<'a>(pub Vec<CnfLiteral<'a>>);
+pub struct CnfFormula<'a>(pub Vec<Literal<'a>>);
 
 impl<'a> fmt::Display for CnfFormula<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

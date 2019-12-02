@@ -312,17 +312,20 @@ pub(in crate) mod parsers {
         fof_logic_formula(x)
     }
 
-    pub fn literal(x: &[u8]) -> Parsed<CnfLiteral> {
+    pub fn literal(x: &[u8]) -> Parsed<Literal> {
         alt((
             map(
                 preceded(pair(tag("~"), ignored), fof_atomic_formula),
-                CnfLiteral::NegatedLiteral,
+                Literal::NegatedLiteral,
             ),
-            map(fof_atomic_formula, CnfLiteral::Literal),
+            map(fof_atomic_formula, |l| match l {
+                FofFormula::Infix(_, _, _) => Literal::EqualityLiteral(l),
+                _ => Literal::Literal(l)
+            }),
         ))(x)
     }
 
-    pub fn disjunction(x: &[u8]) -> Parsed<Vec<CnfLiteral>> {
+    pub fn disjunction(x: &[u8]) -> Parsed<Vec<Literal>> {
         separated_nonempty_list(tuple((ignored, tag("|"), ignored)), literal)(x)
     }
 
