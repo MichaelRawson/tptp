@@ -1,0 +1,17 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Infix(
+    NotEqual,
+    Variable(
+        Variable(
+            "X",
+        ),
+    ),
+    Variable(
+        Variable(
+            "Y",
+        ),
+    ),
+)

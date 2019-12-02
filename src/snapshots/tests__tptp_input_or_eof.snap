@@ -1,0 +1,12 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Some(
+    Include(
+        Included(
+            "test",
+        ),
+        None,
+    ),
+)

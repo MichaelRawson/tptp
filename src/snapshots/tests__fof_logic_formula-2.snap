@@ -1,0 +1,17 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+NonAssoc(
+    LRImplies,
+    Proposition(
+        LowerWord(
+            "p",
+        ),
+    ),
+    Proposition(
+        LowerWord(
+            "q",
+        ),
+    ),
+)

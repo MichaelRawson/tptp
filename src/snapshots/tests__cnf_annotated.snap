@@ -1,0 +1,20 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Cnf(
+    LowerWord(
+        "test",
+    ),
+    Axiom,
+    CnfFormula(
+        [
+            Literal(
+                Boolean(
+                    true,
+                ),
+            ),
+        ],
+    ),
+    None,
+)

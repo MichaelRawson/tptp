@@ -1,4 +1,4 @@
-use insta::assert_debug_snapshot_matches;
+use insta::assert_debug_snapshot;
 
 use crate::parser::parsers::*;
 
@@ -8,7 +8,7 @@ macro_rules! check_parse {
         assert!(result.is_ok(), "parse error");
         let (remaining, parsed) = result.unwrap();
         assert!(remaining.is_empty(), "parsed, but bytes remaining");
-        assert_debug_snapshot_matches!(parsed);
+        assert_debug_snapshot!(parsed);
     };
 }
 

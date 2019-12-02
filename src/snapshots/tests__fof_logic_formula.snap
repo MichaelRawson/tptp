@@ -1,0 +1,12 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Unary(
+    Not,
+    Proposition(
+        LowerWord(
+            "p",
+        ),
+    ),
+)

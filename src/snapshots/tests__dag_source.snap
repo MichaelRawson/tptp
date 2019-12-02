@@ -1,0 +1,9 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Name(
+    LowerWord(
+        "name",
+    ),
+)

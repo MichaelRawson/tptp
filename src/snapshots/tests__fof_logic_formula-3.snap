@@ -1,0 +1,19 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Assoc(
+    And,
+    [
+        Proposition(
+            LowerWord(
+                "p",
+            ),
+        ),
+        Proposition(
+            LowerWord(
+                "q",
+            ),
+        ),
+    ],
+)

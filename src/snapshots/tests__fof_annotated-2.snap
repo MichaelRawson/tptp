@@ -1,0 +1,18 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Fof(
+    LowerWord(
+        "test",
+    ),
+    Axiom,
+    Boolean(
+        true,
+    ),
+    Some(
+        Annotations {
+            source: Unknown,
+        },
+    ),
+)

@@ -1,0 +1,8 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+File(
+    "\'file\'",
+    None,
+)

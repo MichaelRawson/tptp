@@ -1,0 +1,16 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Functor(
+    LowerWord(
+        "f",
+    ),
+    [
+        Variable(
+            Variable(
+                "X",
+            ),
+        ),
+    ],
+)

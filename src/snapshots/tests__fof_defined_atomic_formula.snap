@@ -1,0 +1,7 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Boolean(
+    true,
+)

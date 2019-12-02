@@ -1,0 +1,15 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Quantified(
+    Forall,
+    [
+        Variable(
+            "X",
+        ),
+    ],
+    Boolean(
+        true,
+    ),
+)

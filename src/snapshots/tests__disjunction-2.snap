@@ -1,0 +1,20 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+[
+    Literal(
+        Proposition(
+            LowerWord(
+                "p",
+            ),
+        ),
+    ),
+    NegatedLiteral(
+        Proposition(
+            LowerWord(
+                "q",
+            ),
+        ),
+    ),
+]

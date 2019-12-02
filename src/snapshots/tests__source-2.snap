@@ -1,0 +1,10 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+External(
+    File(
+        "\'file\'",
+        None,
+    ),
+)
