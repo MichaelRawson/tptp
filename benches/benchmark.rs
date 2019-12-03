@@ -16,8 +16,8 @@ fn synthetic_fof() {
     for _ in 0..ITERATIONS {
         let mut position = FOF;
         loop {
-            let (next, parsed) =
-                tptp_input_or_eof(position).expect("parse error");
+            let result: nom::IResult<_, _, ()> = tptp_input_or_eof(position);
+            let (next, parsed) = result.expect("parse error");
             if parsed.is_none() {
                 break;
             }

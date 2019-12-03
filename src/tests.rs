@@ -4,7 +4,7 @@ use crate::parsers::*;
 
 macro_rules! check_parse {
     ($parser:expr, $input:expr) => {
-        let result = $parser($input);
+        let result: nom::IResult<_, _, ()> = $parser($input);
         assert!(result.is_ok(), "parse error");
         let (remaining, parsed) = result.unwrap();
         assert!(remaining.is_empty(), "parsed, but bytes remaining");

@@ -8,8 +8,9 @@
 //! fn example(bytes: &[u8]) {
 //!     let mut position = bytes;
 //!     loop {
-//!         let (next, statement) =
-//!             tptp_input_or_eof(position).expect("parse error");
+//!         // choose how to perform error handling
+//!         let result: nom::IResult<_, _, ()> = tptp_input_or_eof(position);
+//!         let (next, statement) = result.expect("parse error");
 //!
 //!         // EOF
 //!         if statement.is_none() {
