@@ -2,15 +2,4 @@
 source: src/tests.rs
 expression: parsed
 ---
-Include(
-    Included(
-        "test",
-    ),
-    Some(
-        [
-            LowerWord(
-                "test",
-            ),
-        ],
-    ),
-)
+include('test').

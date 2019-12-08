@@ -1,0 +1,46 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+InfixUnary(
+    FofInfixUnary {
+        left: Function(
+            Plain(
+                Function(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "f",
+                            ),
+                        ),
+                    ),
+                    FofArguments(
+                        [
+                            Variable(
+                                Variable(
+                                    UpperWord(
+                                        "X",
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+        ),
+        op: InfixInequality,
+        right: Function(
+            Plain(
+                Constant(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "c",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    },
+)

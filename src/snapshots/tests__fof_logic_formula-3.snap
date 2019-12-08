@@ -2,18 +2,44 @@
 source: src/tests.rs
 expression: parsed
 ---
-Assoc(
-    And,
-    [
-        Proposition(
-            LowerWord(
-                "p",
+Binary(
+    Nonassoc(
+        FofBinaryNonassoc {
+            left: Unitary(
+                Atomic(
+                    Plain(
+                        FofPlainAtomicFormula(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "p",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
             ),
-        ),
-        Proposition(
-            LowerWord(
-                "q",
+            op: LRImplies,
+            right: Unitary(
+                Atomic(
+                    Plain(
+                        FofPlainAtomicFormula(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "q",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
             ),
-        ),
-    ],
+        },
+    ),
 )

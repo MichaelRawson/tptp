@@ -3,7 +3,11 @@ source: src/tests.rs
 expression: parsed
 ---
 Constant(
-    LowerWord(
-        "c",
+    Functor(
+        Lower(
+            LowerWord(
+                "c",
+            ),
+        ),
     ),
 )

@@ -1,0 +1,21 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+FofArguments(
+    [
+        Function(
+            Plain(
+                Constant(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "c",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

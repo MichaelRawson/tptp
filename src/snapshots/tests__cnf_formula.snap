@@ -2,14 +2,24 @@
 source: src/tests.rs
 expression: parsed
 ---
-CnfFormula(
-    [
-        Literal(
-            Proposition(
-                LowerWord(
-                    "p",
+Disjunction(
+    Disjunction(
+        [
+            Atomic(
+                Plain(
+                    FofPlainAtomicFormula(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "p",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
                 ),
             ),
-        ),
-    ],
+        ],
+    ),
 )

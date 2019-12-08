@@ -1,0 +1,48 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Annotated(
+    Cnf(
+        CnfAnnotated {
+            name: AtomicWord(
+                Lower(
+                    LowerWord(
+                        "test",
+                    ),
+                ),
+            ),
+            role: Axiom,
+            formula: Disjunction(
+                Disjunction(
+                    [
+                        Atomic(
+                            Defined(
+                                Plain(
+                                    FofDefinedPlainFormula(
+                                        Constant(
+                                            DefinedConstant(
+                                                DefinedFunctor(
+                                                    AtomicDefinedWord(
+                                                        DollarWord(
+                                                            LowerWord(
+                                                                "true",
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+            annotations: Annotations(
+                None,
+            ),
+        },
+    ),
+)

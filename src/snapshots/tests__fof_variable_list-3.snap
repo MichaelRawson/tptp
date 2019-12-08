@@ -1,0 +1,18 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+FofVariableList(
+    [
+        Variable(
+            UpperWord(
+                "X",
+            ),
+        ),
+        Variable(
+            UpperWord(
+                "Y",
+            ),
+        ),
+    ],
+)

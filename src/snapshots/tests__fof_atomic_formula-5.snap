@@ -1,0 +1,28 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Plain(
+    FofPlainAtomicFormula(
+        Function(
+            Functor(
+                Lower(
+                    LowerWord(
+                        "p",
+                    ),
+                ),
+            ),
+            FofArguments(
+                [
+                    Variable(
+                        Variable(
+                            UpperWord(
+                                "X",
+                            ),
+                        ),
+                    ),
+                ],
+            ),
+        ),
+    ),
+)

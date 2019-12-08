@@ -2,6 +2,10 @@
 source: src/tests.rs
 expression: parsed
 ---
-Integer(
-    "123",
+AtomicWord(
+    SingleQuoted(
+        SingleQuoted(
+            "single quoted",
+        ),
+    ),
 )

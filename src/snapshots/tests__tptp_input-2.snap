@@ -2,13 +2,4 @@
 source: src/tests.rs
 expression: parsed
 ---
-Fof(
-    LowerWord(
-        "test",
-    ),
-    Axiom,
-    Boolean(
-        true,
-    ),
-    None,
-)
+include('test').

@@ -1,0 +1,26 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Function(
+    GeneralFunction {
+        word: Lower(
+            LowerWord(
+                "atomic",
+            ),
+        ),
+        terms: GeneralTerms(
+            [
+                Data(
+                    Variable(
+                        Variable(
+                            UpperWord(
+                                "X",
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+        ),
+    },
+)

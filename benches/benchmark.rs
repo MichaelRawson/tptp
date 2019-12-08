@@ -1,5 +1,5 @@
 use std::time::Instant;
-use tptp::parsers::tptp_input_or_eof;
+use tptp::parsers::ignored_then_tptp_input;
 
 const ITERATIONS: usize = 100_000;
 const FOF: &[u8] = include_bytes!("SYN000+1.p");
@@ -16,7 +16,7 @@ fn synthetic_fof() {
     for _ in 0..ITERATIONS {
         let mut position = FOF;
         loop {
-            let result: nom::IResult<_, _, ()> = tptp_input_or_eof(position);
+            let result = ignored_then_tptp_input::<()>(position);
             let (next, parsed) = result.expect("parse error");
             if parsed.is_none() {
                 break;

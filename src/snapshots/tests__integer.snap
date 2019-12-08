@@ -2,4 +2,6 @@
 source: src/tests.rs
 expression: parsed
 ---
-"0"
+Integer(
+    "0",
+)

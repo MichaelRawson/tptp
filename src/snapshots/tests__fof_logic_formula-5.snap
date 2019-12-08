@@ -2,8 +2,47 @@
 source: src/tests.rs
 expression: parsed
 ---
-Proposition(
-    LowerWord(
-        "p",
+Binary(
+    Assoc(
+        And(
+            FofAndFormula(
+                [
+                    Unitary(
+                        Atomic(
+                            Plain(
+                                FofPlainAtomicFormula(
+                                    Constant(
+                                        Functor(
+                                            Lower(
+                                                LowerWord(
+                                                    "p",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                    Unitary(
+                        Atomic(
+                            Plain(
+                                FofPlainAtomicFormula(
+                                    Constant(
+                                        Functor(
+                                            Lower(
+                                                LowerWord(
+                                                    "q",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+            ),
+        ),
     ),
 )

@@ -1,0 +1,18 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Some(
+    Include(
+        Include {
+            file_name: FileName(
+                SingleQuoted(
+                    "test",
+                ),
+            ),
+            selection: FormulaSelection(
+                None,
+            ),
+        },
+    ),
+)

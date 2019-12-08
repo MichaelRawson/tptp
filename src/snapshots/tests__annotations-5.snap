@@ -1,0 +1,44 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Annotations(
+    Some(
+        (
+            Source(
+                Data(
+                    Atomic(
+                        Lower(
+                            LowerWord(
+                                "c",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            OptionalInfo(
+                Some(
+                    UsefulInfo(
+                        GeneralList(
+                            Some(
+                                GeneralTerms(
+                                    [
+                                        Data(
+                                            Variable(
+                                                Variable(
+                                                    UpperWord(
+                                                        "X",
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

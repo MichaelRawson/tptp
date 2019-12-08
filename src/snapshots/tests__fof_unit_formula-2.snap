@@ -2,9 +2,4 @@
 source: src/tests.rs
 expression: parsed
 ---
-Unary(
-    Not,
-    Boolean(
-        true,
-    ),
-)
+($true)

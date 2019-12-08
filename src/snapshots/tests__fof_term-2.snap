@@ -2,8 +2,4 @@
 source: src/tests.rs
 expression: parsed
 ---
-Variable(
-    Variable(
-        "X",
-    ),
-)
+f(X)

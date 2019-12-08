@@ -3,10 +3,24 @@ source: src/tests.rs
 expression: parsed
 ---
 Unary(
-    Not,
-    Proposition(
-        LowerWord(
-            "p",
+    Unary(
+        UnaryConnective,
+        Unitary(
+            Atomic(
+                Plain(
+                    FofPlainAtomicFormula(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "p",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
         ),
     ),
 )

@@ -2,4 +2,6 @@
 source: src/tests.rs
 expression: parsed
 ---
-"\'single quoted\'"
+SingleQuoted(
+    "single quoted",
+)

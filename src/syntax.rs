@@ -1,154 +1,250 @@
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+use derive_more::{AsRef, Display, From};
 use std::borrow::Cow;
-use std::convert::AsRef;
 use std::fmt;
 use std::path::PathBuf;
 
-/// One of various types of TPTP identifiers.
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum Name<'a> {
-    /// An alphanumeric token, like `propositional_fact2`
-    LowerWord(Cow<'a, str>),
-    /// A `'quoted string'`, quotes included
-    SingleQuoted(Cow<'a, str>),
-    /// Integral identifiers of arbitrary size.
-    Integer(Cow<'a, str>),
-}
-
-impl<'a> AsRef<str> for Name<'a> {
-    fn as_ref(&self) -> &str {
-        use self::Name::*;
-        match self {
-            LowerWord(name) => name,
-            SingleQuoted(name) => name,
-            Integer(name) => name,
-        }
-    }
-}
-
-impl<'a> fmt::Display for Name<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.as_ref())
-    }
-}
-
-/// A variable name, `X`
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Variable<'a>(pub Cow<'a, str>);
-
-impl<'a> AsRef<str> for Variable<'a> {
-    fn as_ref(&self) -> &str {
-        self.0.as_ref()
-    }
-}
-
-impl<'a> fmt::Display for Variable<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.as_ref())
-    }
-}
-
-/// A FOF term.
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum FofTerm<'a> {
-    /// A bound variable
-    Variable(Variable<'a>),
-    /// A constant `c`
-    Constant(Name<'a>),
-    /// An application of a name to arguments, `f(t1, t2, ...)`.
-    Functor(Name<'a>, Vec<FofTerm<'a>>),
-}
-
-fn fmt_args(f: &mut fmt::Formatter, args: &[FofTerm]) -> fmt::Result {
+fn fmt_list<T: fmt::Display>(
+    f: &mut fmt::Formatter,
+    sep: &'static str,
+    args: &[T],
+) -> fmt::Result {
     if args.is_empty() {
         return Ok(());
     }
 
-    write!(f, "(")?;
     let mut args = args.iter();
     write!(f, "{}", args.next().unwrap())?;
     for arg in args {
-        write!(f, ",{}", arg)?;
+        write!(f, "{}{}", sep, arg)?;
     }
-    write!(f, ")")
+    Ok(())
 }
 
-impl<'a> fmt::Display for FofTerm<'a> {
+/// `integer`
+#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Integer<'a>(pub Cow<'a, str>);
+
+/// `lower_word`
+#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct LowerWord<'a>(pub Cow<'a, str>);
+
+/// `upper_word`
+#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct UpperWord<'a>(pub Cow<'a, str>);
+
+/// `dollar_word`
+#[derive(AsRef, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct DollarWord<'a>(pub LowerWord<'a>);
+
+impl<'a> fmt::Display for DollarWord<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FofTerm::*;
+        write!(f, "${}", self.0)
+    }
+}
+
+/// `single_quoted`
+#[derive(AsRef, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct SingleQuoted<'a>(pub Cow<'a, str>);
+
+impl<'a> fmt::Display for SingleQuoted<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "'{}'", self.0)
+    }
+}
+
+/// `atomic_word`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum AtomicWord<'a> {
+    Lower(LowerWord<'a>),
+    SingleQuoted(SingleQuoted<'a>),
+}
+
+/// `name`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum Name<'a> {
+    AtomicWord(AtomicWord<'a>),
+    Integer(Integer<'a>),
+}
+
+/// `variable`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Variable<'a>(pub UpperWord<'a>);
+
+/// `functor`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Functor<'a>(pub AtomicWord<'a>);
+
+/// `fof_arguments`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofArguments<'a>(pub Vec<FofTerm<'a>>);
+
+impl<'a> fmt::Display for FofArguments<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.0.is_empty() {
+            return Ok(());
+        }
+
+        write!(f, "(")?;
+        fmt_list(f, ",", &self.0)?;
+        write!(f, ")")
+    }
+}
+
+/// `fof_plain_term`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofPlainTerm<'a> {
+    /// `constant`
+    Constant(Functor<'a>),
+    /// `functor`, `fof_arguments`
+    Function(Functor<'a>, FofArguments<'a>),
+}
+
+impl<'a> fmt::Display for FofPlainTerm<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofPlainTerm::*;
         match self {
-            Variable(x) => write!(f, "{}", x),
             Constant(c) => write!(f, "{}", c),
-            Functor(name, args) => {
-                write!(f, "{}", name)?;
-                fmt_args(f, args)
-            }
+            Function(name, args) => write!(f, "{}{}", name, args),
         }
     }
 }
 
-/// A unary operator on FOF formulae
+/// `atomic_defined_word`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct AtomicDefinedWord<'a>(pub DollarWord<'a>);
+
+/// `defined_functor`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct DefinedFunctor<'a>(pub AtomicDefinedWord<'a>);
+
+/// `defined_constant`
+#[derive(
+    AsRef, Clone, Display, From, Debug, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct DefinedConstant<'a>(pub DefinedFunctor<'a>);
+
+/// `fof_defined_plain_term`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofDefinedPlainTerm<'a> {
+    /// `defined_constant`
+    Constant(DefinedConstant<'a>),
+}
+
+/// `fof_defined_atomic_term`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofDefinedAtomicTerm<'a>(pub FofDefinedPlainTerm<'a>);
+
+/// `fof_defined_term`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofDefinedTerm<'a> {
+    /// `fof_defined_atomic_term`
+    Atomic(FofDefinedAtomicTerm<'a>),
+}
+
+/// `fof_function_term`
+#[derive(Clone, Debug, From, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofFunctionTerm<'a> {
+    /// `fof_plain_term`
+    Plain(FofPlainTerm<'a>),
+    /// `fof_defined_term`
+    Defined(FofDefinedTerm<'a>),
+}
+
+/// `fof_term`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofTerm<'a> {
+    /// `fof_function_term`,
+    Function(FofFunctionTerm<'a>),
+    /// `variable`
+    Variable(Variable<'a>),
+}
+
+/// `unary_connective`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum UnaryConnective {
-    /// `~p`
-    Not,
-}
+pub struct UnaryConnective;
 
 impl fmt::Display for UnaryConnective {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::UnaryConnective::*;
-        match self {
-            Not => write!(f, "~"),
-        }
+        write!(f, "~")
     }
 }
 
-/// An infix binary operator on FOF terms
+/// `infix_equality`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum InfixEquality {
-    /// `t = s`
-    Equal,
-    /// `t != s`
-    NotEqual,
-}
+pub struct InfixEquality;
 
 impl fmt::Display for InfixEquality {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::InfixEquality::*;
-        match self {
-            Equal => write!(f, "="),
-            NotEqual => write!(f, "!="),
-        }
+        write!(f, "=")
     }
 }
 
-/// A non-associative binary operator on FOF formulae
+/// `infix_inequality`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum NonAssocConnective {
-    /// `p => q`
+pub struct InfixInequality;
+
+impl fmt::Display for InfixInequality {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "!=")
+    }
+}
+
+/// `nonassoc_connective`
+#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum NonassocConnective {
+    /// `=>`
     LRImplies,
-    /// `p <= q`
+    /// `<=`
     RLImplies,
-    /// `p <=> q`
+    /// `<=>`
     Equivalent,
-    /// `p <~> q`
+    /// `<~>`
     NotEquivalent,
-    /// `p ~| q`
+    /// `~|`
     NotOr,
-    /// `p ~& q`
+    /// `~&`
     NotAnd,
 }
 
-impl fmt::Display for NonAssocConnective {
+impl fmt::Display for NonassocConnective {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::NonAssocConnective::*;
+        use self::NonassocConnective::*;
         match self {
             LRImplies => write!(f, "=>"),
             RLImplies => write!(f, "<="),
@@ -160,13 +256,13 @@ impl fmt::Display for NonAssocConnective {
     }
 }
 
-/// An associative binary operator on FOF formulae
+/// `assoc_connective`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum AssocConnective {
-    /// `p1 & p2 & ...`
+    /// `&`
     And,
-    /// `p1 | p2 | ...`
+    /// `|`
     Or,
 }
 
@@ -180,13 +276,13 @@ impl fmt::Display for AssocConnective {
     }
 }
 
-/// A FOF quantifier
+/// `fof_quantifier`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofQuantifier {
-    /// `![X1, X2, ...]: p`
+    /// `!`
     Forall,
-    /// `?[X1, X2, ...]: p`
+    /// `?`
     Exists,
 }
 
@@ -200,110 +296,262 @@ impl fmt::Display for FofQuantifier {
     }
 }
 
-/// A FOF formula
+/// `fof_plain_atomic_formula`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofPlainAtomicFormula<'a>(pub FofPlainTerm<'a>);
+
+/// `defined_infix_pred`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct DefinedInfixPred(pub InfixEquality);
+
+/// `fof_defined_infix_formula`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum FofFormula<'a> {
-    /// `$true`, `$false`
-    Boolean(bool),
-    /// `t1 $op t2`
-    Infix(InfixEquality, FofTerm<'a>, FofTerm<'a>),
-    /// `p`
-    Proposition(Name<'a>),
-    /// `p(t1, t2, ...)`
-    Predicate(Name<'a>, Vec<FofTerm<'a>>),
-    /// `$op(p)`
-    Unary(UnaryConnective, Box<FofFormula<'a>>),
-    /// `p $op q`
-    NonAssoc(NonAssocConnective, Box<FofFormula<'a>>, Box<FofFormula<'a>>),
-    /// `p1 $op p2 $op ...`
-    Assoc(AssocConnective, Vec<FofFormula<'a>>),
-    /// `$op[X1, X2, ...]: p`
-    Quantified(FofQuantifier, Vec<Variable<'a>>, Box<FofFormula<'a>>),
+pub struct FofDefinedInfixFormula<'a> {
+    pub left: FofTerm<'a>,
+    pub op: DefinedInfixPred,
+    pub right: FofTerm<'a>,
 }
 
-impl<'a> fmt::Display for FofFormula<'a> {
+impl<'a> fmt::Display for FofDefinedInfixFormula<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FofFormula::*;
+        write!(f, "{}{}{}", self.left, self.op, self.right)
+    }
+}
+
+/// `fof_defined_plain_formula`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofDefinedPlainFormula<'a>(pub FofDefinedPlainTerm<'a>);
+
+/// `fof_defined_atomic_formula`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofDefinedAtomicFormula<'a> {
+    Plain(FofDefinedPlainFormula<'a>),
+    Infix(FofDefinedInfixFormula<'a>),
+}
+
+/// `fof_atomic_formula`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofAtomicFormula<'a> {
+    Plain(FofPlainAtomicFormula<'a>),
+    Defined(FofDefinedAtomicFormula<'a>),
+}
+
+/// `fof_variable_list`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofVariableList<'a>(pub Vec<Variable<'a>>);
+
+impl<'a> fmt::Display for FofVariableList<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt_list(f, ",", &self.0)
+    }
+}
+
+/// `fof_quantified_formula`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofQuantifiedFormula<'a> {
+    pub quantifier: FofQuantifier,
+    pub bound: FofVariableList<'a>,
+    pub formula: FofUnitFormula<'a>,
+}
+
+impl<'a> fmt::Display for FofQuantifiedFormula<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}[{}]:{}", self.quantifier, self.bound, self.formula)
+    }
+}
+
+/// `fof_infix_unary`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofInfixUnary<'a> {
+    pub left: FofTerm<'a>,
+    pub op: InfixInequality,
+    pub right: FofTerm<'a>,
+}
+
+impl<'a> fmt::Display for FofInfixUnary<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}{}", self.left, self.op, self.right)
+    }
+}
+
+/// `fof_unary_formula`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofUnaryFormula<'a> {
+    Unary(UnaryConnective, FofUnitFormula<'a>),
+    InfixUnary(FofInfixUnary<'a>),
+}
+
+impl<'a> fmt::Display for FofUnaryFormula<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofUnaryFormula::*;
         match self {
-            Boolean(b) => write!(f, "${}", b),
-            Infix(op, left, right) => write!(f, "{}{}{}", left, op, right),
-            Proposition(name) => write!(f, "{}", name),
-            Predicate(name, args) => {
-                write!(f, "{}", name)?;
-                fmt_args(f, args)
-            }
-            Unary(op, sub) => write!(f, "{}({})", op, sub),
-            NonAssoc(op, left, right) => write!(f, "({}{}{})", left, op, right),
-            Assoc(op, args) => {
-                if args.is_empty() {
-                    panic!("displaying empty associative formula");
-                }
-
-                let mut args = args.iter();
-                write!(f, "({}", args.next().unwrap())?;
-                for arg in args {
-                    write!(f, "{}{}", op, arg)?;
-                }
-                write!(f, ")")
-            }
-            Quantified(op, bound, sub) => {
-                if bound.is_empty() {
-                    panic!("displaying empty quantifier");
-                }
-
-                write!(f, "{}[", op)?;
-                let mut bound = bound.iter();
-                write!(f, "{}", bound.next().unwrap())?;
-                for x in bound {
-                    write!(f, ",{}", x)?;
-                }
-                write!(f, "]:{}", sub)
-            }
+            Unary(connective, u) => write!(f, "{}{}", connective, u),
+            InfixUnary(i) => write!(f, "{}", i),
         }
     }
 }
 
-/// A CNF literal
+/// `fof_unitary_formula`
+#[derive(Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofUnitaryFormula<'a> {
+    Quantified(FofQuantifiedFormula<'a>),
+    Atomic(FofAtomicFormula<'a>),
+    Parenthesised(FofLogicFormula<'a>),
+}
+
+impl<'a> fmt::Display for FofUnitaryFormula<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofUnitaryFormula::*;
+        match self {
+            Quantified(q) => write!(f, "{}", q),
+            Atomic(a) => write!(f, "{}", a),
+            Parenthesised(p) => write!(f, "({})", p),
+        }
+    }
+}
+
+/// `fof_unit_formula`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofUnitFormula<'a> {
+    Unitary(Box<FofUnitaryFormula<'a>>),
+    Unary(Box<FofUnaryFormula<'a>>),
+}
+
+/// `fof_or_formula`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofOrFormula<'a>(pub Vec<FofUnitFormula<'a>>);
+
+impl<'a> fmt::Display for FofOrFormula<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt_list(f, "|", &self.0)
+    }
+}
+
+/// `fof_and_formula`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofAndFormula<'a>(pub Vec<FofUnitFormula<'a>>);
+
+impl<'a> fmt::Display for FofAndFormula<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt_list(f, "&", &self.0)
+    }
+}
+
+/// `fof_binary_assoc`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofBinaryAssoc<'a> {
+    Or(FofOrFormula<'a>),
+    And(FofAndFormula<'a>),
+}
+
+/// `fof_binary_nonassoc`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofBinaryNonassoc<'a> {
+    pub left: FofUnitFormula<'a>,
+    pub op: NonassocConnective,
+    pub right: FofUnitFormula<'a>,
+}
+
+impl<'a> fmt::Display for FofBinaryNonassoc<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}{}", self.left, self.op, self.right)
+    }
+}
+
+/// `fof_binary_formula`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofBinaryFormula<'a> {
+    Nonassoc(FofBinaryNonassoc<'a>),
+    Assoc(FofBinaryAssoc<'a>),
+}
+
+/// `fof_logic_formula`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofLogicFormula<'a> {
+    Binary(FofBinaryFormula<'a>),
+    Unary(Box<FofUnaryFormula<'a>>),
+    Unitary(Box<FofUnitaryFormula<'a>>),
+}
+
+/// `fof_formula`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofFormula<'a> {
+    Logic(FofLogicFormula<'a>),
+}
+
+/// `literal`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Literal<'a> {
-    /// A literal, e.g. `p(X)`
-    Literal(FofFormula<'a>),
-    /// A negated literal, e.g. `~p(X)`
-    NegatedLiteral(FofFormula<'a>),
-    /// Equality literals, `t = s` or `t != s`
-    EqualityLiteral(FofFormula<'a>),
+    Atomic(FofAtomicFormula<'a>),
+    NegatedAtomic(FofAtomicFormula<'a>),
+    Infix(FofInfixUnary<'a>),
 }
 
 impl<'a> fmt::Display for Literal<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::Literal::*;
         match self {
-            Literal(fof) => write!(f, "{}", fof),
-            NegatedLiteral(fof) => write!(f, "~{}", fof),
-            EqualityLiteral(fof) => write!(f, "{}", fof),
+            Atomic(a) => write!(f, "{}", a),
+            NegatedAtomic(n) => write!(f, "~{}", n),
+            Infix(i) => write!(f, "{}", i),
         }
     }
 }
 
-/// A CNF formula
+/// `disjunction`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Disjunction<'a>(pub Vec<Literal<'a>>);
+
+impl<'a> fmt::Display for Disjunction<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt_list(f, "|", &self.0)
+    }
+}
+
+/// `cnf_formula`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct CnfFormula<'a>(pub Vec<Literal<'a>>);
+pub enum CnfFormula<'a> {
+    Disjunction(Disjunction<'a>),
+    Parenthesised(Disjunction<'a>),
+}
 
 impl<'a> fmt::Display for CnfFormula<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut literals = self.0.iter();
-        write!(f, "{}", literals.next().unwrap())?;
-        for literal in literals {
-            write!(f, "|{}", literal)?;
+        use self::CnfFormula::*;
+        match self {
+            Disjunction(d) => write!(f, "{}", d),
+            Parenthesised(d) => write!(f, "({})", d),
         }
-        Ok(())
     }
 }
 
-/// A TPTP formula role, such as `axiom` or `negated_conjecture`
+/// `formula_role`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FormulaRole {
@@ -339,181 +587,243 @@ impl fmt::Display for FormulaRole {
     }
 }
 
-/// DAG formula sources
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+/// `formula_data`
+#[derive(Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum DagSource<'a> {
-    Name(Name<'a>),
-    Inference(Cow<'a, str>, Vec<Source<'a>>),
+pub enum FormulaData<'a> {
+    Fof(FofFormula<'a>),
+    Cnf(CnfFormula<'a>),
 }
 
-impl<'a> fmt::Display for DagSource<'a> {
+impl<'a> fmt::Display for FormulaData<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::DagSource::*;
+        use self::FormulaData::*;
         match self {
-            Name(ref name) => write!(f, "{}", name),
-            Inference(ref rule, ref parents) => {
-                write!(f, "inference({},[],[", rule)?;
-                if !parents.is_empty() {
-                    let mut parents = parents.iter();
-                    write!(f, "{}", parents.next().unwrap())?;
-                    for parent in parents {
-                        write!(f, ",{}", parent)?;
-                    }
-                }
-                write!(f, "])")
-            }
+            Fof(fof) => write!(f, "$fof({})", fof),
+            Cnf(cnf) => write!(f, "$cnf({})", cnf),
         }
     }
 }
 
-/// Internal formula sources
+/// `general_function`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum InternalSource {}
+pub struct GeneralFunction<'a> {
+    pub word: AtomicWord<'a>,
+    pub terms: GeneralTerms<'a>,
+}
 
-impl fmt::Display for InternalSource {
+impl<'a> fmt::Display for GeneralFunction<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "")
+        write!(f, "{}({})", self.word, self.terms)
     }
 }
 
-/// External formula sources
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+/// `general_data`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum ExternalSource<'a> {
-    File(Cow<'a, str>, Option<Name<'a>>),
+pub enum GeneralData<'a> {
+    Atomic(AtomicWord<'a>),
+    Function(GeneralFunction<'a>),
+    Variable(Variable<'a>),
+    Formula(FormulaData<'a>),
 }
 
-impl<'a> fmt::Display for ExternalSource<'a> {
+/// `general_terms`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct GeneralTerms<'a>(pub Vec<GeneralTerm<'a>>);
+
+impl<'a> fmt::Display for GeneralTerms<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::ExternalSource::*;
-        match self {
-            File(ref name, None) => write!(f, "file('{}')", name),
-            File(ref name, Some(info)) => {
-                write!(f, "file('{}',{})", name, info)
-            }
+        fmt_list(f, ",", &self.0)
+    }
+}
+
+/// `general_list`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct GeneralList<'a>(pub Option<GeneralTerms<'a>>);
+
+impl<'a> fmt::Display for GeneralList<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self.0 {
+            None => write!(f, "[]"),
+            Some(terms) => write!(f, "[{}]", terms),
         }
     }
 }
 
-/// Formula sources for use in annotations
+/// `general_term`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum Source<'a> {
-    /// `unknown`
-    Unknown,
-    /// A DAG source - either a name or an inference record
-    Dag(DagSource<'a>),
-    /// An internal source
-    Internal(InternalSource),
-    /// An external source
-    External(ExternalSource<'a>),
-    /// Multiple sources
-    Sources(Vec<Source<'a>>),
+pub enum GeneralTerm<'a> {
+    Data(GeneralData<'a>),
+    Colon(GeneralData<'a>, Box<GeneralTerm<'a>>),
+    List(GeneralList<'a>),
 }
 
-impl<'a> fmt::Display for Source<'a> {
+impl<'a> fmt::Display for GeneralTerm<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Source::*;
+        use self::GeneralTerm::*;
         match self {
-            Unknown => write!(f, "unknown"),
-            Dag(ref dag) => write!(f, "{}", dag),
-            Internal(ref internal) => write!(f, "{}", internal),
-            External(ref external) => write!(f, "{}", external),
-            Sources(ref sources) => {
-                write!(f, "[",)?;
-                if !sources.is_empty() {
-                    let mut sources = sources.iter();
-                    write!(f, "{}", sources.next().unwrap())?;
-                    for source in sources {
-                        write!(f, ",{}", source)?;
-                    }
-                }
-                write!(f, "]")
-            }
+            Data(d) => write!(f, "{}", d),
+            Colon(d, t) => write!(f, "{}:{}", d, t),
+            List(l) => write!(f, "{}", l),
         }
     }
 }
 
-/// Formula annotations
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+/// `source`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Annotations<'a> {
-    pub source: Source<'a>,
+pub struct Source<'a>(pub GeneralTerm<'a>);
+
+/// `useful_info`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct UsefulInfo<'a>(pub GeneralList<'a>);
+
+/// `optional_info`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct OptionalInfo<'a>(pub Option<UsefulInfo<'a>>);
+
+impl<'a> fmt::Display for OptionalInfo<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            Some(ref info) => write!(f, ",{}", info),
+            None => Ok(()),
+        }
+    }
 }
+
+/// `annotations`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Annotations<'a>(pub Option<(Source<'a>, OptionalInfo<'a>)>);
 
 impl<'a> fmt::Display for Annotations<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.source)
-    }
-}
-
-/// An include path, not including outer quotes
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Included<'a>(pub Cow<'a, str>);
-
-impl<'a> fmt::Display for Included<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl<'a> From<Included<'a>> for PathBuf {
-    fn from(included: Included<'a>) -> Self {
-        included.0.replace("\\\\", "\\").replace("\\'", "'").into()
-    }
-}
-
-/// A top-level TPTP statement, currently `include`, `cnf`, or `fof`.
-#[allow(clippy::large_enum_variant)]
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum Statement<'a> {
-    Include(Included<'a>, Option<Vec<Name<'a>>>),
-    Cnf(
-        Name<'a>,
-        FormulaRole,
-        CnfFormula<'a>,
-        Option<Annotations<'a>>,
-    ),
-    Fof(
-        Name<'a>,
-        FormulaRole,
-        FofFormula<'a>,
-        Option<Annotations<'a>>,
-    ),
-}
-
-impl<'a> fmt::Display for Statement<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Statement::*;
-        match self {
-            Include(include, None) => write!(f, "include({}).", include),
-            Include(include, Some(names)) => {
-                write!(f, "include({},[", include)?;
-
-                let mut names = names.iter();
-                write!(f, "{}", names.next().unwrap())?;
-                for name in names {
-                    write!(f, ",{}", name)?;
-                }
-
-                write!(f, ").")
-            }
-            Cnf(name, role, formula, None) => {
-                write!(f, "cnf({},{},{}).", name, role, formula)
-            }
-            Cnf(name, role, formula, Some(annotations)) => {
-                write!(f, "cnf({},{},{},{}).", name, role, formula, annotations)
-            }
-            Fof(name, role, formula, None) => {
-                write!(f, "fof({},{},{}).", name, role, formula)
-            }
-            Fof(name, role, formula, Some(annotations)) => {
-                write!(f, "fof({},{},{},{}).", name, role, formula, annotations)
-            }
+        match &self.0 {
+            Some((source, info)) => write!(f, ",{}{}", source, info),
+            None => Ok(()),
         }
     }
+}
+
+/// `fof_annotated`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofAnnotated<'a> {
+    pub name: Name<'a>,
+    pub role: FormulaRole,
+    pub formula: FofFormula<'a>,
+    pub annotations: Annotations<'a>,
+}
+
+impl<'a> fmt::Display for FofAnnotated<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "fof({},{},{}{}).",
+            self.name, self.role, self.formula, self.annotations
+        )
+    }
+}
+
+/// `cnf_annotated`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct CnfAnnotated<'a> {
+    pub name: Name<'a>,
+    pub role: FormulaRole,
+    pub formula: CnfFormula<'a>,
+    pub annotations: Annotations<'a>,
+}
+
+impl<'a> fmt::Display for CnfAnnotated<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "cnf({},{},{}{}).",
+            self.name, self.role, self.formula, self.annotations
+        )
+    }
+}
+
+/// `annotated_formula`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum AnnotatedFormula<'a> {
+    Fof(FofAnnotated<'a>),
+    Cnf(CnfAnnotated<'a>),
+}
+
+/// `file_name`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FileName<'a>(pub SingleQuoted<'a>);
+
+impl<'a> From<FileName<'a>> for PathBuf {
+    fn from(included: FileName<'a>) -> Self {
+        (included.0)
+            .0
+            .replace("\\\\", "\\")
+            .replace("\\'", "'")
+            .into()
+    }
+}
+
+/// `name_list`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct NameList<'a>(pub Vec<Name<'a>>);
+
+impl<'a> fmt::Display for NameList<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt_list(f, ",", &self.0)
+    }
+}
+
+/// `file_name`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FormulaSelection<'a>(pub Option<NameList<'a>>);
+
+impl<'a> fmt::Display for FormulaSelection<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match &self.0 {
+            Some(list) => write!(f, ",[{}]", list),
+            None => Ok(()),
+        }
+    }
+}
+
+/// `include`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Include<'a> {
+    pub file_name: FileName<'a>,
+    pub selection: FormulaSelection<'a>,
+}
+
+impl<'a> fmt::Display for Include<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "include({}{}).", self.file_name, self.selection)
+    }
+}
+
+/// `TPTP_input`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum TPTPInput<'a> {
+    Annotated(Box<AnnotatedFormula<'a>>),
+    Include(Include<'a>),
 }

@@ -2,12 +2,22 @@
 source: src/tests.rs
 expression: parsed
 ---
-[
-    Literal(
-        Proposition(
-            LowerWord(
-                "p",
+Disjunction(
+    [
+        Atomic(
+            Plain(
+                FofPlainAtomicFormula(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "p",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
             ),
         ),
-    ),
-]
+    ],
+)

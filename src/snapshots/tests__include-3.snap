@@ -1,0 +1,26 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Include {
+    file_name: FileName(
+        SingleQuoted(
+            "test",
+        ),
+    ),
+    selection: FormulaSelection(
+        Some(
+            NameList(
+                [
+                    AtomicWord(
+                        Lower(
+                            LowerWord(
+                                "test",
+                            ),
+                        ),
+                    ),
+                ],
+            ),
+        ),
+    ),
+}

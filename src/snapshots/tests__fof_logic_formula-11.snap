@@ -1,0 +1,50 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Binary(
+    Nonassoc(
+        FofBinaryNonassoc {
+            left: Unary(
+                Unary(
+                    UnaryConnective,
+                    Unitary(
+                        Atomic(
+                            Plain(
+                                FofPlainAtomicFormula(
+                                    Constant(
+                                        Functor(
+                                            Lower(
+                                                LowerWord(
+                                                    "p",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            op: LRImplies,
+            right: Unitary(
+                Atomic(
+                    Plain(
+                        FofPlainAtomicFormula(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "q",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        },
+    ),
+)

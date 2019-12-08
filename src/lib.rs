@@ -3,13 +3,13 @@
 //!
 //! # Quickstart
 //! ```rust
-//! use tptp::parsers::tptp_input_or_eof;
+//! use tptp::parsers::ignored_then_tptp_input;
 //!
 //! fn example(bytes: &[u8]) {
 //!     let mut position = bytes;
 //!     loop {
 //!         // choose how to perform error handling
-//!         let result: nom::IResult<_, _, ()> = tptp_input_or_eof(position);
+//!         let result = ignored_then_tptp_input::<()>(position);
 //!         let (next, statement) = result.expect("parse error");
 //!
 //!         // EOF
@@ -23,6 +23,8 @@
 //!     }
 //! }
 //! ```
+
+extern crate derive_more;
 
 /// Parsed TPTP structures
 pub mod syntax;

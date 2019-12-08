@@ -1,0 +1,40 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Disjunction(
+    Disjunction(
+        [
+            Atomic(
+                Plain(
+                    FofPlainAtomicFormula(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "p",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            NegatedAtomic(
+                Plain(
+                    FofPlainAtomicFormula(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "q",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

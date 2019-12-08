@@ -2,6 +2,6 @@
 source: src/tests.rs
 expression: parsed
 ---
-Annotations {
-    source: Unknown,
-}
+Annotations(
+    None,
+)

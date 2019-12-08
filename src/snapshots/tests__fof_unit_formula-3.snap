@@ -1,0 +1,32 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Unary(
+    Unary(
+        UnaryConnective,
+        Unitary(
+            Atomic(
+                Defined(
+                    Plain(
+                        FofDefinedPlainFormula(
+                            Constant(
+                                DefinedConstant(
+                                    DefinedFunctor(
+                                        AtomicDefinedWord(
+                                            DollarWord(
+                                                LowerWord(
+                                                    "true",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

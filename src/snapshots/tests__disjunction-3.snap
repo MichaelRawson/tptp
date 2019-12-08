@@ -2,26 +2,37 @@
 source: src/tests.rs
 expression: parsed
 ---
-[
-    Literal(
-        Proposition(
-            LowerWord(
-                "p",
+Disjunction(
+    [
+        Atomic(
+            Plain(
+                FofPlainAtomicFormula(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "p",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
             ),
         ),
-    ),
-    NegatedLiteral(
-        Proposition(
-            LowerWord(
-                "q",
+        NegatedAtomic(
+            Plain(
+                FofPlainAtomicFormula(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "q",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
             ),
         ),
-    ),
-    Literal(
-        Proposition(
-            LowerWord(
-                "r",
-            ),
-        ),
-    ),
-]
+    ],
+)

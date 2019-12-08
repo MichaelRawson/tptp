@@ -1,0 +1,13 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+DefinedFunctor(
+    AtomicDefinedWord(
+        DollarWord(
+            LowerWord(
+                "defined_functor",
+            ),
+        ),
+    ),
+)

@@ -2,4 +2,4 @@
 source: src/tests.rs
 expression: parsed
 ---
-Equal
+InfixEquality

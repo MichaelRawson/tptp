@@ -2,14 +2,26 @@
 source: src/tests.rs
 expression: parsed
 ---
-[
-    LowerWord(
-        "name",
-    ),
-    SingleQuoted(
-        "\'name\'",
-    ),
-    Integer(
-        "123",
-    ),
-]
+NameList(
+    [
+        AtomicWord(
+            Lower(
+                LowerWord(
+                    "name",
+                ),
+            ),
+        ),
+        AtomicWord(
+            SingleQuoted(
+                SingleQuoted(
+                    "name",
+                ),
+            ),
+        ),
+        Integer(
+            Integer(
+                "123",
+            ),
+        ),
+    ],
+)

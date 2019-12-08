@@ -2,15 +2,23 @@
 source: src/tests.rs
 expression: parsed
 ---
-Functor(
-    LowerWord(
-        "f",
-    ),
-    [
-        Variable(
-            Variable(
-                "X",
+Function(
+    Functor(
+        Lower(
+            LowerWord(
+                "f",
             ),
         ),
-    ],
+    ),
+    FofArguments(
+        [
+            Variable(
+                Variable(
+                    UpperWord(
+                        "X",
+                    ),
+                ),
+            ),
+        ],
+    ),
 )

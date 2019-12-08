@@ -2,14 +2,38 @@
 source: src/tests.rs
 expression: parsed
 ---
-Quantified(
-    Forall,
-    [
-        Variable(
-            "X",
-        ),
-    ],
-    Boolean(
-        true,
+FofQuantifiedFormula {
+    quantifier: Forall,
+    bound: FofVariableList(
+        [
+            Variable(
+                UpperWord(
+                    "X",
+                ),
+            ),
+        ],
     ),
-)
+    formula: Unitary(
+        Atomic(
+            Defined(
+                Plain(
+                    FofDefinedPlainFormula(
+                        Constant(
+                            DefinedConstant(
+                                DefinedFunctor(
+                                    AtomicDefinedWord(
+                                        DollarWord(
+                                            LowerWord(
+                                                "true",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+}

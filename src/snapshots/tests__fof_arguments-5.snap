@@ -1,0 +1,39 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+FofArguments(
+    [
+        Variable(
+            Variable(
+                UpperWord(
+                    "X",
+                ),
+            ),
+        ),
+        Function(
+            Plain(
+                Function(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "f",
+                            ),
+                        ),
+                    ),
+                    FofArguments(
+                        [
+                            Variable(
+                                Variable(
+                                    UpperWord(
+                                        "X",
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

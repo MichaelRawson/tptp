@@ -2,6 +2,28 @@
 source: src/tests.rs
 expression: parsed
 ---
-Boolean(
-    true,
+Parenthesised(
+    Unitary(
+        Atomic(
+            Defined(
+                Plain(
+                    FofDefinedPlainFormula(
+                        Constant(
+                            DefinedConstant(
+                                DefinedFunctor(
+                                    AtomicDefinedWord(
+                                        DollarWord(
+                                            LowerWord(
+                                                "true",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
 )

@@ -1,0 +1,41 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+FofBinaryNonassoc {
+    left: Unitary(
+        Atomic(
+            Plain(
+                FofPlainAtomicFormula(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "p",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+    op: NotOr,
+    right: Unitary(
+        Atomic(
+            Plain(
+                FofPlainAtomicFormula(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "q",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+}

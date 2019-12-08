@@ -2,15 +2,43 @@
 source: src/tests.rs
 expression: parsed
 ---
-Predicate(
-    LowerWord(
-        "p",
-    ),
-    [
-        Variable(
-            Variable(
-                "X",
+Defined(
+    Infix(
+        FofDefinedInfixFormula {
+            left: Function(
+                Plain(
+                    Function(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "f",
+                                ),
+                            ),
+                        ),
+                        FofArguments(
+                            [
+                                Variable(
+                                    Variable(
+                                        UpperWord(
+                                            "X",
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
             ),
-        ),
-    ],
+            op: DefinedInfixPred(
+                InfixEquality,
+            ),
+            right: Variable(
+                Variable(
+                    UpperWord(
+                        "Y",
+                    ),
+                ),
+            ),
+        },
+    ),
 )

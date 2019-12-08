@@ -3,8 +3,28 @@ source: src/tests.rs
 expression: parsed
 ---
 Unary(
-    Not,
-    Boolean(
-        true,
+    UnaryConnective,
+    Unitary(
+        Atomic(
+            Defined(
+                Plain(
+                    FofDefinedPlainFormula(
+                        Constant(
+                            DefinedConstant(
+                                DefinedFunctor(
+                                    AtomicDefinedWord(
+                                        DollarWord(
+                                            LowerWord(
+                                                "true",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
     ),
 )

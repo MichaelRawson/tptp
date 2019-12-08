@@ -1,0 +1,19 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+FofDefinedPlainFormula(
+    Constant(
+        DefinedConstant(
+            DefinedFunctor(
+                AtomicDefinedWord(
+                    DollarWord(
+                        LowerWord(
+                            "defined_plain_formula",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

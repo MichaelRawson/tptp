@@ -1,10 +1,10 @@
 use nom::branch::alt;
 use nom::bytes::complete::{escaped, tag, take_until, take_while, take_while1};
 use nom::character::complete::{digit0, multispace1, one_of};
-use nom::combinator::{map, map_opt, opt, recognize, value};
+use nom::combinator::{map, opt, recognize, value};
 use nom::error::ParseError;
-use nom::multi::{many0, separated_list, separated_nonempty_list};
-use nom::sequence::{delimited, pair, preceded, terminated, tuple};
+use nom::multi::{many0, many1, separated_nonempty_list};
+use nom::sequence::{delimited, pair, preceded, tuple};
 use std::borrow::Cow;
 use std::str;
 
@@ -41,22 +41,23 @@ pub fn is_sq_char(c: u8) -> bool {
 
 pub fn whitespace<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<&[u8], E> {
-    multispace1(x)
+) -> ParseResult<(), E> {
+    value((), multispace1)(x)
 }
 
 pub fn comment_line<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<&[u8], E> {
-    recognize(tuple((tag("%"), take_until("\n"), tag("\n"))))(x)
+) -> ParseResult<(), E> {
+    value((), tuple((tag("%"), take_until("\n"), tag("\n"))))(x)
 }
 
 pub fn comment_block<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<&[u8], E> {
-    recognize(tuple((tag("/*"), take_until("*/"), tag("*/"))))(x)
+) -> ParseResult<(), E> {
+    value((), tuple((tag("/*"), take_until("*/"), tag("*/"))))(x)
 }
 
+/// Zero or more `whitespace`, `comment_line`, or `comment_block`
 pub fn ignored<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<(), E> {
     value((), many0(alt((whitespace, comment_line, comment_block))))(x)
 }
@@ -81,83 +82,65 @@ pub fn alphanumeric<'a, E: ParseError<&'a [u8]>>(
 
 pub fn lower_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Cow<str>, E> {
+) -> ParseResult<LowerWord, E> {
     map(recognize(preceded(lower_alpha, alphanumeric)), |w| {
-        Cow::Borrowed(unsafe { to_str(w) })
+        LowerWord(Cow::Borrowed(unsafe { to_str(w) }))
     })(x)
 }
 
 pub fn upper_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Cow<str>, E> {
+) -> ParseResult<UpperWord, E> {
     map(recognize(preceded(upper_alpha, alphanumeric)), |w| {
-        Cow::Borrowed(unsafe { to_str(w) })
+        UpperWord(Cow::Borrowed(unsafe { to_str(w) }))
     })(x)
 }
 
 pub fn single_quoted<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Cow<str>, E> {
+) -> ParseResult<SingleQuoted, E> {
     map(
-        recognize(delimited(
+        delimited(
             tag("'"),
             escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
             tag("'"),
-        )),
-        |w| Cow::Borrowed(unsafe { to_str(w) }),
+        ),
+        |w| SingleQuoted(Cow::Borrowed(unsafe { to_str(w) })),
     )(x)
 }
 
 pub fn atomic_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Cow<str>, E> {
-    alt((lower_word, single_quoted))(x)
+) -> ParseResult<AtomicWord, E> {
+    alt((
+        map(lower_word, AtomicWord::Lower),
+        map(single_quoted, AtomicWord::SingleQuoted),
+    ))(x)
 }
 
 pub fn dollar_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Cow<str>, E> {
-    preceded(tag("$"), lower_word)(x)
+) -> ParseResult<DollarWord, E> {
+    map(preceded(tag("$"), lower_word), DollarWord)(x)
 }
 
 pub fn integer<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Cow<str>, E> {
+) -> ParseResult<Integer, E> {
     map(
         recognize(preceded(
             opt(one_of("+-")),
             alt((tag("0"), preceded(one_of("123456789"), digit0))),
         )),
-        |w| Cow::Borrowed(unsafe { to_str(w) }),
+        |w| Integer(Cow::Borrowed(unsafe { to_str(w) })),
     )(x)
 }
 
 pub fn name<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<Name, E> {
     alt((
-        map(lower_word, Name::LowerWord),
+        map(atomic_word, Name::AtomicWord),
         map(integer, Name::Integer),
-        map(single_quoted, Name::SingleQuoted),
     ))(x)
-}
-
-pub fn name_list<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParseResult<Vec<Name>, E> {
-    delimited(
-        pair(tag("["), ignored),
-        separated_list(tuple((ignored, tag(","), ignored)), name),
-        pair(ignored, tag("]")),
-    )(x)
-}
-
-pub fn fof_arguments<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParseResult<Vec<FofTerm>, E> {
-    delimited(
-        pair(tag("("), ignored),
-        separated_list(tuple((ignored, tag(","), ignored)), fof_term),
-        pair(ignored, tag(")")),
-    )(x)
 }
 
 pub fn variable<'a, E: ParseError<&'a [u8]>>(
@@ -166,213 +149,518 @@ pub fn variable<'a, E: ParseError<&'a [u8]>>(
     map(upper_word, Variable)(x)
 }
 
-fn variable_term<'a, E: ParseError<&'a [u8]>>(
+pub fn atomic_defined_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<FofTerm, E> {
-    map(variable, FofTerm::Variable)(x)
+) -> ParseResult<AtomicDefinedWord, E> {
+    map(dollar_word, AtomicDefinedWord)(x)
+}
+
+pub fn defined_functor<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<DefinedFunctor, E> {
+    map(atomic_defined_word, DefinedFunctor)(x)
+}
+
+pub fn defined_constant<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<DefinedConstant, E> {
+    map(defined_functor, DefinedConstant)(x)
+}
+
+pub fn functor<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<Functor, E> {
+    map(atomic_word, Functor)(x)
+}
+
+pub fn fof_arguments<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofArguments, E> {
+    map(
+        delimited(
+            pair(tag("("), ignored),
+            separated_nonempty_list(
+                tuple((ignored, tag(","), ignored)),
+                fof_term,
+            ),
+            pair(ignored, tag(")")),
+        ),
+        FofArguments,
+    )(x)
 }
 
 pub fn fof_plain_term<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<FofTerm, E> {
+) -> ParseResult<FofPlainTerm, E> {
     map(
-        pair(name, preceded(ignored, opt(fof_arguments))),
-        |(name, args)| match args {
-            Some(args) => FofTerm::Functor(name, args),
-            None => FofTerm::Constant(name),
+        pair(functor, preceded(ignored, opt(fof_arguments))),
+        |(f, args)| match args {
+            None => FofPlainTerm::Constant(f),
+            Some(args) => FofPlainTerm::Function(f, args),
         },
     )(x)
 }
 
+pub fn fof_defined_plain_term<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofDefinedPlainTerm, E> {
+    map(defined_constant, FofDefinedPlainTerm::Constant)(x)
+}
+
+pub fn fof_defined_atomic_term<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofDefinedAtomicTerm, E> {
+    map(fof_defined_plain_term, FofDefinedAtomicTerm)(x)
+}
+
+pub fn fof_defined_term<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofDefinedTerm, E> {
+    map(fof_defined_atomic_term, FofDefinedTerm::Atomic)(x)
+}
+
 pub fn fof_function_term<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<FofTerm, E> {
-    fof_plain_term(x)
+) -> ParseResult<FofFunctionTerm, E> {
+    alt((
+        map(fof_plain_term, FofFunctionTerm::Plain),
+        map(fof_defined_term, FofFunctionTerm::Defined),
+    ))(x)
 }
 
 pub fn fof_term<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofTerm, E> {
-    alt((fof_function_term, variable_term))(x)
-}
-
-pub fn fof_defined_atomic_formula<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParseResult<FofFormula, E> {
-    map_opt(dollar_word, |w| match w.as_ref() {
-        "true" => Some(FofFormula::Boolean(true)),
-        "false" => Some(FofFormula::Boolean(false)),
-        _ => None,
-    })(x)
+    alt((
+        map(variable, FofTerm::Variable),
+        map(fof_function_term, FofTerm::Function),
+    ))(x)
 }
 
 pub fn infix_equality<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<InfixEquality, E> {
+    value(InfixEquality, tag("="))(x)
+}
+
+pub fn infix_inequality<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<InfixInequality, E> {
+    value(InfixInequality, tag("!="))(x)
+}
+
+pub fn nonassoc_connective<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<NonassocConnective, E> {
     alt((
-        value(InfixEquality::Equal, tag("=")),
-        value(InfixEquality::NotEqual, tag("!=")),
+        value(NonassocConnective::LRImplies, tag("=>")),
+        value(NonassocConnective::Equivalent, tag("<=>")),
+        value(NonassocConnective::RLImplies, tag("<=")),
+        value(NonassocConnective::NotEquivalent, tag("<~>")),
+        value(NonassocConnective::NotAnd, tag("~&")),
+        value(NonassocConnective::NotOr, tag("~|")),
+    ))(x)
+}
+
+pub fn unary_connective<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<UnaryConnective, E> {
+    value(UnaryConnective, tag("~"))(x)
+}
+
+pub fn fof_quantifier<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofQuantifier, E> {
+    alt((
+        value(FofQuantifier::Forall, tag("!")),
+        value(FofQuantifier::Exists, tag("?")),
+    ))(x)
+}
+
+pub fn fof_plain_atomic_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofPlainAtomicFormula, E> {
+    map(fof_plain_term, FofPlainAtomicFormula)(x)
+}
+
+pub fn defined_infix_pred<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<DefinedInfixPred, E> {
+    map(infix_equality, DefinedInfixPred)(x)
+}
+
+pub fn fof_defined_plain_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofDefinedPlainFormula, E> {
+    map(fof_defined_plain_term, FofDefinedPlainFormula)(x)
+}
+
+pub fn fof_defined_infix_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofDefinedInfixFormula, E> {
+    map(
+        tuple((
+            fof_term,
+            delimited(ignored, defined_infix_pred, ignored),
+            fof_term,
+        )),
+        |(left, op, right)| FofDefinedInfixFormula { left, op, right },
+    )(x)
+}
+
+pub fn fof_defined_atomic_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofDefinedAtomicFormula, E> {
+    alt((
+        map(fof_defined_infix_formula, FofDefinedAtomicFormula::Infix),
+        map(fof_defined_plain_formula, FofDefinedAtomicFormula::Plain),
     ))(x)
 }
 
 pub fn fof_atomic_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<FofFormula, E> {
-    alt((
-        map(
-            tuple((
-                variable_term,
-                preceded(ignored, infix_equality),
-                preceded(ignored, fof_term),
+) -> ParseResult<FofAtomicFormula, E> {
+    // avoid re-parsing `fof_plain_term`
+    fn plain_term_maybe_infix<'a, E: ParseError<&'a [u8]>>(
+        x: &'a [u8],
+    ) -> ParseResult<(FofPlainTerm, Option<(DefinedInfixPred, FofTerm)>), E>
+    {
+        pair(
+            fof_plain_term,
+            opt(pair(
+                delimited(ignored, defined_infix_pred, ignored),
+                fof_term,
             )),
-            |(left, op, right)| FofFormula::Infix(op, left, right),
-        ),
-        map(
-            pair(
-                fof_function_term,
-                opt(pair(
-                    preceded(ignored, infix_equality),
-                    preceded(ignored, fof_term),
-                )),
+        )(x)
+    }
+
+    alt((
+        map(plain_term_maybe_infix, |(left, rest)| match rest {
+            Some((op, right)) => FofAtomicFormula::Defined(
+                FofDefinedAtomicFormula::Infix(FofDefinedInfixFormula {
+                    left: FofTerm::Function(FofFunctionTerm::Plain(left)),
+                    op,
+                    right,
+                }),
             ),
-            |(left, rest)| {
-                if let Some((op, right)) = rest {
-                    FofFormula::Infix(op, left, right)
-                } else {
-                    match left {
-                        FofTerm::Constant(name) => {
-                            FofFormula::Proposition(name)
-                        }
-                        FofTerm::Functor(name, args) => {
-                            FofFormula::Predicate(name, args)
-                        }
-                        _ => unreachable!(),
-                    }
-                }
-            },
-        ),
-        fof_defined_atomic_formula,
+            None => FofAtomicFormula::Plain(FofPlainAtomicFormula(left)),
+        }),
+        map(fof_defined_atomic_formula, FofAtomicFormula::Defined),
     ))(x)
+}
+
+pub fn fof_variable_list<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofVariableList, E> {
+    map(
+        separated_nonempty_list(tuple((ignored, tag(","), ignored)), variable),
+        FofVariableList,
+    )(x)
 }
 
 pub fn fof_quantified_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<FofFormula, E> {
+) -> ParseResult<FofQuantifiedFormula, E> {
     map(
         tuple((
-            alt((
-                value(FofQuantifier::Forall, tag("!")),
-                value(FofQuantifier::Exists, tag("?")),
-            )),
-            preceded(
+            fof_quantifier,
+            delimited(
                 tuple((ignored, tag("["), ignored)),
-                separated_nonempty_list(
-                    tuple((ignored, tag(","), ignored)),
-                    variable,
-                ),
-            ),
-            preceded(
+                fof_variable_list,
                 tuple((ignored, tag("]"), ignored, tag(":"), ignored)),
-                fof_unit_formula,
             ),
+            fof_unit_formula,
         )),
-        |(quantifier, bound, formula)| {
-            FofFormula::Quantified(quantifier, bound, Box::new(formula))
+        |(quantifier, bound, formula)| FofQuantifiedFormula {
+            quantifier,
+            bound,
+            formula,
         },
     )(x)
 }
 
-pub fn fof_unitary_formula<'a, E: ParseError<&'a [u8]>>(
+pub fn fof_infix_unary<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<FofFormula, E> {
-    alt((
-        delimited(
-            pair(tag("("), ignored),
-            fof_logic_formula,
-            pair(ignored, tag(")")),
-        ),
-        fof_atomic_formula,
-        fof_quantified_formula,
-    ))(x)
+) -> ParseResult<FofInfixUnary, E> {
+    map(
+        tuple((
+            fof_term,
+            delimited(ignored, infix_inequality, ignored),
+            fof_term,
+        )),
+        |(left, op, right)| FofInfixUnary { left, op, right },
+    )(x)
 }
 
 pub fn fof_unary_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<FofFormula, E> {
-    map(
-        preceded(pair(tag("~"), ignored), fof_unit_formula),
-        |formula| FofFormula::Unary(UnaryConnective::Not, Box::new(formula)),
-    )(x)
+) -> ParseResult<FofUnaryFormula, E> {
+    alt((
+        map(
+            pair(unary_connective, preceded(ignored, fof_unit_formula)),
+            |(c, f)| FofUnaryFormula::Unary(c, f),
+        ),
+        map(fof_infix_unary, FofUnaryFormula::InfixUnary),
+    ))(x)
+}
+
+pub fn fof_unitary_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofUnitaryFormula, E> {
+    alt((
+        map(fof_quantified_formula, FofUnitaryFormula::Quantified),
+        map(
+            delimited(
+                pair(tag("("), ignored),
+                fof_logic_formula,
+                pair(ignored, tag(")")),
+            ),
+            FofUnitaryFormula::Parenthesised,
+        ),
+        map(fof_atomic_formula, FofUnitaryFormula::Atomic),
+    ))(x)
 }
 
 pub fn fof_unit_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<FofFormula, E> {
-    alt((fof_unary_formula, fof_unitary_formula))(x)
-}
+) -> ParseResult<FofUnitFormula, E> {
+    enum Op {
+        Equals(DefinedInfixPred),
+        NotEquals(InfixInequality),
+    }
+    use Op::*;
 
-pub fn nonassoc_connective<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParseResult<NonAssocConnective, E> {
+    fn op<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<Op, E> {
+        alt((
+            map(defined_infix_pred, Equals),
+            map(infix_inequality, NotEquals),
+        ))(x)
+    }
+
+    // avoid re-parsing `fof_plain_term`
+    fn plain_term_maybe_infix<'a, E: ParseError<&'a [u8]>>(
+        x: &'a [u8],
+    ) -> ParseResult<(FofPlainTerm, Option<(Op, FofTerm)>), E> {
+        pair(
+            fof_plain_term,
+            opt(pair(delimited(ignored, op, ignored), fof_term)),
+        )(x)
+    }
+
     alt((
-        value(NonAssocConnective::LRImplies, tag("=>")),
-        value(NonAssocConnective::Equivalent, tag("<=>")),
-        value(NonAssocConnective::RLImplies, tag("<=")),
-        value(NonAssocConnective::NotEquivalent, tag("<~>")),
-        value(NonAssocConnective::NotAnd, tag("~&")),
-        value(NonAssocConnective::NotOr, tag("~|")),
+        map(plain_term_maybe_infix, |(left, rest)| match rest {
+            Some((Equals(op), right)) => FofUnitFormula::Unitary(Box::new(
+                FofUnitaryFormula::Atomic(FofAtomicFormula::Defined(
+                    FofDefinedAtomicFormula::Infix(FofDefinedInfixFormula {
+                        left: FofTerm::Function(FofFunctionTerm::Plain(left)),
+                        op,
+                        right,
+                    }),
+                )),
+            )),
+            Some((NotEquals(op), right)) => FofUnitFormula::Unary(Box::new(
+                FofUnaryFormula::InfixUnary(FofInfixUnary {
+                    left: FofTerm::Function(FofFunctionTerm::Plain(left)),
+                    op,
+                    right,
+                }),
+            )),
+            None => {
+                FofUnitFormula::Unitary(Box::new(FofUnitaryFormula::Atomic(
+                    FofAtomicFormula::Plain(FofPlainAtomicFormula(left)),
+                )))
+            }
+        }),
+        map(fof_unary_formula, |f| FofUnitFormula::Unary(Box::new(f))),
+        map(fof_unitary_formula, |f| {
+            FofUnitFormula::Unitary(Box::new(f))
+        }),
     ))(x)
 }
 
-pub fn assoc_connective<'a, E: ParseError<&'a [u8]>>(
+fn fof_nonassoc_suffix<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<AssocConnective, E> {
-    alt((
-        value(AssocConnective::And, tag("&")),
-        value(AssocConnective::Or, tag("|")),
+) -> ParseResult<(NonassocConnective, FofUnitFormula), E> {
+    pair(
+        delimited(ignored, nonassoc_connective, ignored),
+        fof_unit_formula,
+    )(x)
+}
+
+pub fn fof_binary_nonassoc<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofBinaryNonassoc, E> {
+    map(
+        pair(fof_unit_formula, fof_nonassoc_suffix),
+        |(left, (op, right))| FofBinaryNonassoc { left, op, right },
+    )(x)
+}
+
+fn fof_or_suffix<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<Vec<FofUnitFormula<'a>>, E> {
+    many1(preceded(
+        delimited(ignored, tag("|"), ignored),
+        fof_unit_formula,
     ))(x)
+}
+
+pub fn fof_or_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofOrFormula, E> {
+    map(pair(fof_unit_formula, fof_or_suffix), |(first, rest)| {
+        let mut formulae = vec![first];
+        formulae.extend(rest);
+        FofOrFormula(formulae)
+    })(x)
+}
+
+fn fof_and_suffix<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<Vec<FofUnitFormula<'a>>, E> {
+    many1(preceded(
+        delimited(ignored, tag("&"), ignored),
+        fof_unit_formula,
+    ))(x)
+}
+
+pub fn fof_and_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofAndFormula, E> {
+    map(pair(fof_unit_formula, fof_and_suffix), |(first, rest)| {
+        let mut formulae = vec![first];
+        formulae.extend(rest);
+        FofAndFormula(formulae)
+    })(x)
+}
+
+enum FofAssocSuffix<'a> {
+    Or(Vec<FofUnitFormula<'a>>),
+    And(Vec<FofUnitFormula<'a>>),
+}
+
+fn fof_assoc_suffix<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofAssocSuffix, E> {
+    alt((
+        map(fof_or_suffix, FofAssocSuffix::Or),
+        map(fof_and_suffix, FofAssocSuffix::And),
+    ))(x)
+}
+
+pub fn fof_binary_assoc<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofBinaryAssoc, E> {
+    // avoid re-parsing `fof_unit_formula`
+    map(
+        pair(fof_unit_formula, fof_assoc_suffix),
+        |(left, rest)| match rest {
+            FofAssocSuffix::Or(rest) => {
+                let mut formulae = vec![left];
+                formulae.extend(rest);
+                FofBinaryAssoc::Or(FofOrFormula(formulae))
+            }
+            FofAssocSuffix::And(rest) => {
+                let mut formulae = vec![left];
+                formulae.extend(rest);
+                FofBinaryAssoc::And(FofAndFormula(formulae))
+            }
+        },
+    )(x)
+}
+
+enum FofBinarySuffix<'a> {
+    Assoc(FofAssocSuffix<'a>),
+    Nonassoc(NonassocConnective, FofUnitFormula<'a>),
+}
+
+fn fof_binary_suffix<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofBinarySuffix, E> {
+    alt((
+        map(fof_assoc_suffix, FofBinarySuffix::Assoc),
+        map(fof_nonassoc_suffix, |(op, right)| {
+            FofBinarySuffix::Nonassoc(op, right)
+        }),
+    ))(x)
+}
+
+pub fn fof_binary_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofBinaryFormula, E> {
+    // avoid re-parsing `fof_unit_formula`
+    map(
+        pair(fof_unit_formula, fof_binary_suffix),
+        |(left, suffix)| match suffix {
+            FofBinarySuffix::Assoc(FofAssocSuffix::Or(rest)) => {
+                let mut formulae = vec![left];
+                formulae.extend(rest);
+                FofBinaryFormula::Assoc(FofBinaryAssoc::Or(FofOrFormula(
+                    formulae,
+                )))
+            }
+            FofBinarySuffix::Assoc(FofAssocSuffix::And(rest)) => {
+                let mut formulae = vec![left];
+                formulae.extend(rest);
+                FofBinaryFormula::Assoc(FofBinaryAssoc::And(FofAndFormula(
+                    formulae,
+                )))
+            }
+            FofBinarySuffix::Nonassoc(op, right) => {
+                FofBinaryFormula::Nonassoc(FofBinaryNonassoc {
+                    left,
+                    op,
+                    right,
+                })
+            }
+        },
+    )(x)
 }
 
 pub fn fof_logic_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<FofFormula, E> {
-    let (x, first) = alt((fof_unary_formula, fof_unit_formula))(x)?;
-    if let Ok((x, op)) = delimited::<_, _, _, _, E, _, _, _>(
-        ignored,
-        nonassoc_connective,
-        ignored,
+) -> ParseResult<FofLogicFormula, E> {
+    map(
+        pair(fof_unit_formula, opt(fof_binary_suffix)),
+        |(left, suffix)| {
+            if let Some(suffix) = suffix {
+                FofLogicFormula::Binary(match suffix {
+                    FofBinarySuffix::Assoc(FofAssocSuffix::Or(rest)) => {
+                        let mut formulae = vec![left];
+                        formulae.extend(rest);
+                        FofBinaryFormula::Assoc(FofBinaryAssoc::Or(
+                            FofOrFormula(formulae),
+                        ))
+                    }
+                    FofBinarySuffix::Assoc(FofAssocSuffix::And(rest)) => {
+                        let mut formulae = vec![left];
+                        formulae.extend(rest);
+                        FofBinaryFormula::Assoc(FofBinaryAssoc::And(
+                            FofAndFormula(formulae),
+                        ))
+                    }
+                    FofBinarySuffix::Nonassoc(op, right) => {
+                        FofBinaryFormula::Nonassoc(FofBinaryNonassoc {
+                            left,
+                            op,
+                            right,
+                        })
+                    }
+                })
+            } else {
+                match left {
+                    FofUnitFormula::Unary(u) => FofLogicFormula::Unary(u),
+                    FofUnitFormula::Unitary(u) => FofLogicFormula::Unitary(u),
+                }
+            }
+        },
     )(x)
-    {
-        let (x, second) = fof_unit_formula(x)?;
-        Ok((
-            x,
-            FofFormula::NonAssoc(op, Box::new(first), Box::new(second)),
-        ))
-    } else if let Ok((x, op)) =
-        delimited::<_, _, _, _, E, _, _, _>(ignored, assoc_connective, ignored)(
-            x,
-        )
-    {
-        let sep = tag(match op {
-            AssocConnective::And => "&",
-            AssocConnective::Or => "|",
-        });
-        let mut subformulae = vec![first];
-        let (x, rest) = separated_nonempty_list(
-            delimited(ignored, sep, ignored),
-            fof_unit_formula,
-        )(x)?;
-        subformulae.extend(rest);
-        Ok((x, FofFormula::Assoc(op, subformulae)))
-    } else {
-        Ok((x, first))
-    }
 }
 
 pub fn fof_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofFormula, E> {
-    fof_logic_formula(x)
+    map(fof_logic_formula, FofFormula::Logic)(x)
 }
 
 pub fn literal<'a, E: ParseError<&'a [u8]>>(
@@ -381,35 +669,36 @@ pub fn literal<'a, E: ParseError<&'a [u8]>>(
     alt((
         map(
             preceded(pair(tag("~"), ignored), fof_atomic_formula),
-            Literal::NegatedLiteral,
+            Literal::NegatedAtomic,
         ),
-        map(fof_atomic_formula, |l| match l {
-            FofFormula::Infix(_, _, _) => Literal::EqualityLiteral(l),
-            _ => Literal::Literal(l),
-        }),
+        map(fof_infix_unary, Literal::Infix),
+        map(fof_atomic_formula, Literal::Atomic),
     ))(x)
 }
 
 pub fn disjunction<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Vec<Literal>, E> {
-    separated_nonempty_list(tuple((ignored, tag("|"), ignored)), literal)(x)
+) -> ParseResult<Disjunction, E> {
+    map(
+        separated_nonempty_list(tuple((ignored, tag("|"), ignored)), literal),
+        Disjunction,
+    )(x)
 }
 
 pub fn cnf_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<CnfFormula, E> {
-    map(
-        alt((
+    alt((
+        map(disjunction, CnfFormula::Disjunction),
+        map(
             delimited(
                 pair(tag("("), ignored),
                 disjunction,
                 pair(ignored, tag(")")),
             ),
-            disjunction,
-        )),
-        CnfFormula,
-    )(x)
+            CnfFormula::Parenthesised,
+        ),
+    ))(x)
 }
 
 pub fn formula_role<'a, E: ParseError<&'a [u8]>>(
@@ -430,171 +719,244 @@ pub fn formula_role<'a, E: ParseError<&'a [u8]>>(
     ))(x)
 }
 
-pub fn unknown_source<'a, E: ParseError<&'a [u8]>>(
+pub fn general_terms<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Source, E> {
-    value(Source::Unknown, tag("unknown"))(x)
+) -> ParseResult<GeneralTerms, E> {
+    map(
+        separated_nonempty_list(
+            delimited(ignored, tag(","), ignored),
+            general_term,
+        ),
+        GeneralTerms,
+    )(x)
 }
 
-pub fn dag_source<'a, E: ParseError<&'a [u8]>>(
+pub fn general_list<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<DagSource, E> {
-    alt((
-        map(
-            pair(
-                preceded(
-                    tuple((tag("inference"), ignored, tag("("), ignored)),
-                    atomic_word,
-                ),
-                delimited(
-                    tuple((
-                        ignored,
-                        tag(","),
-                        ignored,
-                        tag("["),
-                        ignored,
-                        tag("]"),
-                        ignored,
-                        tag(","),
-                        ignored,
-                    )),
-                    sources,
-                    pair(ignored, tag(")")),
-                ),
-            ),
-            |(rule, parents)| DagSource::Inference(rule, parents),
+) -> ParseResult<GeneralList, E> {
+    map(
+        delimited(
+            pair(tag("["), ignored),
+            opt(general_terms),
+            pair(ignored, tag("]")),
         ),
-        map(name, DagSource::Name),
+        GeneralList,
+    )(x)
+}
+
+pub fn general_function<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<GeneralFunction, E> {
+    map(
+        pair(
+            atomic_word,
+            delimited(
+                tuple((ignored, tag("("), ignored)),
+                general_terms,
+                tuple((ignored, tag(")"))),
+            ),
+        ),
+        |(word, terms)| GeneralFunction { word, terms },
+    )(x)
+}
+
+pub fn formula_data<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FormulaData, E> {
+    preceded(
+        tag("$"),
+        alt((
+            map(
+                delimited(
+                    tuple((tag("fof"), ignored, tag("("), ignored)),
+                    fof_formula,
+                    tuple((ignored, tag(")"))),
+                ),
+                FormulaData::Fof,
+            ),
+            map(
+                delimited(
+                    tuple((tag("cnf"), ignored, tag("("), ignored)),
+                    cnf_formula,
+                    tuple((ignored, tag(")"))),
+                ),
+                FormulaData::Cnf,
+            ),
+        )),
+    )(x)
+}
+
+pub fn general_data<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<GeneralData, E> {
+    alt((
+        map(general_function, GeneralData::Function),
+        map(atomic_word, GeneralData::Atomic),
+        map(variable, GeneralData::Variable),
+        map(formula_data, GeneralData::Formula),
     ))(x)
 }
 
-pub fn external_source<'a, E: ParseError<&'a [u8]>>(
+pub fn general_term<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<ExternalSource, E> {
-    map(
-        delimited(
-            tuple((tag("file"), ignored, tag("("), ignored)),
+) -> ParseResult<GeneralTerm, E> {
+    alt((
+        map(general_list, GeneralTerm::List),
+        map(
             pair(
-                single_quoted,
-                opt(preceded(tuple((ignored, tag(","), ignored)), name)),
+                general_data,
+                preceded(tuple((ignored, tag(":"), ignored)), general_term),
             ),
-            pair(ignored, tag(")")),
+            |(d, f)| GeneralTerm::Colon(d, Box::new(f)),
         ),
-        |(file, info)| ExternalSource::File(file, info),
-    )(x)
-}
-
-pub fn sources<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParseResult<Vec<Source>, E> {
-    delimited(
-        pair(tag("["), ignored),
-        separated_list(tuple((ignored, tag(","), ignored)), source),
-        pair(ignored, tag("]")),
-    )(x)
+        map(general_data, GeneralTerm::Data),
+    ))(x)
 }
 
 pub fn source<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<Source, E> {
-    alt((
-        unknown_source,
-        map(external_source, Source::External),
-        map(dag_source, Source::Dag),
-        map(sources, Source::Sources),
-    ))(x)
+    map(general_term, Source)(x)
+}
+
+pub fn useful_info<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<UsefulInfo, E> {
+    map(general_list, UsefulInfo)(x)
+}
+
+pub fn optional_info<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<OptionalInfo, E> {
+    map(
+        opt(preceded(pair(tag(","), ignored), useful_info)),
+        OptionalInfo,
+    )(x)
 }
 
 pub fn annotations<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<Annotations, E> {
-    map(source, |source| Annotations { source })(x)
-}
-
-pub fn include_path<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParseResult<Included, E> {
     map(
-        delimited(
-            tag("'"),
-            escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
-            tag("'"),
-        ),
-        |w| Included(unsafe { to_str(w) }.into()),
-    )(x)
-}
-
-pub fn include<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParseResult<Statement, E> {
-    map(
-        delimited(
-            tuple((tag("include"), ignored, tag("("), ignored)),
-            pair(
-                include_path,
-                opt(preceded(tuple((ignored, tag(","), ignored)), name_list)),
-            ),
-            pair(ignored, tag(")")),
-        ),
-        |(included, selection)| Statement::Include(included, selection),
+        opt(preceded(
+            pair(tag(","), ignored),
+            pair(source, preceded(ignored, optional_info)),
+        )),
+        Annotations,
     )(x)
 }
 
 pub fn fof_annotated<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Statement, E> {
+) -> ParseResult<FofAnnotated, E> {
     map(
         delimited(
             tuple((tag("fof"), ignored, tag("("), ignored)),
             tuple((
                 name,
-                preceded(tuple((ignored, tag(","), ignored)), formula_role),
-                preceded(tuple((ignored, tag(","), ignored)), fof_formula),
-                opt(preceded(tuple((ignored, tag(","), ignored)), annotations)),
+                preceded(delimited(ignored, tag(","), ignored), formula_role),
+                preceded(delimited(ignored, tag(","), ignored), fof_formula),
+                preceded(ignored, annotations),
             )),
-            pair(ignored, tag(")")),
+            tuple((ignored, tag(")"), ignored, tag("."))),
         ),
-        |(name, role, formula, annotations)| {
-            Statement::Fof(name, role, formula, annotations)
+        |(name, role, formula, annotations)| FofAnnotated {
+            name,
+            role,
+            formula,
+            annotations,
         },
     )(x)
 }
 
 pub fn cnf_annotated<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Statement, E> {
+) -> ParseResult<CnfAnnotated, E> {
     map(
         delimited(
             tuple((tag("cnf"), ignored, tag("("), ignored)),
             tuple((
                 name,
-                preceded(tuple((ignored, tag(","), ignored)), formula_role),
-                preceded(tuple((ignored, tag(","), ignored)), cnf_formula),
-                opt(preceded(tuple((ignored, tag(","), ignored)), annotations)),
+                preceded(delimited(ignored, tag(","), ignored), formula_role),
+                preceded(delimited(ignored, tag(","), ignored), cnf_formula),
+                preceded(ignored, annotations),
             )),
-            pair(ignored, tag(")")),
+            tuple((ignored, tag(")"), ignored, tag("."))),
         ),
-        |(name, role, formula, annotations)| {
-            Statement::Cnf(name, role, formula, annotations)
+        |(name, role, formula, annotations)| CnfAnnotated {
+            name,
+            role,
+            formula,
+            annotations,
+        },
+    )(x)
+}
+
+pub fn annotated_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<AnnotatedFormula, E> {
+    alt((
+        map(fof_annotated, AnnotatedFormula::Fof),
+        map(cnf_annotated, AnnotatedFormula::Cnf),
+    ))(x)
+}
+
+pub fn file_name<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FileName, E> {
+    map(single_quoted, FileName)(x)
+}
+
+pub fn name_list<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<NameList, E> {
+    map(
+        separated_nonempty_list(tuple((ignored, tag(","), ignored)), name),
+        NameList,
+    )(x)
+}
+
+pub fn formula_selection<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FormulaSelection, E> {
+    map(
+        opt(delimited(
+            tuple((tag(","), ignored, tag("["), ignored)),
+            name_list,
+            tuple((ignored, tag("]"))),
+        )),
+        FormulaSelection,
+    )(x)
+}
+
+pub fn include<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<Include, E> {
+    map(
+        delimited(
+            tuple((tag("include"), ignored, tag("("), ignored)),
+            pair(file_name, preceded(ignored, formula_selection)),
+            tuple((ignored, tag(")"), ignored, tag("."))),
+        ),
+        |(file_name, selection)| Include {
+            file_name,
+            selection,
         },
     )(x)
 }
 
 pub fn tptp_input<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Statement, E> {
-    terminated(
-        alt((include, fof_annotated, cnf_annotated)),
-        pair(ignored, tag(".")),
-    )(x)
+) -> ParseResult<TPTPInput, E> {
+    alt((
+        map(annotated_formula, |x| TPTPInput::Annotated(Box::new(x))),
+        map(include, TPTPInput::Include),
+    ))(x)
 }
 
-pub fn tptp_input_or_eof<'a, E: ParseError<&'a [u8]>>(
+/// `ignored`, then an optional TPTP input (or EOF)
+pub fn ignored_then_tptp_input<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Option<Statement>, E> {
-    if x.is_empty() {
-        Ok((x, None))
-    } else {
-        map(delimited(ignored, tptp_input, ignored), Some)(x)
-    }
+) -> ParseResult<Option<TPTPInput>, E> {
+    preceded(ignored, opt(tptp_input))(x)
 }

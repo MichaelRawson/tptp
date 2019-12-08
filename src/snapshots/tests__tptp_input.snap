@@ -3,8 +3,14 @@ source: src/tests.rs
 expression: parsed
 ---
 Include(
-    Included(
-        "test",
-    ),
-    None,
+    Include {
+        file_name: FileName(
+            SingleQuoted(
+                "test",
+            ),
+        ),
+        selection: FormulaSelection(
+            None,
+        ),
+    },
 )

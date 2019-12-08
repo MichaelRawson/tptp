@@ -2,19 +2,43 @@
 source: src/tests.rs
 expression: parsed
 ---
-Cnf(
-    LowerWord(
-        "test",
-    ),
-    Axiom,
-    CnfFormula(
-        [
-            Literal(
-                Boolean(
-                    true,
-                ),
+CnfAnnotated {
+    name: AtomicWord(
+        Lower(
+            LowerWord(
+                "test",
             ),
-        ],
+        ),
     ),
-    None,
-)
+    role: Axiom,
+    formula: Disjunction(
+        Disjunction(
+            [
+                Atomic(
+                    Defined(
+                        Plain(
+                            FofDefinedPlainFormula(
+                                Constant(
+                                    DefinedConstant(
+                                        DefinedFunctor(
+                                            AtomicDefinedWord(
+                                                DollarWord(
+                                                    LowerWord(
+                                                        "true",
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+        ),
+    ),
+    annotations: Annotations(
+        None,
+    ),
+}

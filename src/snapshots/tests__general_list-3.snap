@@ -1,0 +1,21 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+GeneralList(
+    Some(
+        GeneralTerms(
+            [
+                Data(
+                    Variable(
+                        Variable(
+                            UpperWord(
+                                "X",
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+        ),
+    ),
+)

@@ -1,0 +1,27 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Formula(
+    Fof(
+        Logic(
+            Unitary(
+                Atomic(
+                    Plain(
+                        FofPlainAtomicFormula(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "p",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

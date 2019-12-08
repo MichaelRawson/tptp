@@ -1,0 +1,5 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+(![X,Y,Z]:?[Q]:Q!=p(A))&p&(q=>r)

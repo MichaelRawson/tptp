@@ -2,4 +2,4 @@
 source: src/tests.rs
 expression: parsed
 ---
-"aA123"
+x

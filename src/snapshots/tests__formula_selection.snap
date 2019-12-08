@@ -1,0 +1,31 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+FormulaSelection(
+    Some(
+        NameList(
+            [
+                AtomicWord(
+                    Lower(
+                        LowerWord(
+                            "name",
+                        ),
+                    ),
+                ),
+                AtomicWord(
+                    SingleQuoted(
+                        SingleQuoted(
+                            "name",
+                        ),
+                    ),
+                ),
+                Integer(
+                    Integer(
+                        "123",
+                    ),
+                ),
+            ],
+        ),
+    ),
+)
