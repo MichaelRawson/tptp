@@ -5,7 +5,7 @@ expression: parsed
 Data(
     Formula(
         Fof(
-            Logic(
+            FofFormula(
                 Unitary(
                     Atomic(
                         Plain(

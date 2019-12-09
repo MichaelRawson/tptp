@@ -19,7 +19,7 @@ Quantified(
                 Defined(
                     Plain(
                         FofDefinedPlainFormula(
-                            Constant(
+                            FofDefinedPlainTerm(
                                 DefinedConstant(
                                     DefinedFunctor(
                                         AtomicDefinedWord(

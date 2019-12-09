@@ -1,7 +1,7 @@
 use nom::branch::alt;
 use nom::bytes::complete::{escaped, tag, take_until, take_while, take_while1};
 use nom::character::complete::{digit0, multispace1, one_of};
-use nom::combinator::{map, opt, recognize, value};
+use nom::combinator::{iterator, map, opt, recognize, value, ParserIterator};
 use nom::error::ParseError;
 use nom::multi::{many0, many1, separated_nonempty_list};
 use nom::sequence::{delimited, pair, preceded, tuple};
@@ -178,12 +178,12 @@ pub fn fof_arguments<'a, E: ParseError<&'a [u8]>>(
 ) -> ParseResult<FofArguments, E> {
     map(
         delimited(
-            pair(tag("("), ignored),
+            tag("("),
             separated_nonempty_list(
-                tuple((ignored, tag(","), ignored)),
-                fof_term,
+                tag(","),
+                delimited(ignored, fof_term, ignored),
             ),
-            pair(ignored, tag(")")),
+            tag(")"),
         ),
         FofArguments,
     )(x)
@@ -204,7 +204,7 @@ pub fn fof_plain_term<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_defined_plain_term<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofDefinedPlainTerm, E> {
-    map(defined_constant, FofDefinedPlainTerm::Constant)(x)
+    map(defined_constant, FofDefinedPlainTerm)(x)
 }
 
 pub fn fof_defined_atomic_term<'a, E: ParseError<&'a [u8]>>(
@@ -216,7 +216,7 @@ pub fn fof_defined_atomic_term<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_defined_term<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofDefinedTerm, E> {
-    map(fof_defined_atomic_term, FofDefinedTerm::Atomic)(x)
+    map(fof_defined_atomic_term, FofDefinedTerm)(x)
 }
 
 pub fn fof_function_term<'a, E: ParseError<&'a [u8]>>(
@@ -660,7 +660,7 @@ pub fn fof_logic_formula<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofFormula, E> {
-    map(fof_logic_formula, FofFormula::Logic)(x)
+    map(fof_logic_formula, FofFormula)(x)
 }
 
 pub fn literal<'a, E: ParseError<&'a [u8]>>(
@@ -689,7 +689,6 @@ pub fn cnf_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<CnfFormula, E> {
     alt((
-        map(disjunction, CnfFormula::Disjunction),
         map(
             delimited(
                 pair(tag("("), ignored),
@@ -698,6 +697,7 @@ pub fn cnf_formula<'a, E: ParseError<&'a [u8]>>(
             ),
             CnfFormula::Parenthesised,
         ),
+        map(disjunction, CnfFormula::Disjunction),
     ))(x)
 }
 
@@ -954,9 +954,15 @@ pub fn tptp_input<'a, E: ParseError<&'a [u8]>>(
     ))(x)
 }
 
-/// `ignored`, then an optional TPTP input (or EOF)
+/// `ignored`, then a TPTP input
 pub fn ignored_then_tptp_input<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<Option<TPTPInput>, E> {
-    preceded(ignored, opt(tptp_input))(x)
+) -> ParseResult<TPTPInput, E> {
+    preceded(ignored, tptp_input)(x)
+}
+
+pub fn tptp_input_iterator<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParserIterator<&[u8], E, impl Fn(&'a [u8]) -> ParseResult<TPTPInput, E>> {
+    iterator(x, ignored_then_tptp_input)
 }

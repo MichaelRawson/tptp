@@ -1,28 +1,31 @@
 use std::time::Instant;
-use tptp::parsers::ignored_then_tptp_input;
+use tptp::parsers::tptp_input_iterator;
+use tptp::syntax::Visitor;
 
 const ITERATIONS: usize = 100_000;
 const FOF: &[u8] = include_bytes!("SYN000+1.p");
+const CNF: &[u8] = include_bytes!("SYN000-1.p");
 
-fn synthetic_fof() {
+struct DoNothing;
+impl Visitor for DoNothing {}
+
+fn benchmark(bytes: &[u8], name: &'static str) {
     println!(
-        "{} iterations, {} bytes of SYN000+1.p",
+        "{} iterations, {} bytes of {}",
         ITERATIONS,
-        FOF.len()
+        bytes.len(),
+        name
     );
 
     let start = Instant::now();
 
     for _ in 0..ITERATIONS {
-        let mut position = FOF;
-        loop {
-            let result = ignored_then_tptp_input::<()>(position);
-            let (next, parsed) = result.expect("parse error");
-            if parsed.is_none() {
-                break;
-            }
-            position = next;
+        let mut visitor = DoNothing;
+        let mut parser = tptp_input_iterator::<()>(bytes);
+        for input in &mut parser {
+            visitor.visit_tptp_input(input);
         }
+        assert!(parser.finish().is_ok());
     }
 
     let elapsed = start.elapsed();
@@ -31,7 +34,7 @@ fn synthetic_fof() {
     let nanoseconds = 1_000_000_000 * whole + fractional;
     let seconds = (nanoseconds as f64) / 1E9;
     let seconds_per_iter = seconds / (ITERATIONS as f64);
-    let bytes_per_second = (FOF.len() as f64) / seconds_per_iter;
+    let bytes_per_second = (bytes.len() as f64) / seconds_per_iter;
     let mb_per_second = bytes_per_second / 1E6;
 
     println!(
@@ -41,5 +44,6 @@ fn synthetic_fof() {
 }
 
 fn main() {
-    synthetic_fof();
+    benchmark(CNF, "SYN000-1.p");
+    benchmark(FOF, "SYN000+1.p");
 }

@@ -448,8 +448,6 @@ fn test_tptp_input() {
 
 #[test]
 fn test_ignored_then_tptp_input() {
-    parse_nodisplay(ignored_then_tptp_input, b" include('test').");
-    parse_nodisplay(ignored_then_tptp_input, b" include('test').");
-    parse_nodisplay(ignored_then_tptp_input, b" ");
-    parse_nodisplay(ignored_then_tptp_input, b"");
+    parse(ignored_then_tptp_input, b" include('test').");
+    parse(ignored_then_tptp_input, b" include('test').");
 }

@@ -11,13 +11,13 @@ FofAnnotated {
         ),
     ),
     role: Axiom,
-    formula: Logic(
+    formula: FofFormula(
         Unitary(
             Atomic(
                 Defined(
                     Plain(
                         FofDefinedPlainFormula(
-                            Constant(
+                            FofDefinedPlainTerm(
                                 DefinedConstant(
                                     DefinedFunctor(
                                         AtomicDefinedWord(

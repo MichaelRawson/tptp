@@ -2,4 +2,15 @@
 source: src/tests.rs
 expression: parsed
 ---
-None
+Include(
+    Include {
+        file_name: FileName(
+            SingleQuoted(
+                "test",
+            ),
+        ),
+        selection: FormulaSelection(
+            None,
+        ),
+    },
+)

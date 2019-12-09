@@ -3,7 +3,7 @@ source: src/tests.rs
 expression: parsed
 ---
 Fof(
-    Logic(
+    FofFormula(
         Unitary(
             Atomic(
                 Plain(

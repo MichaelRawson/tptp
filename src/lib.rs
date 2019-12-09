@@ -3,24 +3,20 @@
 //!
 //! # Quickstart
 //! ```rust
-//! use tptp::parsers::ignored_then_tptp_input;
+//! use tptp::parsers::tptp_input_iterator;
+//! use tptp::syntax::Visitor;
+//!
+//! struct MyVisitor;
+//! impl Visitor for MyVisitor {}
 //!
 //! fn example(bytes: &[u8]) {
-//!     let mut position = bytes;
-//!     loop {
-//!         // choose how to perform error handling
-//!         let result = ignored_then_tptp_input::<()>(position);
-//!         let (next, statement) = result.expect("parse error");
-//!
-//!         // EOF
-//!         if statement.is_none() {
-//!             break;
-//!         }
-//!         else {
-//!             // process `statement` as you see fit
-//!         }
-//!         position = next;
+//!     let mut visitor = MyVisitor;
+//!     let mut parser = tptp_input_iterator::<()>(bytes);
+//!     for input in &mut parser {
+//!         println!("{}", &input);
+//!         visitor.visit_tptp_input(input);
 //!     }
+//!     assert!(parser.finish().is_ok());
 //! }
 //! ```
 

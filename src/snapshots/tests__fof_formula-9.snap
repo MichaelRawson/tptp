@@ -2,7 +2,7 @@
 source: src/tests.rs
 expression: parsed
 ---
-Logic(
+FofFormula(
     Binary(
         Assoc(
             And(

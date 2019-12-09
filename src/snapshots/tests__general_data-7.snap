@@ -4,7 +4,7 @@ expression: parsed
 ---
 Formula(
     Fof(
-        Logic(
+        FofFormula(
             Unitary(
                 Atomic(
                     Plain(
