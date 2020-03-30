@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::io::Read;
-use tptp::parsers::tptp_input_iterator;
+use tptp::parsers::TPTPIterator;
 use tptp::syntax::{Name, Visitor};
 
 #[derive(Default)]
@@ -31,12 +31,8 @@ fn read_file() -> Box<[u8]> {
 fn main() {
     let bytes = read_file();
     let mut visitor = Names::default();
-    let mut parser = tptp_input_iterator::<()>(&bytes);
+    let mut parser = TPTPIterator::<()>::new(&bytes);
     for input in &mut parser {
-        visitor.visit_tptp_input(input);
-    }
-    if !parser.finish().is_ok() {
-        eprintln!("syntax error");
-        std::process::exit(1);
+        visitor.visit_tptp_input(input.expect("syntax error"));
     }
 }

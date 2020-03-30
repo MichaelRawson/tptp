@@ -1,33 +1,36 @@
 use alloc::borrow::Cow;
 use alloc::boxed::Box;
 use alloc::str;
-use alloc::vec;
 use alloc::vec::Vec;
 use nom::branch::alt;
-use nom::bytes::complete::{escaped, tag, take_until, take_while, take_while1};
-use nom::character::complete::{digit0, multispace1, one_of};
-use nom::combinator::{iterator, map, opt, recognize, value, ParserIterator};
+use nom::bytes::streaming::{
+    escaped, tag, take_until, take_while, take_while1,
+};
+use nom::character::streaming::{
+    digit0, line_ending, multispace1, not_line_ending, one_of,
+};
+use nom::combinator::{map, opt, recognize, value};
 use nom::error::ParseError;
-use nom::multi::{many0, many1, separated_nonempty_list};
-use nom::sequence::{delimited, pair, preceded, tuple};
+use nom::multi::{fold_many0, many1, separated_nonempty_list};
+use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 
 use crate::syntax::*;
 
 type ParseResult<'a, T, E> = nom::IResult<&'a [u8], T, E>;
 
-unsafe fn to_str(bytes: &[u8]) -> &str {
-    str::from_utf8_unchecked(bytes)
+fn to_str(bytes: &[u8]) -> &str {
+    unsafe { str::from_utf8_unchecked(bytes) }
 }
 
-pub fn is_lower_alpha(c: u8) -> bool {
+fn is_lower_alpha(c: u8) -> bool {
     c >= b'a' && c <= b'z'
 }
 
-pub fn is_upper_alpha(c: u8) -> bool {
+fn is_upper_alpha(c: u8) -> bool {
     c >= b'A' && c <= b'Z'
 }
 
-pub fn is_alphanumeric(c: u8) -> bool {
+fn is_alphanumeric(c: u8) -> bool {
     (c >= b'a' && c <= b'z')
         || (c >= b'A' && c <= b'Z')
         || (c >= b'0' && c <= b'9')
@@ -51,33 +54,42 @@ pub fn whitespace<'a, E: ParseError<&'a [u8]>>(
 pub fn comment_line<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<(), E> {
-    value((), tuple((tag("%"), take_until("\n"), tag("\n"))))(x)
+    preceded(
+        tag("%"),
+        terminated(value((), not_line_ending), line_ending),
+    )(x)
 }
 
 pub fn comment_block<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<(), E> {
-    value((), tuple((tag("/*"), take_until("*/"), tag("*/"))))(x)
+    delimited(tag("/*"), value((), take_until("*/")), tag("*/"))(x)
+}
+
+fn single_ignored<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<(), E> {
+    alt((whitespace, comment_line, comment_block))(x)
 }
 
 /// zero or more `whitespace`, `comment_line`, or `comment_block`
 pub fn ignored<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<(), E> {
-    value((), many0(alt((whitespace, comment_line, comment_block))))(x)
+    fold_many0(single_ignored, (), |_, _| ())(x)
 }
 
-pub fn lower_alpha<'a, E: ParseError<&'a [u8]>>(
+fn lower_alpha1<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<&[u8], E> {
     take_while1(is_lower_alpha)(x)
 }
 
-pub fn upper_alpha<'a, E: ParseError<&'a [u8]>>(
+fn upper_alpha1<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<&[u8], E> {
     take_while1(is_upper_alpha)(x)
 }
 
-pub fn alphanumeric<'a, E: ParseError<&'a [u8]>>(
+fn alphanumeric<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<&[u8], E> {
     take_while(is_alphanumeric)(x)
@@ -86,16 +98,16 @@ pub fn alphanumeric<'a, E: ParseError<&'a [u8]>>(
 pub fn lower_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<LowerWord, E> {
-    map(recognize(preceded(lower_alpha, alphanumeric)), |w| {
-        LowerWord(Cow::Borrowed(unsafe { to_str(w) }))
+    map(recognize(preceded(lower_alpha1, alphanumeric)), |w| {
+        LowerWord(Cow::Borrowed(to_str(w)))
     })(x)
 }
 
 pub fn upper_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<UpperWord, E> {
-    map(recognize(preceded(upper_alpha, alphanumeric)), |w| {
-        UpperWord(Cow::Borrowed(unsafe { to_str(w) }))
+    map(recognize(preceded(upper_alpha1, alphanumeric)), |w| {
+        UpperWord(Cow::Borrowed(to_str(w)))
     })(x)
 }
 
@@ -108,7 +120,7 @@ pub fn single_quoted<'a, E: ParseError<&'a [u8]>>(
             escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
             tag("'"),
         ),
-        |w| SingleQuoted(Cow::Borrowed(unsafe { to_str(w) })),
+        |w| SingleQuoted(Cow::Borrowed(to_str(w))),
     )(x)
 }
 
@@ -135,7 +147,7 @@ pub fn integer<'a, E: ParseError<&'a [u8]>>(
             opt(one_of("+-")),
             alt((tag("0"), preceded(one_of("123456789"), digit0))),
         )),
-        |w| Integer(Cow::Borrowed(unsafe { to_str(w) })),
+        |w| Integer(Cow::Borrowed(to_str(w))),
     )(x)
 }
 
@@ -424,29 +436,32 @@ pub fn fof_unitary_formula<'a, E: ParseError<&'a [u8]>>(
     ))(x)
 }
 
+enum TempFofInfixOp {
+    Equals(DefinedInfixPred),
+    NotEquals(InfixInequality),
+}
+
+fn temp_fof_infix_op<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<TempFofInfixOp, E> {
+    alt((
+        map(defined_infix_pred, TempFofInfixOp::Equals),
+        map(infix_inequality, TempFofInfixOp::NotEquals),
+    ))(x)
+}
+
 pub fn fof_unit_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofUnitFormula, E> {
-    enum Op {
-        Equals(DefinedInfixPred),
-        NotEquals(InfixInequality),
-    }
-    use Op::*;
-
-    fn op<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<Op, E> {
-        alt((
-            map(defined_infix_pred, Equals),
-            map(infix_inequality, NotEquals),
-        ))(x)
-    }
+    use TempFofInfixOp::*;
 
     // avoid re-parsing `fof_plain_term`
     fn plain_term_maybe_infix<'a, E: ParseError<&'a [u8]>>(
         x: &'a [u8],
-    ) -> ParseResult<(FofPlainTerm, Option<(Op, FofTerm)>), E> {
+    ) -> ParseResult<(FofPlainTerm, Option<(TempFofInfixOp, FofTerm)>), E> {
         pair(
             fof_plain_term,
-            opt(pair(delimited(ignored, op, ignored), fof_term)),
+            opt(pair(delimited(ignored, temp_fof_infix_op, ignored), fof_term)),
         )(x)
     }
 
@@ -511,10 +526,9 @@ fn fof_or_suffix<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_or_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofOrFormula, E> {
-    map(pair(fof_unit_formula, fof_or_suffix), |(first, rest)| {
-        let mut formulae = vec![first];
-        formulae.extend(rest);
-        FofOrFormula(formulae)
+    map(pair(fof_unit_formula, fof_or_suffix), |(first, mut rest)| {
+        rest.insert(0, first);
+        FofOrFormula(rest)
     })(x)
 }
 
@@ -530,10 +544,9 @@ fn fof_and_suffix<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_and_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofAndFormula, E> {
-    map(pair(fof_unit_formula, fof_and_suffix), |(first, rest)| {
-        let mut formulae = vec![first];
-        formulae.extend(rest);
-        FofAndFormula(formulae)
+    map(pair(fof_unit_formula, fof_and_suffix), |(first, mut rest)| {
+        rest.insert(0, first);
+        FofAndFormula(rest)
     })(x)
 }
 
@@ -558,15 +571,13 @@ pub fn fof_binary_assoc<'a, E: ParseError<&'a [u8]>>(
     map(
         pair(fof_unit_formula, fof_assoc_suffix),
         |(left, rest)| match rest {
-            FofAssocSuffix::Or(rest) => {
-                let mut formulae = vec![left];
-                formulae.extend(rest);
-                FofBinaryAssoc::Or(FofOrFormula(formulae))
+            FofAssocSuffix::Or(mut rest) => {
+                rest.insert(0, left);
+                FofBinaryAssoc::Or(FofOrFormula(rest))
             }
-            FofAssocSuffix::And(rest) => {
-                let mut formulae = vec![left];
-                formulae.extend(rest);
-                FofBinaryAssoc::And(FofAndFormula(formulae))
+            FofAssocSuffix::And(mut rest) => {
+                rest.insert(0, left);
+                FofBinaryAssoc::And(FofAndFormula(rest))
             }
         },
     )(x)
@@ -595,18 +606,16 @@ pub fn fof_binary_formula<'a, E: ParseError<&'a [u8]>>(
     map(
         pair(fof_unit_formula, fof_binary_suffix),
         |(left, suffix)| match suffix {
-            FofBinarySuffix::Assoc(FofAssocSuffix::Or(rest)) => {
-                let mut formulae = vec![left];
-                formulae.extend(rest);
+            FofBinarySuffix::Assoc(FofAssocSuffix::Or(mut rest)) => {
+                rest.insert(0, left);
                 FofBinaryFormula::Assoc(FofBinaryAssoc::Or(FofOrFormula(
-                    formulae,
+                    rest,
                 )))
             }
-            FofBinarySuffix::Assoc(FofAssocSuffix::And(rest)) => {
-                let mut formulae = vec![left];
-                formulae.extend(rest);
+            FofBinarySuffix::Assoc(FofAssocSuffix::And(mut rest)) => {
+                rest.insert(0, left);
                 FofBinaryFormula::Assoc(FofBinaryAssoc::And(FofAndFormula(
-                    formulae,
+                    rest,
                 )))
             }
             FofBinarySuffix::Nonassoc(op, right) => {
@@ -628,18 +637,16 @@ pub fn fof_logic_formula<'a, E: ParseError<&'a [u8]>>(
         |(left, suffix)| {
             if let Some(suffix) = suffix {
                 FofLogicFormula::Binary(match suffix {
-                    FofBinarySuffix::Assoc(FofAssocSuffix::Or(rest)) => {
-                        let mut formulae = vec![left];
-                        formulae.extend(rest);
+                    FofBinarySuffix::Assoc(FofAssocSuffix::Or(mut rest)) => {
+                        rest.insert(0, left);
                         FofBinaryFormula::Assoc(FofBinaryAssoc::Or(
-                            FofOrFormula(formulae),
+                            FofOrFormula(rest),
                         ))
                     }
-                    FofBinarySuffix::Assoc(FofAssocSuffix::And(rest)) => {
-                        let mut formulae = vec![left];
-                        formulae.extend(rest);
+                    FofBinarySuffix::Assoc(FofAssocSuffix::And(mut rest)) => {
+                        rest.insert(0, left);
                         FofBinaryFormula::Assoc(FofBinaryAssoc::And(
-                            FofAndFormula(formulae),
+                            FofAndFormula(rest),
                         ))
                     }
                     FofBinarySuffix::Nonassoc(op, right) => {
@@ -669,13 +676,77 @@ pub fn fof_formula<'a, E: ParseError<&'a [u8]>>(
 pub fn literal<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<Literal, E> {
+    // avoid re-parsing fof_plain_term
+    pub fn infix_or_atomic<'a, E: ParseError<&'a [u8]>>(
+        x: &'a [u8],
+    ) -> ParseResult<Literal, E> {
+        map(
+            pair(
+                fof_plain_term,
+                opt(preceded(
+                    ignored,
+                    pair(temp_fof_infix_op, preceded(ignored, fof_term)),
+                )),
+            ),
+            |(left, rest)| match rest {
+                Some((TempFofInfixOp::Equals(op), right)) => Literal::Atomic(
+                    FofAtomicFormula::Defined(FofDefinedAtomicFormula::Infix(
+                        FofDefinedInfixFormula {
+                            left: FofTerm::Function(FofFunctionTerm::Plain(
+                                left,
+                            )),
+                            op,
+                            right,
+                        },
+                    )),
+                ),
+                Some((TempFofInfixOp::NotEquals(op), right)) => {
+                    Literal::Infix(FofInfixUnary {
+                        left: FofTerm::Function(FofFunctionTerm::Plain(left)),
+                        op,
+                        right,
+                    })
+                }
+                None => Literal::Atomic(FofAtomicFormula::Plain(
+                    FofPlainAtomicFormula(left),
+                )),
+            },
+        )(x)
+    }
+
+    // avoid re-parsing fof_plain_term
+    pub fn infix_var<'a, E: ParseError<&'a [u8]>>(
+        x: &'a [u8],
+    ) -> ParseResult<Literal, E> {
+        map(
+            tuple((
+                map(variable, FofTerm::Variable),
+                preceded(ignored, temp_fof_infix_op),
+                preceded(ignored, fof_term),
+            )),
+            |(left, op, right)| match op {
+                TempFofInfixOp::Equals(op) => Literal::Atomic(
+                    FofAtomicFormula::Defined(FofDefinedAtomicFormula::Infix(
+                        FofDefinedInfixFormula { left, op, right },
+                    )),
+                ),
+                TempFofInfixOp::NotEquals(op) => {
+                    Literal::Infix(FofInfixUnary { left, op, right })
+                }
+            },
+        )(x)
+    }
+
     alt((
         map(
             preceded(pair(tag("~"), ignored), fof_atomic_formula),
             Literal::NegatedAtomic,
         ),
-        map(fof_infix_unary, Literal::Infix),
-        map(fof_atomic_formula, Literal::Atomic),
+        infix_or_atomic,
+        infix_var,
+        map(fof_defined_atomic_formula, |f| {
+            Literal::Atomic(FofAtomicFormula::Defined(f))
+        }),
     ))(x)
 }
 
@@ -952,17 +1023,54 @@ pub fn tptp_input<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<TPTPInput, E> {
     alt((
-        map(annotated_formula, |x| TPTPInput::Annotated(Box::new(x))),
+        map(annotated_formula, TPTPInput::Annotated),
         map(include, TPTPInput::Include),
     ))(x)
 }
 
 /// iterator returning `tptp_input`, separated with `ignored`.
 ///
-/// Convenience function not in TPTP BNF.
-/// Call `.finish()` to check for error conditions and get remaining input.
-pub fn tptp_input_iterator<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParserIterator<&[u8], E, impl Fn(&'a [u8]) -> ParseResult<TPTPInput, E>> {
-    iterator(x, delimited(ignored, tptp_input, ignored))
+/// Convenience structure not in TPTP BNF.
+pub struct TPTPIterator<'a, E> {
+    pub remaining: &'a [u8],
+    _phantom: core::marker::PhantomData<E>,
+}
+
+impl<'a, E> TPTPIterator<'a, E> {
+    pub fn new(remaining: &'a [u8]) -> Self {
+        let _phantom = core::marker::PhantomData;
+        Self {
+            remaining,
+            _phantom,
+        }
+    }
+}
+
+impl<'a, E: ParseError<&'a [u8]>> Iterator for TPTPIterator<'a, E> {
+    type Item = Result<TPTPInput<'a>, E>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            match single_ignored::<E>(self.remaining) {
+                Ok((remaining, ())) => {
+                    self.remaining = remaining;
+                }
+                Err(nom::Err::Incomplete(_)) => {
+                    return None;
+                }
+                Err(_) => {
+                    break;
+                }
+            }
+        }
+
+        match tptp_input::<E>(self.remaining) {
+            Ok((remaining, input)) => {
+                self.remaining = remaining;
+                Some(Ok(input))
+            }
+            Err(nom::Err::Error(e)) | Err(nom::Err::Failure(e)) => Some(Err(e)),
+            Err(nom::Err::Incomplete(_)) => None,
+        }
+    }
 }

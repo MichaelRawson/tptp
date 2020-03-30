@@ -8,11 +8,11 @@ fn do_parse<'a, P, T: 'a>(parser: P, input: &'a [u8]) -> T
 where
     P: FnOnce(&'a [u8]) -> nom::IResult<&[u8], T, ()>,
 {
-    let result = parser(input);
-    assert!(result.is_ok(), "parse error");
-    let (remaining, parsed) = result.unwrap();
-    assert!(remaining.is_empty(), "parsed, but bytes remaining");
-    parsed
+    match parser(input) {
+        Ok((b"\0", result)) => result,
+        Ok((_, _)) => panic!("parsed, but bytes remaining"),
+        Err(_) => panic!("parse error"),
+    }
 }
 
 fn parse_nodisplay<'a, P, T: 'a>(parser: P, input: &'a [u8])
@@ -36,413 +36,413 @@ where
 
 #[test]
 fn test_whitespace() {
-    parse_nodisplay(whitespace, b" \t\n");
+    parse_nodisplay(whitespace, b" \t\n\0");
 }
 
 #[test]
 fn test_comment_line() {
-    parse_nodisplay(comment_line, b"% a comment\n");
+    parse_nodisplay(comment_line, b"% a comment\n\0");
 }
 
 #[test]
 fn test_comment_block() {
-    parse_nodisplay(comment_block, b"/* a\n block * / comment\n*/");
+    parse_nodisplay(comment_block, b"/* a\n block * / comment\n*/\0");
 }
 
 #[test]
 fn test_ignored() {
-    parse_nodisplay(ignored, b"");
-    parse_nodisplay(ignored, b"   %test\n  /* test\ntest */  ");
+    parse_nodisplay(ignored, b"\0");
+    parse_nodisplay(ignored, b"   %test\n  /* test\ntest */  \0");
 }
 
 #[test]
 fn test_upper_word() {
-    parse(upper_word, b"X");
-    parse(upper_word, b"Aa123");
+    parse(upper_word, b"X\0");
+    parse(upper_word, b"Aa123\0");
 }
 
 #[test]
 fn test_lower_word() {
-    parse(lower_word, b"x");
-    parse(lower_word, b"aA123");
+    parse(lower_word, b"x\0");
+    parse(lower_word, b"aA123\0");
 }
 
 #[test]
 fn test_dollar_word() {
-    parse(dollar_word, b"$dollar");
+    parse(dollar_word, b"$dollar\0");
 }
 
 #[test]
 fn test_single_quoted() {
-    parse(single_quoted, b"'single quoted'");
-    parse(single_quoted, b"'\\'\\\\'");
+    parse(single_quoted, b"'single quoted'\0");
+    parse(single_quoted, b"'\\'\\\\'\0");
 }
 
 #[test]
 fn test_atomic_word() {
-    parse(atomic_word, b"x");
-    parse(atomic_word, b"'single quoted'");
+    parse(atomic_word, b"x\0");
+    parse(atomic_word, b"'single quoted'\0");
 }
 
 #[test]
 fn test_integer() {
-    parse(integer, b"0");
-    parse(integer, b"123");
-    parse(integer, b"-123");
+    parse(integer, b"0\0");
+    parse(integer, b"123\0");
+    parse(integer, b"-123\0");
 }
 
 #[test]
 fn test_name() {
-    parse(name, b"lower_word2");
-    parse(name, b"'single quoted'");
-    parse(name, b"123");
+    parse(name, b"lower_word2\0");
+    parse(name, b"'single quoted'\0");
+    parse(name, b"123\0");
 }
 
 #[test]
 fn test_variable() {
-    parse(variable, b"X");
+    parse(variable, b"X\0");
 }
 
 #[test]
 fn test_atomic_defiend_word() {
-    parse(atomic_defined_word, b"$atomic");
+    parse(atomic_defined_word, b"$atomic\0");
 }
 
 #[test]
 fn test_defined_functor() {
-    parse(defined_functor, b"$defined_functor");
+    parse(defined_functor, b"$defined_functor\0");
 }
 
 #[test]
 fn test_defined_constant() {
-    parse(defined_constant, b"$defined_constant");
+    parse(defined_constant, b"$defined_constant\0");
 }
 
 #[test]
 fn test_functor() {
-    parse(functor, b"functor");
+    parse(functor, b"functor\0");
 }
 
 #[test]
 fn test_fof_arguments() {
-    parse(fof_arguments, b"( c )");
-    parse(fof_arguments, b"( X )");
-    parse(fof_arguments, b"( X, f ( X ) )");
+    parse(fof_arguments, b"( c )\0");
+    parse(fof_arguments, b"( X )\0");
+    parse(fof_arguments, b"( X, f ( X ) )\0");
 }
 
 #[test]
 fn test_fof_plain_term() {
-    parse(fof_plain_term, b"c");
-    parse(fof_plain_term, b"f ( X )");
-    parse(fof_plain_term, b"f ( X, g ( Y ) )");
+    parse(fof_plain_term, b"c\0");
+    parse(fof_plain_term, b"f ( X )\0");
+    parse(fof_plain_term, b"f ( X, g ( Y ) )\0");
 }
 
 #[test]
 fn test_fof_defined_plain_term() {
-    parse(fof_defined_plain_term, b"$defined_plain_term");
+    parse(fof_defined_plain_term, b"$defined_plain_term\0");
 }
 
 #[test]
 fn test_fof_defined_atomic_term() {
-    parse(fof_defined_atomic_term, b"$defined_atomic_term");
+    parse(fof_defined_atomic_term, b"$defined_atomic_term\0");
 }
 
 #[test]
 fn test_fof_defined_term() {
-    parse(fof_defined_term, b"$defined_term");
+    parse(fof_defined_term, b"$defined_term\0");
 }
 
 #[test]
 fn test_fof_function_term() {
-    parse(fof_function_term, b"f(X)");
-    parse(fof_function_term, b"$defined");
+    parse(fof_function_term, b"f(X)\0");
+    parse(fof_function_term, b"$defined\0");
 }
 
 #[test]
 fn test_fof_term() {
-    parse(fof_term, b"f(X)");
-    parse(fof_term, b"X");
+    parse(fof_term, b"f(X)\0");
+    parse(fof_term, b"X\0");
 }
 
 #[test]
 fn test_fof_plain_atomic_formula() {
-    parse(fof_plain_atomic_formula, b"f ( X, g ( Y ) )");
+    parse(fof_plain_atomic_formula, b"f ( X, g ( Y ) )\0");
 }
 
 #[test]
 fn test_fof_defined_plain_formula() {
-    parse(fof_defined_plain_formula, b"$defined_plain_formula");
+    parse(fof_defined_plain_formula, b"$defined_plain_formula\0");
 }
 
 #[test]
 fn test_infix_equality() {
-    parse(infix_equality, b"=");
+    parse(infix_equality, b"=\0");
 }
 
 #[test]
 fn test_infix_inequality() {
-    parse(infix_inequality, b"!=");
+    parse(infix_inequality, b"!=\0");
 }
 
 #[test]
 fn test_unary_connective() {
-    parse(unary_connective, b"~");
+    parse(unary_connective, b"~\0");
 }
 
 #[test]
 fn test_nonassoc_connective() {
-    parse(nonassoc_connective, b"<=");
-    parse(nonassoc_connective, b"<=>");
-    parse(nonassoc_connective, b"=>");
-    parse(nonassoc_connective, b"<~>");
-    parse(nonassoc_connective, b"~&");
-    parse(nonassoc_connective, b"~|");
+    parse(nonassoc_connective, b"<=\0");
+    parse(nonassoc_connective, b"<=>\0");
+    parse(nonassoc_connective, b"=>\0");
+    parse(nonassoc_connective, b"<~>\0");
+    parse(nonassoc_connective, b"~&\0");
+    parse(nonassoc_connective, b"~|\0");
 }
 
 #[test]
 fn test_fof_quantifier() {
-    parse(fof_quantifier, b"!");
-    parse(fof_quantifier, b"?");
+    parse(fof_quantifier, b"!\0");
+    parse(fof_quantifier, b"?\0");
 }
 
 #[test]
 fn test_defined_infix_pred() {
-    parse(defined_infix_pred, b"=");
+    parse(defined_infix_pred, b"=\0");
 }
 
 #[test]
 fn test_fof_defined_infix_formula() {
-    parse(fof_defined_infix_formula, b"f(X) = c");
+    parse(fof_defined_infix_formula, b"f(X) = c\0");
 }
 
 #[test]
 fn test_fof_defined_atomic_formula() {
-    parse(fof_defined_atomic_formula, b"$true");
-    parse(fof_defined_atomic_formula, b"$false");
-    parse(fof_defined_atomic_formula, b"f(X) = c");
+    parse(fof_defined_atomic_formula, b"$true\0");
+    parse(fof_defined_atomic_formula, b"$false\0");
+    parse(fof_defined_atomic_formula, b"f(X) = c\0");
 }
 
 #[test]
 fn test_fof_atomic_formula() {
-    parse(fof_atomic_formula, b"$true");
-    parse(fof_atomic_formula, b"f(X) = Y");
-    parse(fof_atomic_formula, b"p(X)");
+    parse(fof_atomic_formula, b"$true\0");
+    parse(fof_atomic_formula, b"f(X) = Y\0");
+    parse(fof_atomic_formula, b"p(X)\0");
 }
 
 #[test]
 fn test_fof_variable_list() {
-    parse(fof_variable_list, b"X");
-    parse(fof_variable_list, b"X , Y");
-    parse(fof_variable_list, b"X , Y , Z");
+    parse(fof_variable_list, b"X\0");
+    parse(fof_variable_list, b"X , Y\0");
+    parse(fof_variable_list, b"X , Y , Z\0");
 }
 
 #[test]
 fn test_fof_quantified_formula() {
-    parse(fof_quantified_formula, b"! [ X ] : $true");
-    parse(fof_quantified_formula, b"? [ X , Y , Z ] : $true");
+    parse(fof_quantified_formula, b"! [ X ] : $true\0");
+    parse(fof_quantified_formula, b"? [ X , Y , Z ] : $true\0");
 }
 
 #[test]
 fn test_fof_infix_unary() {
-    parse(fof_infix_unary, b"f(X) != c");
+    parse(fof_infix_unary, b"f(X) != c\0");
 }
 
 #[test]
 fn test_fof_unary_formula() {
-    parse(fof_unary_formula, b"~ $true");
-    parse(fof_unary_formula, b"f(X) != c");
+    parse(fof_unary_formula, b"~ $true\0");
+    parse(fof_unary_formula, b"f(X) != c\0");
 }
 
 #[test]
 fn test_fof_unitary_formula() {
-    parse(fof_unitary_formula, b"( $true )");
-    parse(fof_unitary_formula, b"$true");
-    parse(fof_unitary_formula, b"![X]: $true");
+    parse(fof_unitary_formula, b"( $true )\0");
+    parse(fof_unitary_formula, b"$true\0");
+    parse(fof_unitary_formula, b"![X]: $true\0");
 }
 
 #[test]
 fn test_fof_unit_formula() {
-    parse(fof_unit_formula, b"($true)");
-    parse(fof_unit_formula, b"~$true");
+    parse(fof_unit_formula, b"($true)\0");
+    parse(fof_unit_formula, b"~$true\0");
 }
 
 #[test]
 fn test_fof_binary_nonassoc() {
-    parse(fof_binary_nonassoc, b"p => q");
-    parse(fof_binary_nonassoc, b"p ~| q");
+    parse(fof_binary_nonassoc, b"p => q\0");
+    parse(fof_binary_nonassoc, b"p ~| q\0");
 }
 
 #[test]
 fn test_fof_or_formula() {
-    parse(fof_or_formula, b"p | q | r");
+    parse(fof_or_formula, b"p | q | r\0");
 }
 
 #[test]
 fn test_fof_and_formula() {
-    parse(fof_and_formula, b"p & q");
+    parse(fof_and_formula, b"p & q\0");
 }
 
 #[test]
 fn test_fof_binary_assoc() {
-    parse(fof_binary_assoc, b"p | q | r");
-    parse(fof_binary_assoc, b"p & q");
+    parse(fof_binary_assoc, b"p | q | r\0");
+    parse(fof_binary_assoc, b"p & q\0");
 }
 
 #[test]
 fn test_fof_logic_formula() {
-    parse(fof_logic_formula, b"~p");
-    parse(fof_logic_formula, b"p => q");
-    parse(fof_logic_formula, b"p & q");
-    parse(fof_logic_formula, b"p | q | r");
-    parse(fof_logic_formula, b"p");
-    parse(fof_logic_formula, b"~p => q");
+    parse(fof_logic_formula, b"~p\0");
+    parse(fof_logic_formula, b"p => q\0");
+    parse(fof_logic_formula, b"p & q\0");
+    parse(fof_logic_formula, b"p | q | r\0");
+    parse(fof_logic_formula, b"p\0");
+    parse(fof_logic_formula, b"~p => q\0");
 }
 
 #[test]
 fn test_fof_formula() {
-    parse(fof_formula, b"p");
-    parse(fof_formula, b"~~p");
-    parse(fof_formula, b"(p)");
-    parse(fof_formula, b"$true|$false");
-    parse(fof_formula, b"(![X,Y,Z]:?[Q]:Q!=p(A))&p&(q=>r)");
+    parse(fof_formula, b"p\0");
+    parse(fof_formula, b"~~p\0");
+    parse(fof_formula, b"(p)\0");
+    parse(fof_formula, b"$true|$false\0");
+    parse(fof_formula, b"(![X,Y,Z]:?[Q]:Q!=p(A))&p&(q=>r)\0");
 }
 
 #[test]
 fn test_literal() {
-    parse(literal, b"p");
-    parse(literal, b"~ p");
-    parse(literal, b"f(X) = c");
+    parse(literal, b"p\0");
+    parse(literal, b"~ p\0");
+    parse(literal, b"f(X) = c\0");
 }
 
 #[test]
 fn test_disjunction() {
-    parse(disjunction, b"p");
-    parse(disjunction, b"p | ~q");
-    parse(disjunction, b"p | ~q | r");
+    parse(disjunction, b"p\0");
+    parse(disjunction, b"p | ~q\0");
+    parse(disjunction, b"p | ~q | r\0");
 }
 
 #[test]
 fn test_cnf_formula() {
-    parse(cnf_formula, b"p");
-    parse(cnf_formula, b"( p )");
-    parse(cnf_formula, b"p | ~q");
+    parse(cnf_formula, b"p\0");
+    parse(cnf_formula, b"( p )\0");
+    parse(cnf_formula, b"p | ~q\0");
 }
 
 #[test]
 fn test_role() {
-    parse(formula_role, b"axiom");
-    parse(formula_role, b"conjecture");
+    parse(formula_role, b"axiom\0");
+    parse(formula_role, b"conjecture\0");
 }
 
 #[test]
 fn test_general_terms() {
-    parse(general_terms, b"X");
-    parse(general_terms, b"X , Y");
+    parse(general_terms, b"X\0");
+    parse(general_terms, b"X , Y\0");
 }
 
 #[test]
 fn test_general_list() {
-    parse(general_list, b"[ ]");
-    parse(general_list, b"[ X ]");
-    parse(general_list, b"[ X , Y ]");
+    parse(general_list, b"[ ]\0");
+    parse(general_list, b"[ X ]\0");
+    parse(general_list, b"[ X , Y ]\0");
 }
 
 #[test]
 fn test_general_function() {
-    parse(general_function, b"atomic ( X )");
+    parse(general_function, b"atomic ( X )\0");
 }
 
 #[test]
 fn test_formula_data() {
-    parse(formula_data, b"$fof ( p )");
-    parse(formula_data, b"$cnf ( p )");
+    parse(formula_data, b"$fof ( p )\0");
+    parse(formula_data, b"$cnf ( p )\0");
 }
 
 #[test]
 fn test_general_data() {
-    parse(general_data, b"c");
-    parse(general_data, b"X");
-    parse(general_data, b"atomic ( X )");
-    parse(general_data, b"$fof ( p )");
+    parse(general_data, b"c\0");
+    parse(general_data, b"X\0");
+    parse(general_data, b"atomic ( X )\0");
+    parse(general_data, b"$fof ( p )\0");
 }
 
 #[test]
 fn test_general_term() {
-    parse(general_term, b"[ X , Y ]");
-    parse(general_term, b"$fof ( p )");
-    parse(general_term, b"X : Y");
+    parse(general_term, b"[ X , Y ]\0");
+    parse(general_term, b"$fof ( p )\0");
+    parse(general_term, b"X : Y\0");
 }
 
 #[test]
 fn test_useful_info() {
-    parse(useful_info, b"[ X , Y ]");
+    parse(useful_info, b"[ X , Y ]\0");
 }
 
 #[test]
 fn test_optional_info() {
-    parse(optional_info, b"");
-    parse(optional_info, b", [ X , Y ]");
+    parse(optional_info, b"\0");
+    parse(optional_info, b", [ X , Y ]\0");
 }
 
 #[test]
 fn test_annotations() {
-    parse(annotations, b"");
-    parse(annotations, b", c");
-    parse(annotations, b", c , [X]");
+    parse(annotations, b"\0");
+    parse(annotations, b", c\0");
+    parse(annotations, b", c , [X]\0");
 }
 
 #[test]
 fn test_fof_annotated() {
-    parse(fof_annotated, b"fof ( test , axiom , $true ) .");
-    parse(fof_annotated, b"fof ( test , axiom , $true , unknown ) .");
+    parse(fof_annotated, b"fof ( test , axiom , $true ) .\0");
+    parse(fof_annotated, b"fof ( test , axiom , $true , unknown ) .\0");
     parse(
         fof_annotated,
-        b"fof ( test , axiom , $true , unknown , [] ) .",
+        b"fof ( test , axiom , $true , unknown , [] ) .\0",
     );
 }
 
 #[test]
 fn test_cnf_annotated() {
-    parse(cnf_annotated, b"cnf ( test , axiom , $true ) .");
-    parse(cnf_annotated, b"cnf ( test , axiom , $true , unknown ) .");
+    parse(cnf_annotated, b"cnf ( test , axiom , $true ) .\0");
+    parse(cnf_annotated, b"cnf ( test , axiom , $true , unknown ) .\0");
     parse(
         cnf_annotated,
-        b"cnf ( test , axiom , $true , unknown , [] ) .",
+        b"cnf ( test , axiom , $true , unknown , [] ) .\0",
     );
 }
 
 #[test]
 fn test_annotated_formula() {
-    parse(annotated_formula, b"fof ( test , axiom , $true ) .");
-    parse(annotated_formula, b"cnf ( test , axiom , $true ) .");
+    parse(annotated_formula, b"fof ( test , axiom , $true ) .\0");
+    parse(annotated_formula, b"cnf ( test , axiom , $true ) .\0");
 }
 
 #[test]
 fn test_file_name() {
-    parse(file_name, b"'test'");
+    parse(file_name, b"'test'\0");
 }
 
 #[test]
 fn test_name_list() {
-    parse(name_list, b"name , 'name' , 123");
-    parse(name_list, b"name");
+    parse(name_list, b"name , 'name' , 123\0");
+    parse(name_list, b"name\0");
 }
 
 #[test]
 fn test_formula_selection() {
-    parse(formula_selection, b", [ name , 'name' , 123 ]");
-    parse(formula_selection, b", [ name ]");
+    parse(formula_selection, b", [ name , 'name' , 123 ]\0");
+    parse(formula_selection, b", [ name ]\0");
 }
 
 #[test]
 fn test_include() {
-    parse(include, b"include ( 'test' ) .");
-    parse(include, b"include( 'test', [ test ] ) .");
+    parse(include, b"include ( 'test' ) .\0");
+    parse(include, b"include( 'test', [ test ] ) .\0");
 }
 
 #[test]
 fn test_tptp_input() {
-    parse(tptp_input, b"include ( 'test' ) .");
-    parse(tptp_input, b"fof ( test , axiom , $true ) .");
-    parse(tptp_input, b"cnf ( test , axiom , $true ) .");
+    parse(tptp_input, b"include ( 'test' ) .\0");
+    parse(tptp_input, b"fof ( test , axiom , $true ) .\0");
+    parse(tptp_input, b"cnf ( test , axiom , $true ) .\0");
 }

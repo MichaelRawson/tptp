@@ -806,7 +806,7 @@ impl<'a> fmt::Display for Include<'a> {
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TPTPInput<'a> {
-    Annotated(Box<AnnotatedFormula<'a>>),
+    Annotated(AnnotatedFormula<'a>),
     Include(Include<'a>),
 }
 
@@ -1297,7 +1297,7 @@ pub trait Visitor<'a> {
     fn visit_tptp_input(&mut self, input: TPTPInput<'a>) {
         match input {
             TPTPInput::Annotated(annotated) => {
-                self.visit_annotated_formula(*annotated)
+                self.visit_annotated_formula(annotated)
             }
             TPTPInput::Include(include) => self.visit_include(include),
         }

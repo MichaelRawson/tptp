@@ -1,5 +1,5 @@
 use std::io::Read;
-use tptp::parsers::tptp_input_iterator;
+use tptp::parsers::TPTPIterator;
 
 fn read_file() -> Box<[u8]> {
     let path = std::env::args().nth(1).expect("supply an argument");
@@ -9,13 +9,20 @@ fn read_file() -> Box<[u8]> {
     return buffer.into_boxed_slice();
 }
 
+fn syntax_error() -> ! {
+    eprintln!("syntax error");
+    std::process::exit(1);
+}
+
 fn main() {
     let bytes = read_file();
-    let mut parser = tptp_input_iterator::<()>(&bytes);
-    for _input in &mut parser {}
-    if let Ok((b"", _)) = parser.finish() {
-    } else {
-        eprintln!("syntax error");
-        std::process::exit(1);
+    let mut parser = TPTPIterator::<()>::new(&bytes);
+    for input in &mut parser {
+        if input.is_err() {
+            syntax_error()
+        }
+    }
+    if !parser.remaining.is_empty() {
+        syntax_error()
     }
 }

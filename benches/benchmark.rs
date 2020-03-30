@@ -1,13 +1,9 @@
 use std::time::Instant;
-use tptp::parsers::tptp_input_iterator;
-use tptp::syntax::Visitor;
+use tptp::parsers::TPTPIterator;
 
 const ITERATIONS: usize = 100_000;
 const FOF: &[u8] = include_bytes!("SYN000+1.p");
 const CNF: &[u8] = include_bytes!("SYN000-1.p");
-
-struct DoNothing;
-impl<'a> Visitor<'a> for DoNothing {}
 
 fn benchmark(bytes: &[u8], name: &'static str) {
     println!(
@@ -20,12 +16,11 @@ fn benchmark(bytes: &[u8], name: &'static str) {
     let start = Instant::now();
 
     for _ in 0..ITERATIONS {
-        let mut visitor = DoNothing;
-        let mut parser = tptp_input_iterator::<()>(bytes);
+        let mut parser = TPTPIterator::<()>::new(bytes);
         for input in &mut parser {
-            visitor.visit_tptp_input(input);
+            input.expect("syntax error");
         }
-        assert!(parser.finish().is_ok());
+        assert!(parser.remaining.is_empty());
     }
 
     let elapsed = start.elapsed();
