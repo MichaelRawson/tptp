@@ -28,6 +28,7 @@ features = ["as_ref", "from", "display"]
 
 [dev-dependencies]
 insta = "0.12"
+serde_json = "1.0"
 
 [[bench]]
 name = "benchmark"

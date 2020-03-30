@@ -4,7 +4,7 @@ A [crate](https://crates.io/crates/tptp) for reading files in the [TPTP](http://
 
 ## Features
 * [`nom`](https://crates.io/crates/nom) parsers for maximum flexibility
-* high-performance, zero-copy parsing
+* high-performance, streaming, zero-copy parsing
 * convenient abstractions: visitor pattern, input iterator
 * near-complete CNF/FOF dialect support
 
@@ -17,9 +17,9 @@ Unscientific benchmark:
 ```
 $ cargo bench
 100000 iterations, 2159 bytes of SYN000-1.p
-1.34 seconds total (160.77 MB/s).
+1.03 seconds total (210.36 MB/s).
 100000 iterations, 2702 bytes of SYN000+1.p
-1.92 seconds total (140.65 MB/s).
+1.89 seconds total (142.68 MB/s).
 $
 ```
 
