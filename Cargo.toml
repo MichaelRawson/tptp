@@ -10,7 +10,8 @@ readme = "README.md"
 keywords = ["parser", "tptp"]
 include = [
 	"Cargo.toml",
-	"src/*.rs"
+	"src/*.rs",
+	"benches/*.rs",
 ]
 
 [dependencies]
