@@ -3,17 +3,29 @@
 A [crate](https://crates.io/crates/tptp) for reading files in the [TPTP](http://tptp.org) format.
 
 ## Features
+* [`nom`](https://crates.io/crates/nom) parsers for maximum flexibility
+* high-performance, zero-copy parsing
+* convenient abstractions: visitor pattern, input iterator
+* near-complete CNF/FOF dialect support
 
-* Streaming zero-copy parser on byte slices
-* Reasonably complete CNF/FOF dialect support
+## Documentation
+See [docs.rs](https://docs.rs/tptp).
+The `examples/` directory contains some trivial programs.
+
+## Performance
+Unscientific benchmark:
+```
+$ cargo bench
+100000 iterations, 2159 bytes of SYN000-1.p
+1.34 seconds total (160.77 MB/s).
+100000 iterations, 2702 bytes of SYN000+1.p
+1.92 seconds total (140.65 MB/s).
+$
+```
+
+`examples/validate` currently checks 458MB of `CSR002+5.ax` in under 4 seconds.
 
 ## Wishlist
 
-In order of urgency:
-
-* Complete annotation support
-* TFF/THF support?
-
-## Documentation
-
-See [docs.rs](https://docs.rs/tptp).
+* support complete CNF/FOF
+* FOFX/TFF/THF support?

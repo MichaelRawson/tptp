@@ -1,10 +1,10 @@
+use alloc::borrow::Cow;
+use alloc::boxed::Box;
+use alloc::fmt;
+use alloc::vec::Vec;
+use derive_more::{AsRef, Display, From};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-
-use derive_more::{AsRef, Display, From};
-use std::borrow::Cow;
-use std::fmt;
-use std::path::PathBuf;
 
 fn fmt_list<T: fmt::Display>(
     f: &mut fmt::Formatter,
@@ -763,16 +763,6 @@ pub enum AnnotatedFormula<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct FileName<'a>(pub SingleQuoted<'a>);
 
-impl<'a> From<FileName<'a>> for PathBuf {
-    fn from(included: FileName<'a>) -> Self {
-        (included.0)
-            .0
-            .replace("\\\\", "\\")
-            .replace("\\'", "'")
-            .into()
-    }
-}
-
 /// `name_list`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -820,14 +810,18 @@ pub enum TPTPInput<'a> {
     Include(Include<'a>),
 }
 
-pub trait Visitor {
-    fn visit_lower_word(&mut self, _lower_word: LowerWord) {}
+/// [visitor pattern](https://en.wikipedia.org/wiki/Visitor_pattern) trait
+///
+/// This can make traversing the TPTP AST easier.
+/// Default method implementations visit child structures in parsing order.
+pub trait Visitor<'a> {
+    fn visit_lower_word(&mut self, _lower_word: LowerWord<'a>) {}
 
-    fn visit_upper_word(&mut self, _upper_word: UpperWord) {}
+    fn visit_upper_word(&mut self, _upper_word: UpperWord<'a>) {}
 
-    fn visit_single_quoted(&mut self, _single_quoted: SingleQuoted) {}
+    fn visit_single_quoted(&mut self, _single_quoted: SingleQuoted<'a>) {}
 
-    fn visit_atomic_word(&mut self, atomic_word: AtomicWord) {
+    fn visit_atomic_word(&mut self, atomic_word: AtomicWord<'a>) {
         match atomic_word {
             AtomicWord::Lower(lower_word) => self.visit_lower_word(lower_word),
             AtomicWord::SingleQuoted(single_quoted) => {
@@ -836,9 +830,9 @@ pub trait Visitor {
         }
     }
 
-    fn visit_integer(&mut self, _integer: Integer) {}
+    fn visit_integer(&mut self, _integer: Integer<'a>) {}
 
-    fn visit_name(&mut self, name: Name) {
+    fn visit_name(&mut self, name: Name<'a>) {
         match name {
             Name::AtomicWord(atomic_word) => {
                 self.visit_atomic_word(atomic_word)
@@ -847,40 +841,43 @@ pub trait Visitor {
         }
     }
 
-    fn visit_variable(&mut self, variable: Variable) {
+    fn visit_variable(&mut self, variable: Variable<'a>) {
         self.visit_upper_word(variable.0);
     }
 
-    fn visit_functor(&mut self, functor: Functor) {
+    fn visit_functor(&mut self, functor: Functor<'a>) {
         self.visit_atomic_word(functor.0);
     }
 
-    fn visit_dollar_word(&mut self, dollar_word: DollarWord) {
+    fn visit_dollar_word(&mut self, dollar_word: DollarWord<'a>) {
         self.visit_lower_word(dollar_word.0);
     }
 
     fn visit_atomic_defined_word(
         &mut self,
-        atomic_defined_word: AtomicDefinedWord,
+        atomic_defined_word: AtomicDefinedWord<'a>,
     ) {
         self.visit_dollar_word(atomic_defined_word.0);
     }
 
-    fn visit_defined_functor(&mut self, defined_functor: DefinedFunctor) {
+    fn visit_defined_functor(&mut self, defined_functor: DefinedFunctor<'a>) {
         self.visit_atomic_defined_word(defined_functor.0);
     }
 
-    fn visit_defined_constant(&mut self, defined_constant: DefinedConstant) {
+    fn visit_defined_constant(
+        &mut self,
+        defined_constant: DefinedConstant<'a>,
+    ) {
         self.visit_defined_functor(defined_constant.0);
     }
 
-    fn visit_fof_arguments(&mut self, fof_arguments: FofArguments) {
+    fn visit_fof_arguments(&mut self, fof_arguments: FofArguments<'a>) {
         for fof_term in fof_arguments.0 {
             self.visit_fof_term(fof_term);
         }
     }
 
-    fn visit_fof_plain_term(&mut self, fof_plain_term: FofPlainTerm) {
+    fn visit_fof_plain_term(&mut self, fof_plain_term: FofPlainTerm<'a>) {
         match fof_plain_term {
             FofPlainTerm::Constant(functor) => self.visit_functor(functor),
             FofPlainTerm::Function(functor, fof_arguments) => {
@@ -892,23 +889,26 @@ pub trait Visitor {
 
     fn visit_fof_defined_plain_term(
         &mut self,
-        fof_defined_plain_term: FofDefinedPlainTerm,
+        fof_defined_plain_term: FofDefinedPlainTerm<'a>,
     ) {
         self.visit_defined_constant(fof_defined_plain_term.0);
     }
 
     fn visit_fof_defined_atomic_term(
         &mut self,
-        fof_defined_atomic_term: FofDefinedAtomicTerm,
+        fof_defined_atomic_term: FofDefinedAtomicTerm<'a>,
     ) {
         self.visit_fof_defined_plain_term(fof_defined_atomic_term.0);
     }
 
-    fn visit_fof_defined_term(&mut self, fof_defined_term: FofDefinedTerm) {
+    fn visit_fof_defined_term(&mut self, fof_defined_term: FofDefinedTerm<'a>) {
         self.visit_fof_defined_atomic_term(fof_defined_term.0);
     }
 
-    fn visit_fof_function_term(&mut self, fof_function_term: FofFunctionTerm) {
+    fn visit_fof_function_term(
+        &mut self,
+        fof_function_term: FofFunctionTerm<'a>,
+    ) {
         match fof_function_term {
             FofFunctionTerm::Plain(fof_plain_term) => {
                 self.visit_fof_plain_term(fof_plain_term)
@@ -919,7 +919,7 @@ pub trait Visitor {
         }
     }
 
-    fn visit_fof_term(&mut self, fof_term: FofTerm) {
+    fn visit_fof_term(&mut self, fof_term: FofTerm<'a>) {
         match fof_term {
             FofTerm::Function(fof_function_term) => {
                 self.visit_fof_function_term(fof_function_term)
@@ -951,21 +951,21 @@ pub trait Visitor {
 
     fn visit_fof_plain_atomic_formula(
         &mut self,
-        fof_plain_atomic_formula: FofPlainAtomicFormula,
+        fof_plain_atomic_formula: FofPlainAtomicFormula<'a>,
     ) {
         self.visit_fof_plain_term(fof_plain_atomic_formula.0);
     }
 
     fn visit_fof_defined_plain_formula(
         &mut self,
-        fof_defined_plain_formula: FofDefinedPlainFormula,
+        fof_defined_plain_formula: FofDefinedPlainFormula<'a>,
     ) {
         self.visit_fof_defined_plain_term(fof_defined_plain_formula.0);
     }
 
     fn visit_fof_defined_infix_formula(
         &mut self,
-        fof_defined_infix_formula: FofDefinedInfixFormula,
+        fof_defined_infix_formula: FofDefinedInfixFormula<'a>,
     ) {
         self.visit_fof_term(fof_defined_infix_formula.left);
         self.visit_defined_infix_pred(fof_defined_infix_formula.op);
@@ -974,7 +974,7 @@ pub trait Visitor {
 
     fn visit_fof_defined_atomic_formula(
         &mut self,
-        fof_defined_atomic_formula: FofDefinedAtomicFormula,
+        fof_defined_atomic_formula: FofDefinedAtomicFormula<'a>,
     ) {
         match fof_defined_atomic_formula {
             FofDefinedAtomicFormula::Plain(fof_defined_plain_formula) => {
@@ -988,7 +988,7 @@ pub trait Visitor {
 
     fn visit_fof_atomic_formula(
         &mut self,
-        fof_atomic_formula: FofAtomicFormula,
+        fof_atomic_formula: FofAtomicFormula<'a>,
     ) {
         match fof_atomic_formula {
             FofAtomicFormula::Plain(fof_plain_atomic_formula) => {
@@ -999,7 +999,7 @@ pub trait Visitor {
         }
     }
 
-    fn visit_fof_infix_unary(&mut self, fof_infix_unary: FofInfixUnary) {
+    fn visit_fof_infix_unary(&mut self, fof_infix_unary: FofInfixUnary<'a>) {
         self.visit_fof_term(fof_infix_unary.left);
         self.visit_infix_inequality(fof_infix_unary.op);
         self.visit_fof_term(fof_infix_unary.right);
@@ -1007,26 +1007,26 @@ pub trait Visitor {
 
     fn visit_fof_binary_nonassoc(
         &mut self,
-        fof_binary_nonassoc: FofBinaryNonassoc,
+        fof_binary_nonassoc: FofBinaryNonassoc<'a>,
     ) {
         self.visit_fof_unit_formula(fof_binary_nonassoc.left);
         self.visit_nonassoc_connective(fof_binary_nonassoc.op);
         self.visit_fof_unit_formula(fof_binary_nonassoc.right);
     }
 
-    fn visit_fof_or_formula(&mut self, fof_or_formula: FofOrFormula) {
+    fn visit_fof_or_formula(&mut self, fof_or_formula: FofOrFormula<'a>) {
         for fof_unit_formula in fof_or_formula.0 {
             self.visit_fof_unit_formula(fof_unit_formula);
         }
     }
 
-    fn visit_fof_and_formula(&mut self, fof_and_formula: FofAndFormula) {
+    fn visit_fof_and_formula(&mut self, fof_and_formula: FofAndFormula<'a>) {
         for fof_unit_formula in fof_and_formula.0 {
             self.visit_fof_unit_formula(fof_unit_formula);
         }
     }
 
-    fn visit_fof_binary_assoc(&mut self, fof_binary_assoc: FofBinaryAssoc) {
+    fn visit_fof_binary_assoc(&mut self, fof_binary_assoc: FofBinaryAssoc<'a>) {
         match fof_binary_assoc {
             FofBinaryAssoc::Or(fof_or_formula) => {
                 self.visit_fof_or_formula(fof_or_formula)
@@ -1039,7 +1039,7 @@ pub trait Visitor {
 
     fn visit_fof_binary_formula(
         &mut self,
-        fof_binary_formula: FofBinaryFormula,
+        fof_binary_formula: FofBinaryFormula<'a>,
     ) {
         match fof_binary_formula {
             FofBinaryFormula::Nonassoc(fof_binary_nonassoc) => {
@@ -1051,7 +1051,10 @@ pub trait Visitor {
         }
     }
 
-    fn visit_fof_unary_formula(&mut self, fof_unary_formula: FofUnaryFormula) {
+    fn visit_fof_unary_formula(
+        &mut self,
+        fof_unary_formula: FofUnaryFormula<'a>,
+    ) {
         match fof_unary_formula {
             FofUnaryFormula::Unary(unary_connective, fof_unit_formula) => {
                 self.visit_unary_connective(unary_connective);
@@ -1063,13 +1066,16 @@ pub trait Visitor {
         }
     }
 
-    fn visit_fof_variable_list(&mut self, fof_variable_list: FofVariableList) {
+    fn visit_fof_variable_list(
+        &mut self,
+        fof_variable_list: FofVariableList<'a>,
+    ) {
         for variable in fof_variable_list.0 {
             self.visit_variable(variable);
         }
     }
 
-    fn visit_fof_unit_formula(&mut self, fof_unit_formula: FofUnitFormula) {
+    fn visit_fof_unit_formula(&mut self, fof_unit_formula: FofUnitFormula<'a>) {
         match fof_unit_formula {
             FofUnitFormula::Unitary(fof_unitary_formula) => {
                 self.visit_fof_unitary_formula(*fof_unitary_formula)
@@ -1082,7 +1088,7 @@ pub trait Visitor {
 
     fn visit_fof_quantified_formula(
         &mut self,
-        fof_quantified_formula: FofQuantifiedFormula,
+        fof_quantified_formula: FofQuantifiedFormula<'a>,
     ) {
         self.visit_fof_quantifier(fof_quantified_formula.quantifier);
         self.visit_fof_variable_list(fof_quantified_formula.bound);
@@ -1091,7 +1097,7 @@ pub trait Visitor {
 
     fn visit_fof_unitary_formula(
         &mut self,
-        fof_unitary_formula: FofUnitaryFormula,
+        fof_unitary_formula: FofUnitaryFormula<'a>,
     ) {
         match fof_unitary_formula {
             FofUnitaryFormula::Quantified(fof_quantified_formula) => {
@@ -1106,7 +1112,10 @@ pub trait Visitor {
         }
     }
 
-    fn visit_fof_logic_formula(&mut self, fof_logic_formula: FofLogicFormula) {
+    fn visit_fof_logic_formula(
+        &mut self,
+        fof_logic_formula: FofLogicFormula<'a>,
+    ) {
         match fof_logic_formula {
             FofLogicFormula::Binary(fof_binary_formula) => {
                 self.visit_fof_binary_formula(fof_binary_formula)
@@ -1120,11 +1129,11 @@ pub trait Visitor {
         }
     }
 
-    fn visit_fof_formula(&mut self, fof_formula: FofFormula) {
+    fn visit_fof_formula(&mut self, fof_formula: FofFormula<'a>) {
         self.visit_fof_logic_formula(fof_formula.0);
     }
 
-    fn visit_literal(&mut self, literal: Literal) {
+    fn visit_literal(&mut self, literal: Literal<'a>) {
         match literal {
             Literal::Atomic(fof_atomic_formula) => {
                 self.visit_fof_atomic_formula(fof_atomic_formula)
@@ -1138,13 +1147,13 @@ pub trait Visitor {
         }
     }
 
-    fn visit_disjunction(&mut self, disjunction: Disjunction) {
+    fn visit_disjunction(&mut self, disjunction: Disjunction<'a>) {
         for literal in disjunction.0 {
             self.visit_literal(literal);
         }
     }
 
-    fn visit_cnf_formula(&mut self, cnf_formula: CnfFormula) {
+    fn visit_cnf_formula(&mut self, cnf_formula: CnfFormula<'a>) {
         match cnf_formula {
             CnfFormula::Disjunction(disjunction) => {
                 self.visit_disjunction(disjunction)
@@ -1157,24 +1166,27 @@ pub trait Visitor {
 
     fn visit_formula_role(&mut self, _formula_role: FormulaRole) {}
 
-    fn visit_general_terms(&mut self, general_terms: GeneralTerms) {
+    fn visit_general_terms(&mut self, general_terms: GeneralTerms<'a>) {
         for general_term in general_terms.0 {
             self.visit_general_term(general_term);
         }
     }
 
-    fn visit_general_list(&mut self, general_list: GeneralList) {
+    fn visit_general_list(&mut self, general_list: GeneralList<'a>) {
         if let Some(general_terms) = general_list.0 {
             self.visit_general_terms(general_terms)
         }
     }
 
-    fn visit_general_function(&mut self, general_function: GeneralFunction) {
+    fn visit_general_function(
+        &mut self,
+        general_function: GeneralFunction<'a>,
+    ) {
         self.visit_atomic_word(general_function.word);
         self.visit_general_terms(general_function.terms);
     }
 
-    fn visit_formula_data(&mut self, formula_data: FormulaData) {
+    fn visit_formula_data(&mut self, formula_data: FormulaData<'a>) {
         match formula_data {
             FormulaData::Fof(fof_formula) => {
                 self.visit_fof_formula(fof_formula)
@@ -1185,7 +1197,7 @@ pub trait Visitor {
         }
     }
 
-    fn visit_general_data(&mut self, general_data: GeneralData) {
+    fn visit_general_data(&mut self, general_data: GeneralData<'a>) {
         match general_data {
             GeneralData::Atomic(atomic_word) => {
                 self.visit_atomic_word(atomic_word)
@@ -1200,7 +1212,7 @@ pub trait Visitor {
         }
     }
 
-    fn visit_general_term(&mut self, general_term: GeneralTerm) {
+    fn visit_general_term(&mut self, general_term: GeneralTerm<'a>) {
         match general_term {
             GeneralTerm::Data(general_data) => {
                 self.visit_general_data(general_data)
@@ -1215,42 +1227,42 @@ pub trait Visitor {
         }
     }
 
-    fn visit_source(&mut self, source: Source) {
+    fn visit_source(&mut self, source: Source<'a>) {
         self.visit_general_term(source.0);
     }
 
-    fn visit_useful_info(&mut self, useful_info: UsefulInfo) {
+    fn visit_useful_info(&mut self, useful_info: UsefulInfo<'a>) {
         self.visit_general_list(useful_info.0);
     }
 
-    fn visit_optional_info(&mut self, optional_info: OptionalInfo) {
+    fn visit_optional_info(&mut self, optional_info: OptionalInfo<'a>) {
         if let Some(useful_info) = optional_info.0 {
             self.visit_useful_info(useful_info)
         }
     }
 
-    fn visit_annotations(&mut self, annotations: Annotations) {
+    fn visit_annotations(&mut self, annotations: Annotations<'a>) {
         if let Some((source, optional_info)) = annotations.0 {
             self.visit_source(source);
             self.visit_optional_info(optional_info);
         }
     }
 
-    fn visit_fof_annotated(&mut self, fof_annotated: FofAnnotated) {
+    fn visit_fof_annotated(&mut self, fof_annotated: FofAnnotated<'a>) {
         self.visit_name(fof_annotated.name);
         self.visit_formula_role(fof_annotated.role);
         self.visit_fof_formula(fof_annotated.formula);
         self.visit_annotations(fof_annotated.annotations);
     }
 
-    fn visit_cnf_annotated(&mut self, cnf_annotated: CnfAnnotated) {
+    fn visit_cnf_annotated(&mut self, cnf_annotated: CnfAnnotated<'a>) {
         self.visit_name(cnf_annotated.name);
         self.visit_formula_role(cnf_annotated.role);
         self.visit_cnf_formula(cnf_annotated.formula);
         self.visit_annotations(cnf_annotated.annotations);
     }
 
-    fn visit_annotated_formula(&mut self, annotated: AnnotatedFormula) {
+    fn visit_annotated_formula(&mut self, annotated: AnnotatedFormula<'a>) {
         match annotated {
             AnnotatedFormula::Fof(fof_annotated) => {
                 self.visit_fof_annotated(fof_annotated)
@@ -1261,28 +1273,28 @@ pub trait Visitor {
         }
     }
 
-    fn visit_name_list(&mut self, name_list: NameList) {
+    fn visit_name_list(&mut self, name_list: NameList<'a>) {
         for name in name_list.0 {
             self.visit_name(name);
         }
     }
 
-    fn visit_formula_selection(&mut self, selection: FormulaSelection) {
+    fn visit_formula_selection(&mut self, selection: FormulaSelection<'a>) {
         if let Some(name_list) = selection.0 {
             self.visit_name_list(name_list);
         }
     }
 
-    fn visit_file_name(&mut self, file_name: FileName) {
+    fn visit_file_name(&mut self, file_name: FileName<'a>) {
         self.visit_single_quoted(file_name.0);
     }
 
-    fn visit_include(&mut self, include: Include) {
+    fn visit_include(&mut self, include: Include<'a>) {
         self.visit_file_name(include.file_name);
         self.visit_formula_selection(include.selection);
     }
 
-    fn visit_tptp_input(&mut self, input: TPTPInput) {
+    fn visit_tptp_input(&mut self, input: TPTPInput<'a>) {
         match input {
             TPTPInput::Annotated(annotated) => {
                 self.visit_annotated_formula(*annotated)

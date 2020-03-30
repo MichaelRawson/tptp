@@ -7,7 +7,7 @@ const FOF: &[u8] = include_bytes!("SYN000+1.p");
 const CNF: &[u8] = include_bytes!("SYN000-1.p");
 
 struct DoNothing;
-impl Visitor for DoNothing {}
+impl<'a> Visitor<'a> for DoNothing {}
 
 fn benchmark(bytes: &[u8], name: &'static str) {
     println!(
@@ -37,10 +37,7 @@ fn benchmark(bytes: &[u8], name: &'static str) {
     let bytes_per_second = (bytes.len() as f64) / seconds_per_iter;
     let mb_per_second = bytes_per_second / 1E6;
 
-    println!(
-        "{:.*} seconds total ({:.*} MB/s).",
-        2, seconds, 2, mb_per_second
-    );
+    println!("{:.2} seconds total ({:.2} MB/s).", seconds, mb_per_second);
 }
 
 fn main() {

@@ -1,5 +1,6 @@
+use alloc::fmt;
+use alloc::format;
 use insta::{assert_debug_snapshot, assert_display_snapshot};
-use std::fmt;
 
 use crate::parsers::*;
 
@@ -444,10 +445,4 @@ fn test_tptp_input() {
     parse(tptp_input, b"include ( 'test' ) .");
     parse(tptp_input, b"fof ( test , axiom , $true ) .");
     parse(tptp_input, b"cnf ( test , axiom , $true ) .");
-}
-
-#[test]
-fn test_ignored_then_tptp_input() {
-    parse(ignored_then_tptp_input, b" include('test').");
-    parse(ignored_then_tptp_input, b" include('test').");
 }

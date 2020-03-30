@@ -1,3 +1,8 @@
+use alloc::borrow::Cow;
+use alloc::boxed::Box;
+use alloc::str;
+use alloc::vec;
+use alloc::vec::Vec;
 use nom::branch::alt;
 use nom::bytes::complete::{escaped, tag, take_until, take_while, take_while1};
 use nom::character::complete::{digit0, multispace1, one_of};
@@ -5,8 +10,6 @@ use nom::combinator::{iterator, map, opt, recognize, value, ParserIterator};
 use nom::error::ParseError;
 use nom::multi::{many0, many1, separated_nonempty_list};
 use nom::sequence::{delimited, pair, preceded, tuple};
-use std::borrow::Cow;
-use std::str;
 
 use crate::syntax::*;
 
@@ -57,7 +60,7 @@ pub fn comment_block<'a, E: ParseError<&'a [u8]>>(
     value((), tuple((tag("/*"), take_until("*/"), tag("*/"))))(x)
 }
 
-/// Zero or more `whitespace`, `comment_line`, or `comment_block`
+/// zero or more `whitespace`, `comment_line`, or `comment_block`
 pub fn ignored<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<(), E> {
     value((), many0(alt((whitespace, comment_line, comment_block))))(x)
 }
@@ -954,15 +957,12 @@ pub fn tptp_input<'a, E: ParseError<&'a [u8]>>(
     ))(x)
 }
 
-/// `ignored`, then a TPTP input
-pub fn ignored_then_tptp_input<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParseResult<TPTPInput, E> {
-    preceded(ignored, tptp_input)(x)
-}
-
+/// iterator returning `tptp_input`, separated with `ignored`.
+///
+/// Convenience function not in TPTP BNF.
+/// Call `.finish()` to check for error conditions and get remaining input.
 pub fn tptp_input_iterator<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParserIterator<&[u8], E, impl Fn(&'a [u8]) -> ParseResult<TPTPInput, E>> {
-    iterator(x, ignored_then_tptp_input)
+    iterator(x, delimited(ignored, tptp_input, ignored))
 }

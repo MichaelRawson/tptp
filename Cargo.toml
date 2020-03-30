@@ -2,17 +2,23 @@
 name = "tptp"
 description = "Parse the TPTP format"
 edition = "2018"
-version = "0.14.0"
+version = "0.15.0"
 authors = ["Michael Rawson <michael@rawsons.uk>"]
 license = "MIT"
 homepage = "https://github.com/MichaelRawson/tptp"
 readme = "README.md"
 keywords = ["parser", "tptp"]
-exclude = ["src/snapshots/*.snap"]
+include = [
+	"Cargo.toml",
+	"src/*.rs"
+]
 
 [dependencies]
-nom = "5.0"
 serde = { version = "1.0", optional = true, features = ["derive"] }
+
+[dependencies.nom]
+version = "5.1"
+features = ["lexical"]
 
 [dependencies.derive_more]
 version = "0.99"
@@ -26,5 +32,10 @@ insta = "0.12"
 name = "benchmark"
 harness = false
 
+[profile.release]
+lto = true
+codegen-units = 1
+
 [profile.bench]
 lto = true
+codegen-units = 1
