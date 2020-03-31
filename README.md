@@ -6,7 +6,9 @@ A [crate](https://crates.io/crates/tptp) for reading files in the [TPTP](http://
 * [`nom`](https://crates.io/crates/nom) parsers for maximum flexibility
 * high-performance, streaming, zero-copy parsing
 * convenient abstractions: visitor pattern, input iterator
-* near-complete CNF/FOF dialect support
+* complete CNF/FOF dialect support
+* adherence to TPTP BNF: transform as you wish
+* comprehensive test suite, fuzzing with AFL
 
 ## Documentation
 See [docs.rs](https://docs.rs/tptp).
@@ -27,5 +29,4 @@ $
 
 ## Wishlist
 
-* support complete CNF/FOF
 * FOFX/TFF/THF support?
