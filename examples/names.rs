@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::io;
 use std::io::Read;
 use tptp::parsers::TPTPIterator;
 use tptp::syntax::{Name, Visitor};
@@ -20,19 +21,19 @@ where
     }
 }
 
-fn read_file() -> Box<[u8]> {
-    let path = std::env::args().nth(1).expect("supply an argument");
-    let mut file = std::fs::File::open(path).expect("opening file failed");
+fn read_stdin() -> io::Result<Box<[u8]>> {
     let mut buffer = vec![];
-    file.read_to_end(&mut buffer).expect("failed reading file");
-    return buffer.into_boxed_slice();
+    io::stdin().lock().read_to_end(&mut buffer)?;
+    Ok(buffer.into_boxed_slice())
 }
 
-fn main() {
-    let bytes = read_file();
+fn main() -> io::Result<()> {
+    let bytes = read_stdin()?;
     let mut visitor = Names::default();
     let mut parser = TPTPIterator::<()>::new(&bytes);
     for input in &mut parser {
         visitor.visit_tptp_input(input.expect("syntax error"));
     }
+    assert!(parser.remaining.is_empty());
+    Ok(())
 }
