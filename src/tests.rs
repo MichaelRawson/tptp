@@ -92,6 +92,11 @@ fn test_integer() {
 }
 
 #[test]
+fn test_number() {
+    parse(number, b"-123\0");
+}
+
+#[test]
 fn test_name() {
     parse(name, b"lower_word2\0");
     parse(name, b"'single quoted'\0");
@@ -104,7 +109,7 @@ fn test_variable() {
 }
 
 #[test]
-fn test_atomic_defiend_word() {
+fn test_atomic_defined_word() {
     parse(atomic_defined_word, b"$atomic\0");
 }
 
@@ -116,6 +121,11 @@ fn test_defined_functor() {
 #[test]
 fn test_defined_constant() {
     parse(defined_constant, b"$defined_constant\0");
+}
+
+#[test]
+fn test_defined_term() {
+    parse(defined_term, b"-123\0");
 }
 
 #[test]
@@ -150,6 +160,7 @@ fn test_fof_defined_atomic_term() {
 #[test]
 fn test_fof_defined_term() {
     parse(fof_defined_term, b"$defined_term\0");
+    parse(fof_defined_term, b"-123\0");
 }
 
 #[test]

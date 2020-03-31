@@ -3,7 +3,7 @@ source: src/tests.rs
 expression: parsed
 ---
 Defined(
-    FofDefinedTerm(
+    Atomic(
         FofDefinedAtomicTerm(
             FofDefinedPlainTerm(
                 DefinedConstant(

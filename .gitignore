@@ -3,3 +3,5 @@
 Cargo.lock
 /Axioms
 /Problems
+/fuzz/target
+/fuzz/results

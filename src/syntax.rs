@@ -60,6 +60,24 @@ impl<'a> fmt::Display for SingleQuoted<'a> {
     }
 }
 
+/// `distinct_object`
+#[derive(AsRef, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct DistinctObject<'a>(pub Cow<'a, str>);
+
+impl<'a> fmt::Display for DistinctObject<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "\"{}\"", self.0)
+    }
+}
+
+/// `number`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum Number<'a> {
+    Integer(Integer<'a>),
+}
+
 /// `atomic_word`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -160,10 +178,21 @@ pub struct FofDefinedPlainTerm<'a>(pub DefinedConstant<'a>);
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct FofDefinedAtomicTerm<'a>(pub FofDefinedPlainTerm<'a>);
 
+/// `defined_term`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum DefinedTerm<'a> {
+    Number(Number<'a>),
+    Distinct(DistinctObject<'a>),
+}
+
 /// `fof_defined_term`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct FofDefinedTerm<'a>(pub FofDefinedAtomicTerm<'a>);
+pub enum FofDefinedTerm<'a> {
+    Defined(DefinedTerm<'a>),
+    Atomic(FofDefinedAtomicTerm<'a>),
+}
 
 /// `fof_function_term`
 #[derive(Clone, Debug, From, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
@@ -821,6 +850,8 @@ pub trait Visitor<'a> {
 
     fn visit_single_quoted(&mut self, _single_quoted: SingleQuoted<'a>) {}
 
+    fn visit_distinct_object(&mut self, _distinct_object: DistinctObject<'a>) {}
+
     fn visit_atomic_word(&mut self, atomic_word: AtomicWord<'a>) {
         match atomic_word {
             AtomicWord::Lower(lower_word) => self.visit_lower_word(lower_word),
@@ -853,6 +884,12 @@ pub trait Visitor<'a> {
         self.visit_lower_word(dollar_word.0);
     }
 
+    fn visit_number(&mut self, number: Number<'a>) {
+        match number {
+            Number::Integer(integer) => self.visit_integer(integer),
+        }
+    }
+
     fn visit_atomic_defined_word(
         &mut self,
         atomic_defined_word: AtomicDefinedWord<'a>,
@@ -869,6 +906,15 @@ pub trait Visitor<'a> {
         defined_constant: DefinedConstant<'a>,
     ) {
         self.visit_defined_functor(defined_constant.0);
+    }
+
+    fn visit_defined_term(&mut self, defined_term: DefinedTerm<'a>) {
+        match defined_term {
+            DefinedTerm::Number(number) => self.visit_number(number),
+            DefinedTerm::Distinct(distinct) => {
+                self.visit_distinct_object(distinct)
+            }
+        }
     }
 
     fn visit_fof_arguments(&mut self, fof_arguments: FofArguments<'a>) {
@@ -902,7 +948,14 @@ pub trait Visitor<'a> {
     }
 
     fn visit_fof_defined_term(&mut self, fof_defined_term: FofDefinedTerm<'a>) {
-        self.visit_fof_defined_atomic_term(fof_defined_term.0);
+        match fof_defined_term {
+            FofDefinedTerm::Defined(defined) => {
+                self.visit_defined_term(defined)
+            }
+            FofDefinedTerm::Atomic(atomic) => {
+                self.visit_fof_defined_atomic_term(atomic)
+            }
+        }
     }
 
     fn visit_fof_function_term(

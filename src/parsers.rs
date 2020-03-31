@@ -45,6 +45,10 @@ pub fn is_sq_char(c: u8) -> bool {
     is_visible(c) && c != b'\'' && c != b'\\'
 }
 
+pub fn is_do_char(c: u8) -> bool {
+    is_visible(c) && c != b'"' && c != b'\\'
+}
+
 pub fn whitespace<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<(), E> {
@@ -124,6 +128,19 @@ pub fn single_quoted<'a, E: ParseError<&'a [u8]>>(
     )(x)
 }
 
+pub fn distinct_object<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<DistinctObject, E> {
+    map(
+        delimited(
+            tag("\""),
+            escaped(take_while1(is_do_char), '\\', one_of("\\\"")),
+            tag("\""),
+        ),
+        |w| DistinctObject(Cow::Borrowed(to_str(w))),
+    )(x)
+}
+
 pub fn atomic_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<AtomicWord, E> {
@@ -149,6 +166,12 @@ pub fn integer<'a, E: ParseError<&'a [u8]>>(
         )),
         |w| Integer(Cow::Borrowed(to_str(w))),
     )(x)
+}
+
+pub fn number<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<Number, E> {
+    map(integer, Number::Integer)(x)
 }
 
 pub fn name<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<Name, E> {
@@ -180,6 +203,12 @@ pub fn defined_constant<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<DefinedConstant, E> {
     map(defined_functor, DefinedConstant)(x)
+}
+
+pub fn defined_term<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<DefinedTerm, E> {
+    map(number, DefinedTerm::Number)(x)
 }
 
 pub fn functor<'a, E: ParseError<&'a [u8]>>(
@@ -231,7 +260,10 @@ pub fn fof_defined_atomic_term<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_defined_term<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofDefinedTerm, E> {
-    map(fof_defined_atomic_term, FofDefinedTerm)(x)
+    alt((
+        map(defined_term, FofDefinedTerm::Defined),
+        map(fof_defined_atomic_term, FofDefinedTerm::Atomic),
+    ))(x)
 }
 
 pub fn fof_function_term<'a, E: ParseError<&'a [u8]>>(
@@ -461,7 +493,10 @@ pub fn fof_unit_formula<'a, E: ParseError<&'a [u8]>>(
     ) -> ParseResult<(FofPlainTerm, Option<(TempFofInfixOp, FofTerm)>), E> {
         pair(
             fof_plain_term,
-            opt(pair(delimited(ignored, temp_fof_infix_op, ignored), fof_term)),
+            opt(pair(
+                delimited(ignored, temp_fof_infix_op, ignored),
+                fof_term,
+            )),
         )(x)
     }
 
@@ -526,10 +561,13 @@ fn fof_or_suffix<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_or_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofOrFormula, E> {
-    map(pair(fof_unit_formula, fof_or_suffix), |(first, mut rest)| {
-        rest.insert(0, first);
-        FofOrFormula(rest)
-    })(x)
+    map(
+        pair(fof_unit_formula, fof_or_suffix),
+        |(first, mut rest)| {
+            rest.insert(0, first);
+            FofOrFormula(rest)
+        },
+    )(x)
 }
 
 fn fof_and_suffix<'a, E: ParseError<&'a [u8]>>(
@@ -544,10 +582,13 @@ fn fof_and_suffix<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_and_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofAndFormula, E> {
-    map(pair(fof_unit_formula, fof_and_suffix), |(first, mut rest)| {
-        rest.insert(0, first);
-        FofAndFormula(rest)
-    })(x)
+    map(
+        pair(fof_unit_formula, fof_and_suffix),
+        |(first, mut rest)| {
+            rest.insert(0, first);
+            FofAndFormula(rest)
+        },
+    )(x)
 }
 
 enum FofAssocSuffix<'a> {
@@ -608,9 +649,7 @@ pub fn fof_binary_formula<'a, E: ParseError<&'a [u8]>>(
         |(left, suffix)| match suffix {
             FofBinarySuffix::Assoc(FofAssocSuffix::Or(mut rest)) => {
                 rest.insert(0, left);
-                FofBinaryFormula::Assoc(FofBinaryAssoc::Or(FofOrFormula(
-                    rest,
-                )))
+                FofBinaryFormula::Assoc(FofBinaryAssoc::Or(FofOrFormula(rest)))
             }
             FofBinarySuffix::Assoc(FofAssocSuffix::And(mut rest)) => {
                 rest.insert(0, left);

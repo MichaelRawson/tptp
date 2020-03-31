@@ -25,8 +25,7 @@ fn main() -> io::Result<()> {
         while let Some(result) = parser.next() {
             if let Ok(input) = result {
                 write_formula(&input);
-            }
-            else {
+            } else {
                 eprintln!("syntax error");
                 break;
             }

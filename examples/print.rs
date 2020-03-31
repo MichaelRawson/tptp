@@ -9,7 +9,7 @@ fn read_stdin() -> io::Result<Box<[u8]>> {
 }
 
 fn main() -> io::Result<()> {
-    let bytes = read_file()?;
+    let bytes = read_stdin()?;
     let mut parser = TPTPIterator::<()>::new(&bytes);
     for input in &mut parser {
         println!("{}", input.expect("syntax error"));
