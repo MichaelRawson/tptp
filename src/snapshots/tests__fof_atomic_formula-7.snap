@@ -1,0 +1,21 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+System(
+    FofSystemAtomicFormula(
+        Constant(
+            SystemConstant(
+                SystemFunctor(
+                    AtomicSystemWord(
+                        DollarDollarWord(
+                            LowerWord(
+                                "system",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

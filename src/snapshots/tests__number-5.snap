@@ -1,0 +1,9 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Real(
+    Real(
+        "-1.23E-456",
+    ),
+)

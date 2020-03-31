@@ -9,10 +9,12 @@ Fof(
                 Plain(
                     FofPlainAtomicFormula(
                         Constant(
-                            Functor(
-                                Lower(
-                                    LowerWord(
-                                        "p",
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "p",
+                                        ),
                                     ),
                                 ),
                             ),

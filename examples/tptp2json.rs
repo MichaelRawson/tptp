@@ -27,7 +27,7 @@ fn main() -> io::Result<()> {
                 write_formula(&input);
             } else {
                 eprintln!("syntax error");
-                break;
+                return Ok(());
             }
         }
         buf = parser.remaining.to_vec();

@@ -8,10 +8,12 @@ Disjunction(
             Plain(
                 FofPlainAtomicFormula(
                     Constant(
-                        Functor(
-                            Lower(
-                                LowerWord(
-                                    "p",
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "p",
+                                    ),
                                 ),
                             ),
                         ),
@@ -23,10 +25,12 @@ Disjunction(
             Plain(
                 FofPlainAtomicFormula(
                     Constant(
-                        Functor(
-                            Lower(
-                                LowerWord(
-                                    "q",
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "q",
+                                    ),
                                 ),
                             ),
                         ),
@@ -38,10 +42,12 @@ Disjunction(
             Plain(
                 FofPlainAtomicFormula(
                     Constant(
-                        Functor(
-                            Lower(
-                                LowerWord(
-                                    "r",
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "r",
+                                    ),
                                 ),
                             ),
                         ),

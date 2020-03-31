@@ -1,0 +1,11 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Number(
+    Integer(
+        Integer(
+            "123",
+        ),
+    ),
+)

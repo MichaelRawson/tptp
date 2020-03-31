@@ -73,9 +73,20 @@ fn test_dollar_word() {
 }
 
 #[test]
+fn test_dollar_dollar_word() {
+    parse(dollar_dollar_word, b"$$dollar\0");
+}
+
+#[test]
 fn test_single_quoted() {
     parse(single_quoted, b"'single quoted'\0");
     parse(single_quoted, b"'\\'\\\\'\0");
+}
+
+#[test]
+fn test_distinct_object() {
+    parse(distinct_object, b"\"distinct object\"\0");
+    parse(distinct_object, b"\"\\\"\\\\\"\0");
 }
 
 #[test]
@@ -92,8 +103,24 @@ fn test_integer() {
 }
 
 #[test]
+fn test_rational() {
+    parse(rational, b"0/1\0");
+    parse(rational, b"123/456\0");
+    parse(rational, b"-123/456\0");
+}
+
+#[test]
+fn test_real() {
+    parse(real, b"0.0\0");
+    parse(real, b"1E0\0");
+    parse(real, b"-1.23E-456\0");
+}
+
+#[test]
 fn test_number() {
     parse(number, b"-123\0");
+    parse(number, b"-123/456\0");
+    parse(number, b"-1.23E-456\0");
 }
 
 #[test]
@@ -109,8 +136,23 @@ fn test_variable() {
 }
 
 #[test]
+fn test_atomic_system_word() {
+    parse(atomic_system_word, b"$$atomic\0");
+}
+
+#[test]
 fn test_atomic_defined_word() {
     parse(atomic_defined_word, b"$atomic\0");
+}
+
+#[test]
+fn test_system_functor() {
+    parse(system_functor, b"$$system_functor\0");
+}
+
+#[test]
+fn test_system_constant() {
+    parse(system_constant, b"$$system_constant\0");
 }
 
 #[test]
@@ -126,11 +168,17 @@ fn test_defined_constant() {
 #[test]
 fn test_defined_term() {
     parse(defined_term, b"-123\0");
+    parse(defined_term, b"\"distinct object\"\0");
 }
 
 #[test]
 fn test_functor() {
     parse(functor, b"functor\0");
+}
+
+#[test]
+fn test_constant() {
+    parse(constant, b"constant\0");
 }
 
 #[test]
@@ -145,6 +193,13 @@ fn test_fof_plain_term() {
     parse(fof_plain_term, b"c\0");
     parse(fof_plain_term, b"f ( X )\0");
     parse(fof_plain_term, b"f ( X, g ( Y ) )\0");
+}
+
+#[test]
+fn test_fof_system_term() {
+    parse(fof_system_term, b"$$c\0");
+    parse(fof_system_term, b"$$f ( X )\0");
+    parse(fof_system_term, b"$$f ( X, g ( Y ) )\0");
 }
 
 #[test]
@@ -234,10 +289,16 @@ fn test_fof_defined_atomic_formula() {
 }
 
 #[test]
+fn test_fof_system_atomic_formula() {
+    parse(fof_system_atomic_formula, b"$$system\0");
+}
+
+#[test]
 fn test_fof_atomic_formula() {
     parse(fof_atomic_formula, b"$true\0");
     parse(fof_atomic_formula, b"f(X) = Y\0");
     parse(fof_atomic_formula, b"p(X)\0");
+    parse(fof_atomic_formula, b"$$system\0");
 }
 
 #[test]
@@ -367,6 +428,7 @@ fn test_general_function() {
 fn test_formula_data() {
     parse(formula_data, b"$fof ( p )\0");
     parse(formula_data, b"$cnf ( p )\0");
+    parse(formula_data, b"$fot ( t )\0");
 }
 
 #[test]
@@ -375,6 +437,8 @@ fn test_general_data() {
     parse(general_data, b"X\0");
     parse(general_data, b"atomic ( X )\0");
     parse(general_data, b"$fof ( p )\0");
+    parse(general_data, b"123\0");
+    parse(general_data, b"\"distinct object\"\0");
 }
 
 #[test]

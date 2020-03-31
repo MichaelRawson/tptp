@@ -28,6 +28,16 @@ fn fmt_list<T: fmt::Display>(
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Integer<'a>(pub Cow<'a, str>);
 
+/// `rational`
+#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Rational<'a>(pub Cow<'a, str>);
+
+/// `rational`
+#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Real<'a>(pub Cow<'a, str>);
+
 /// `lower_word`
 #[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -46,6 +56,17 @@ pub struct DollarWord<'a>(pub LowerWord<'a>);
 impl<'a> fmt::Display for DollarWord<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "${}", self.0)
+    }
+}
+
+/// `dollar_dollar_word`
+#[derive(AsRef, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct DollarDollarWord<'a>(pub LowerWord<'a>);
+
+impl<'a> fmt::Display for DollarDollarWord<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "$${}", self.0)
     }
 }
 
@@ -71,11 +92,34 @@ impl<'a> fmt::Display for DistinctObject<'a> {
     }
 }
 
+/// `atomic_system_word`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct AtomicSystemWord<'a>(pub DollarDollarWord<'a>);
+
+/// `system_functor`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct SystemFunctor<'a>(pub AtomicSystemWord<'a>);
+
+/// `system_constant`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct SystemConstant<'a>(pub SystemFunctor<'a>);
+
 /// `number`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Number<'a> {
     Integer(Integer<'a>),
+    Rational(Rational<'a>),
+    Real(Real<'a>),
 }
 
 /// `atomic_word`
@@ -108,6 +152,13 @@ pub struct Variable<'a>(pub UpperWord<'a>);
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Functor<'a>(pub AtomicWord<'a>);
 
+/// `functor`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct Constant<'a>(pub Functor<'a>);
+
 /// `fof_arguments`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -125,12 +176,32 @@ impl<'a> fmt::Display for FofArguments<'a> {
     }
 }
 
+/// `fof_system_term`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum FofSystemTerm<'a> {
+    /// `system_constant`
+    Constant(SystemConstant<'a>),
+    /// `system_functor`, `fof_arguments`
+    Function(SystemFunctor<'a>, FofArguments<'a>),
+}
+
+impl<'a> fmt::Display for FofSystemTerm<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FofSystemTerm::*;
+        match self {
+            Constant(c) => write!(f, "{}", c),
+            Function(name, args) => write!(f, "{}{}", name, args),
+        }
+    }
+}
+
 /// `fof_plain_term`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofPlainTerm<'a> {
     /// `constant`
-    Constant(Functor<'a>),
+    Constant(Constant<'a>),
     /// `functor`, `fof_arguments`
     Function(Functor<'a>, FofArguments<'a>),
 }
@@ -319,6 +390,13 @@ impl fmt::Display for FofQuantifier {
     }
 }
 
+/// `fof_system_atomic_formula`
+#[derive(
+    AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct FofSystemAtomicFormula<'a>(pub FofSystemTerm<'a>);
+
 /// `fof_plain_atomic_formula`
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
@@ -367,6 +445,7 @@ pub enum FofDefinedAtomicFormula<'a> {
 pub enum FofAtomicFormula<'a> {
     Plain(FofPlainAtomicFormula<'a>),
     Defined(FofDefinedAtomicFormula<'a>),
+    System(FofSystemAtomicFormula<'a>),
 }
 
 /// `fof_variable_list`
@@ -614,6 +693,7 @@ impl fmt::Display for FormulaRole {
 pub enum FormulaData<'a> {
     Fof(FofFormula<'a>),
     Cnf(CnfFormula<'a>),
+    Fot(FofTerm<'a>),
 }
 
 impl<'a> fmt::Display for FormulaData<'a> {
@@ -622,6 +702,7 @@ impl<'a> fmt::Display for FormulaData<'a> {
         match self {
             Fof(fof) => write!(f, "$fof({})", fof),
             Cnf(cnf) => write!(f, "$cnf({})", cnf),
+            Fot(cnf) => write!(f, "$fot({})", cnf),
         }
     }
 }
@@ -647,6 +728,8 @@ pub enum GeneralData<'a> {
     Atomic(AtomicWord<'a>),
     Function(GeneralFunction<'a>),
     Variable(Variable<'a>),
+    Number(Number<'a>),
+    DistinctObject(DistinctObject<'a>),
     Formula(FormulaData<'a>),
 }
 
@@ -835,7 +918,7 @@ impl<'a> fmt::Display for Include<'a> {
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TPTPInput<'a> {
-    Annotated(AnnotatedFormula<'a>),
+    Annotated(Box<AnnotatedFormula<'a>>),
     Include(Include<'a>),
 }
 
@@ -863,6 +946,10 @@ pub trait Visitor<'a> {
 
     fn visit_integer(&mut self, _integer: Integer<'a>) {}
 
+    fn visit_rational(&mut self, _rational: Rational<'a>) {}
+
+    fn visit_real(&mut self, _real: Real<'a>) {}
+
     fn visit_name(&mut self, name: Name<'a>) {
         match name {
             Name::AtomicWord(atomic_word) => {
@@ -880,13 +967,26 @@ pub trait Visitor<'a> {
         self.visit_atomic_word(functor.0);
     }
 
+    fn visit_constant(&mut self, constant: Constant<'a>) {
+        self.visit_functor(constant.0);
+    }
+
     fn visit_dollar_word(&mut self, dollar_word: DollarWord<'a>) {
         self.visit_lower_word(dollar_word.0);
+    }
+
+    fn visit_dollar_dollar_word(
+        &mut self,
+        dollar_dollar_word: DollarDollarWord<'a>,
+    ) {
+        self.visit_lower_word(dollar_dollar_word.0);
     }
 
     fn visit_number(&mut self, number: Number<'a>) {
         match number {
             Number::Integer(integer) => self.visit_integer(integer),
+            Number::Rational(rational) => self.visit_rational(rational),
+            Number::Real(real) => self.visit_real(real),
         }
     }
 
@@ -895,6 +995,21 @@ pub trait Visitor<'a> {
         atomic_defined_word: AtomicDefinedWord<'a>,
     ) {
         self.visit_dollar_word(atomic_defined_word.0);
+    }
+
+    fn visit_atomic_system_word(
+        &mut self,
+        atomic_system_word: AtomicSystemWord<'a>,
+    ) {
+        self.visit_dollar_dollar_word(atomic_system_word.0);
+    }
+
+    fn visit_system_functor(&mut self, system_functor: SystemFunctor<'a>) {
+        self.visit_atomic_system_word(system_functor.0);
+    }
+
+    fn visit_system_constant(&mut self, system_constant: SystemConstant<'a>) {
+        self.visit_system_functor(system_constant.0);
     }
 
     fn visit_defined_functor(&mut self, defined_functor: DefinedFunctor<'a>) {
@@ -923,9 +1038,21 @@ pub trait Visitor<'a> {
         }
     }
 
+    fn visit_fof_system_term(&mut self, fof_system_term: FofSystemTerm<'a>) {
+        match fof_system_term {
+            FofSystemTerm::Constant(constant) => {
+                self.visit_system_constant(constant)
+            }
+            FofSystemTerm::Function(functor, fof_arguments) => {
+                self.visit_system_functor(functor);
+                self.visit_fof_arguments(fof_arguments);
+            }
+        }
+    }
+
     fn visit_fof_plain_term(&mut self, fof_plain_term: FofPlainTerm<'a>) {
         match fof_plain_term {
-            FofPlainTerm::Constant(functor) => self.visit_functor(functor),
+            FofPlainTerm::Constant(constant) => self.visit_constant(constant),
             FofPlainTerm::Function(functor, fof_arguments) => {
                 self.visit_functor(functor);
                 self.visit_fof_arguments(fof_arguments);
@@ -1002,6 +1129,13 @@ pub trait Visitor<'a> {
     ) {
     }
 
+    fn visit_fof_system_atomic_formula(
+        &mut self,
+        fof_system_atomic_formula: FofSystemAtomicFormula<'a>,
+    ) {
+        self.visit_fof_system_term(fof_system_atomic_formula.0);
+    }
+
     fn visit_fof_plain_atomic_formula(
         &mut self,
         fof_plain_atomic_formula: FofPlainAtomicFormula<'a>,
@@ -1049,6 +1183,9 @@ pub trait Visitor<'a> {
             }
             FofAtomicFormula::Defined(fof_defined_atomic_formula) => self
                 .visit_fof_defined_atomic_formula(fof_defined_atomic_formula),
+            FofAtomicFormula::System(fof_system_atomic_formula) => {
+                self.visit_fof_system_atomic_formula(fof_system_atomic_formula)
+            }
         }
     }
 
@@ -1247,6 +1384,7 @@ pub trait Visitor<'a> {
             FormulaData::Cnf(cnf_formula) => {
                 self.visit_cnf_formula(cnf_formula)
             }
+            FormulaData::Fot(fof_term) => self.visit_fof_term(fof_term),
         }
     }
 
@@ -1259,6 +1397,10 @@ pub trait Visitor<'a> {
                 self.visit_general_function(general_function)
             }
             GeneralData::Variable(variable) => self.visit_variable(variable),
+            GeneralData::Number(number) => self.visit_number(number),
+            GeneralData::DistinctObject(distinct_object) => {
+                self.visit_distinct_object(distinct_object)
+            }
             GeneralData::Formula(formula_data) => {
                 self.visit_formula_data(formula_data)
             }
@@ -1350,7 +1492,7 @@ pub trait Visitor<'a> {
     fn visit_tptp_input(&mut self, input: TPTPInput<'a>) {
         match input {
             TPTPInput::Annotated(annotated) => {
-                self.visit_annotated_formula(annotated)
+                self.visit_annotated_formula(*annotated)
             }
             TPTPInput::Include(include) => self.visit_include(include),
         }

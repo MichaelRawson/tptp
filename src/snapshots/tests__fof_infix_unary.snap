@@ -31,10 +31,12 @@ FofInfixUnary {
     right: Function(
         Plain(
             Constant(
-                Functor(
-                    Lower(
-                        LowerWord(
-                            "c",
+                Constant(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "c",
+                            ),
                         ),
                     ),
                 ),
