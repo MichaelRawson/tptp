@@ -11,7 +11,8 @@ pub trait Visitor<'a> {
 
     fn visit_single_quoted(&mut self, _single_quoted: SingleQuoted<'a>) {}
 
-    fn visit_distinct_object(&mut self, _distinct_object: DistinctObject<'a>) {}
+    fn visit_distinct_object(&mut self, _distinct_object: DistinctObject<'a>) {
+    }
 
     fn visit_atomic_word(&mut self, atomic_word: AtomicWord<'a>) {
         match atomic_word {
@@ -152,7 +153,10 @@ pub trait Visitor<'a> {
         self.visit_fof_defined_plain_term(fof_defined_atomic_term.0);
     }
 
-    fn visit_fof_defined_term(&mut self, fof_defined_term: FofDefinedTerm<'a>) {
+    fn visit_fof_defined_term(
+        &mut self,
+        fof_defined_term: FofDefinedTerm<'a>,
+    ) {
         match fof_defined_term {
             FofDefinedTerm::Defined(defined) => {
                 self.visit_defined_term(defined)
@@ -294,7 +298,10 @@ pub trait Visitor<'a> {
         }
     }
 
-    fn visit_fof_binary_assoc(&mut self, fof_binary_assoc: FofBinaryAssoc<'a>) {
+    fn visit_fof_binary_assoc(
+        &mut self,
+        fof_binary_assoc: FofBinaryAssoc<'a>,
+    ) {
         match fof_binary_assoc {
             FofBinaryAssoc::Or(fof_or_formula) => {
                 self.visit_fof_or_formula(fof_or_formula)
@@ -343,7 +350,10 @@ pub trait Visitor<'a> {
         }
     }
 
-    fn visit_fof_unit_formula(&mut self, fof_unit_formula: FofUnitFormula<'a>) {
+    fn visit_fof_unit_formula(
+        &mut self,
+        fof_unit_formula: FofUnitFormula<'a>,
+    ) {
         match fof_unit_formula {
             FofUnitFormula::Unitary(fof_unitary_formula) => {
                 self.visit_fof_unitary_formula(*fof_unitary_formula)
@@ -432,12 +442,17 @@ pub trait Visitor<'a> {
         }
     }
 
-    fn visit_thf_unitary_term(&mut self, thf_unitary_term: ThfUnitaryTerm<'a>) {
+    fn visit_thf_unitary_term(
+        &mut self,
+        thf_unitary_term: ThfUnitaryTerm<'a>,
+    ) {
         match thf_unitary_term {
             ThfUnitaryTerm::Atomic(atomic) => {
                 self.visit_thf_atomic_formula(atomic)
             }
-            ThfUnitaryTerm::Variable(variable) => self.visit_variable(variable),
+            ThfUnitaryTerm::Variable(variable) => {
+                self.visit_variable(variable)
+            }
             ThfUnitaryTerm::Parenthesised(formula) => {
                 self.visit_thf_logic_formula(formula)
             }
@@ -453,9 +468,14 @@ pub trait Visitor<'a> {
         self.visit_thf_unitary_term(thf_defined_infix.right);
     }
 
-    fn visit_thf_plain_atomic(&mut self, thf_plain_atomic: ThfPlainAtomic<'a>) {
+    fn visit_thf_plain_atomic(
+        &mut self,
+        thf_plain_atomic: ThfPlainAtomic<'a>,
+    ) {
         match thf_plain_atomic {
-            ThfPlainAtomic::Constant(constant) => self.visit_constant(constant),
+            ThfPlainAtomic::Constant(constant) => {
+                self.visit_constant(constant)
+            }
         }
     }
 
@@ -516,12 +536,17 @@ pub trait Visitor<'a> {
         }
     }
 
-    fn visit_thf_unit_formula(&mut self, thf_unit_formula: ThfUnitFormula<'a>) {
+    fn visit_thf_unit_formula(
+        &mut self,
+        thf_unit_formula: ThfUnitFormula<'a>,
+    ) {
         match thf_unit_formula {
             ThfUnitFormula::Unitary(unitary) => {
                 self.visit_thf_unitary_formula(unitary)
             }
-            ThfUnitFormula::Unary(unary) => self.visit_thf_unary_formula(unary),
+            ThfUnitFormula::Unary(unary) => {
+                self.visit_thf_unary_formula(unary)
+            }
             ThfUnitFormula::Infix(infix) => {
                 self.visit_thf_defined_infix(infix)
             }
@@ -543,18 +568,29 @@ pub trait Visitor<'a> {
         }
     }
 
-    fn visit_thf_binary_assoc(&mut self, thf_binary_assoc: ThfBinaryAssoc<'a>) {
+    fn visit_thf_binary_assoc(
+        &mut self,
+        thf_binary_assoc: ThfBinaryAssoc<'a>,
+    ) {
         match thf_binary_assoc {
             ThfBinaryAssoc::Or(or) => self.visit_thf_or_formula(or),
-            ThfBinaryAssoc::Apply(apply) => self.visit_thf_apply_formula(apply),
+            ThfBinaryAssoc::Apply(apply) => {
+                self.visit_thf_apply_formula(apply)
+            }
         }
     }
 
-    fn visit_thf_unitary_type(&mut self, thf_unitary_type: ThfUnitaryType<'a>) {
+    fn visit_thf_unitary_type(
+        &mut self,
+        thf_unitary_type: ThfUnitaryType<'a>,
+    ) {
         self.visit_thf_unitary_formula(thf_unitary_type.0)
     }
 
-    fn visit_thf_mapping_type(&mut self, thf_mapping_type: ThfMappingType<'a>) {
+    fn visit_thf_mapping_type(
+        &mut self,
+        thf_mapping_type: ThfMappingType<'a>,
+    ) {
         for unitary in thf_mapping_type.0 {
             self.visit_thf_unitary_type(unitary)
         }

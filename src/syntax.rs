@@ -24,27 +24,37 @@ fn fmt_list<T: fmt::Display>(
 }
 
 /// `integer`
-#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Integer<'a>(pub Cow<'a, str>);
 
 /// `rational`
-#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Rational<'a>(pub Cow<'a, str>);
 
 /// `rational`
-#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Real<'a>(pub Cow<'a, str>);
 
 /// `lower_word`
-#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct LowerWord<'a>(pub Cow<'a, str>);
 
 /// `upper_word`
-#[derive(AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UpperWord<'a>(pub Cow<'a, str>);
 

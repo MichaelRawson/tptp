@@ -78,7 +78,9 @@ fn single_ignored<'a, E: ParseError<&'a [u8]>>(
 }
 
 /// zero or more `whitespace`, `comment_line`, or `comment_block`
-pub fn ignored<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<(), E> {
+pub fn ignored<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<(), E> {
     fold_many0(single_ignored, (), |_, _| ())(x)
 }
 
@@ -192,7 +194,11 @@ pub fn real<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<Real, E> {
                 value((), pair(one_of("eE"), integer)),
                 value(
                     (),
-                    tuple((tag("."), digit1, opt(pair(one_of("eE"), integer)))),
+                    tuple((
+                        tag("."),
+                        digit1,
+                        opt(pair(one_of("eE"), integer)),
+                    )),
                 ),
             )),
         ))),
@@ -584,7 +590,8 @@ pub fn fof_unit_formula<'a, E: ParseError<&'a [u8]>>(
                         FofUnitFormulaTail::Equal(op, right) => {
                             let infix =
                                 FofDefinedInfixFormula { left, op, right };
-                            let defined = FofDefinedAtomicFormula::Infix(infix);
+                            let defined =
+                                FofDefinedAtomicFormula::Infix(infix);
                             let atomic = FofAtomicFormula::Defined(defined);
                             let unitary = FofUnitaryFormula::Atomic(atomic);
                             FofUnitFormula::Unitary(Box::new(unitary))
@@ -792,7 +799,8 @@ pub fn literal<'a, E: ParseError<&'a [u8]>>(
                         LiteralTail::Equal(op, right) => {
                             let infix =
                                 FofDefinedInfixFormula { left, op, right };
-                            let defined = FofDefinedAtomicFormula::Infix(infix);
+                            let defined =
+                                FofDefinedAtomicFormula::Infix(infix);
                             let atomic = FofAtomicFormula::Defined(defined);
                             Literal::Atomic(atomic)
                         }
@@ -955,17 +963,14 @@ pub fn thf_or_formula<'a, E: ParseError<&'a [u8]>>(
     let (x, first) = thf_unit_formula(x)?;
     map(
         fold_many1(
-            preceded(
-                tuple((ignored, tag("|"), ignored)),
-                thf_unit_formula
-            ),
+            preceded(tuple((ignored, tag("|"), ignored)), thf_unit_formula),
             vec![first],
             |mut result, item| {
                 result.push(item);
                 result
-            }
+            },
         ),
-        ThfOrFormula
+        ThfOrFormula,
     )(x)
 }
 
@@ -975,17 +980,14 @@ pub fn thf_apply_formula<'a, E: ParseError<&'a [u8]>>(
     let (x, first) = thf_unit_formula(x)?;
     map(
         fold_many1(
-            preceded(
-                tuple((ignored, tag("@"), ignored)),
-                thf_unit_formula
-            ),
+            preceded(tuple((ignored, tag("@"), ignored)), thf_unit_formula),
             vec![first],
             |mut result, item| {
                 result.push(item);
                 result
-            }
+            },
         ),
-        ThfApplyFormula
+        ThfApplyFormula,
     )(x)
 }
 
@@ -1010,17 +1012,14 @@ pub fn thf_mapping_type<'a, E: ParseError<&'a [u8]>>(
     let (x, first) = thf_unitary_type(x)?;
     map(
         fold_many1(
-            preceded(
-                tuple((ignored, tag(">"), ignored)),
-                thf_unitary_type
-            ),
+            preceded(tuple((ignored, tag(">"), ignored)), thf_unitary_type),
             vec![first],
             |mut result, item| {
                 result.push(item);
                 result
-            }
+            },
         ),
-        ThfMappingType
+        ThfMappingType,
     )(x)
 }
 
@@ -1364,7 +1363,9 @@ impl<'a, E: ParseError<&'a [u8]>> Iterator for TPTPIterator<'a, E> {
                 self.remaining = remaining;
                 Some(Ok(input))
             }
-            Err(nom::Err::Error(e)) | Err(nom::Err::Failure(e)) => Some(Err(e)),
+            Err(nom::Err::Error(e)) | Err(nom::Err::Failure(e)) => {
+                Some(Err(e))
+            }
             Err(nom::Err::Incomplete(_)) => None,
         }
     }
