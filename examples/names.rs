@@ -2,7 +2,8 @@ use std::collections::HashSet;
 use std::io;
 use std::io::Read;
 use tptp::parsers::TPTPIterator;
-use tptp::syntax::{Name, Visitor};
+use tptp::syntax::Name;
+use tptp::visitor::Visitor;
 
 #[derive(Default)]
 struct Names<'a> {

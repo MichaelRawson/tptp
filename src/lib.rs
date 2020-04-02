@@ -4,7 +4,7 @@
 //! # Quickstart
 //! ```rust
 //! use tptp::parsers::TPTPIterator;
-//! use tptp::syntax::Visitor;
+//! use tptp::visitor::Visitor;
 //!
 //! struct MyVisitor;
 //! impl<'a> Visitor<'a> for MyVisitor {}
@@ -25,11 +25,14 @@
 extern crate alloc;
 extern crate derive_more;
 
+/// `nom` parsers corresponding to [TPTP BNF](http://www.tptp.org/TPTP/SyntaxBNF.html)
+pub mod parsers;
+
 /// Parsed TPTP structures
 pub mod syntax;
 
-/// `nom` parsers corresponding to [TPTP BNF](http://www.tptp.org/TPTP/SyntaxBNF.html)
-pub mod parsers;
+/// TPTP Visitor trait
+pub mod visitor;
 
 #[cfg(test)]
 mod tests;

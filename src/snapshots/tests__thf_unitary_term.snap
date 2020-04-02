@@ -1,0 +1,19 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Atomic(
+    Plain(
+        Constant(
+            Constant(
+                Functor(
+                    Lower(
+                        LowerWord(
+                            "c",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

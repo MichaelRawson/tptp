@@ -5,3 +5,4 @@ Cargo.lock
 /Problems
 /fuzz/target
 /fuzz/results
+/tptp2json/target

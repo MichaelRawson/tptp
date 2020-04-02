@@ -1,0 +1,46 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Type(
+    Mapping(
+        ThfMappingType(
+            [
+                ThfUnitaryType(
+                    Atomic(
+                        Plain(
+                            Constant(
+                                Constant(
+                                    Functor(
+                                        Lower(
+                                            LowerWord(
+                                                "c",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+                ThfUnitaryType(
+                    Atomic(
+                        Plain(
+                            Constant(
+                                Constant(
+                                    Functor(
+                                        Lower(
+                                            LowerWord(
+                                                "d",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+        ),
+    ),
+)

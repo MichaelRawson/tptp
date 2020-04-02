@@ -1,0 +1,48 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Binary(
+    Assoc(
+        Or(
+            ThfOrFormula(
+                [
+                    Unitary(
+                        Atomic(
+                            Plain(
+                                Constant(
+                                    Constant(
+                                        Functor(
+                                            Lower(
+                                                LowerWord(
+                                                    "c",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                    Unitary(
+                        Atomic(
+                            Plain(
+                                Constant(
+                                    Constant(
+                                        Functor(
+                                            Lower(
+                                                LowerWord(
+                                                    "d",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+            ),
+        ),
+    ),
+)

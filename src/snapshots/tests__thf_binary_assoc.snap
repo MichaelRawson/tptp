@@ -1,0 +1,44 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Or(
+    ThfOrFormula(
+        [
+            Unitary(
+                Atomic(
+                    Plain(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "c",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            Unitary(
+                Atomic(
+                    Plain(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "d",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

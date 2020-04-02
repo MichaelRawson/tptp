@@ -11,28 +11,24 @@ keywords = ["parser", "tptp"]
 include = [
 	"Cargo.toml",
 	"src/*.rs",
-	"benches/*.rs",
 ]
-
-[dependencies]
-serde = { version = "1.0", optional = true, features = ["derive"] }
-
-[dependencies.nom]
-version = "5.1"
-features = ["lexical"]
 
 [dependencies.derive_more]
 version = "0.99"
 default-features = false
 features = ["as_ref", "from", "display"]
 
+[dependencies.nom]
+version = "5.1"
+features = ["lexical"]
+
+[dependencies.serde]
+version = "1.0"
+features = ["derive"]
+optional = true
+
 [dev-dependencies]
 insta = "0.12"
-serde_json = "1.0"
-
-[[bench]]
-name = "benchmark"
-harness = false
 
 [profile.release]
 lto = true
@@ -41,3 +37,8 @@ codegen-units = 1
 [profile.bench]
 lto = true
 codegen-units = 1
+
+[[bench]]
+path = "benches/benchmark.rs"
+name = "benchmark"
+harness = false

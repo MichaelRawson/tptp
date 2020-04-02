@@ -12,7 +12,7 @@ use nom::character::streaming::{
 };
 use nom::combinator::{map, opt, peek, recognize, value};
 use nom::error::ParseError;
-use nom::multi::{fold_many0, separated_nonempty_list};
+use nom::multi::{fold_many0, fold_many1, separated_nonempty_list};
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 
 use crate::syntax::*;
@@ -850,6 +850,214 @@ pub fn cnf_formula<'a, E: ParseError<&'a [u8]>>(
         ),
         map(disjunction, CnfFormula::Disjunction),
     ))(x)
+}
+
+pub fn thf_plain_atomic<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfPlainAtomic, E> {
+    map(constant, ThfPlainAtomic::Constant)(x)
+}
+
+pub fn thf_defined_atomic<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfDefinedAtomic, E> {
+    map(defined_constant, ThfDefinedAtomic::Constant)(x)
+}
+
+pub fn thf_atomic_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfAtomicFormula, E> {
+    alt((
+        map(thf_plain_atomic, ThfAtomicFormula::Plain),
+        map(thf_defined_atomic, ThfAtomicFormula::Defined),
+    ))(x)
+}
+
+pub fn thf_unitary_term<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfUnitaryTerm, E> {
+    alt((
+        map(thf_atomic_formula, ThfUnitaryTerm::Atomic),
+        map(variable, ThfUnitaryTerm::Variable),
+        map(
+            delimited(
+                terminated(tag("("), ignored),
+                thf_logic_formula,
+                preceded(ignored, tag(")")),
+            ),
+            ThfUnitaryTerm::Parenthesised,
+        ),
+    ))(x)
+}
+
+pub fn thf_defined_infix<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfDefinedInfix, E> {
+    map(
+        tuple((
+            thf_unitary_term,
+            preceded(ignored, defined_infix_pred),
+            preceded(ignored, thf_unitary_term),
+        )),
+        |(left, op, right)| ThfDefinedInfix { left, op, right },
+    )(x)
+}
+
+pub fn thf_unitary_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfUnitaryFormula, E> {
+    alt((
+        map(thf_atomic_formula, ThfUnitaryFormula::Atomic),
+        map(variable, ThfUnitaryFormula::Variable),
+        map(
+            delimited(
+                terminated(tag("("), ignored),
+                thf_logic_formula,
+                preceded(ignored, tag(")")),
+            ),
+            ThfUnitaryFormula::Parenthesised,
+        ),
+    ))(x)
+}
+
+pub fn thf_infix_unary<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfInfixUnary, E> {
+    map(
+        tuple((
+            thf_unitary_term,
+            preceded(ignored, infix_inequality),
+            preceded(ignored, thf_unitary_term),
+        )),
+        |(left, op, right)| ThfInfixUnary { left, op, right },
+    )(x)
+}
+
+pub fn thf_unary_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfUnaryFormula, E> {
+    map(thf_infix_unary, ThfUnaryFormula::Infix)(x)
+}
+
+pub fn thf_unit_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfUnitFormula, E> {
+    alt((
+        map(thf_defined_infix, ThfUnitFormula::Infix),
+        map(thf_unary_formula, ThfUnitFormula::Unary),
+        map(thf_unitary_formula, ThfUnitFormula::Unitary),
+    ))(x)
+}
+
+pub fn thf_or_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfOrFormula, E> {
+    let (x, first) = thf_unit_formula(x)?;
+    map(
+        fold_many1(
+            preceded(
+                tuple((ignored, tag("|"), ignored)),
+                thf_unit_formula
+            ),
+            vec![first],
+            |mut result, item| {
+                result.push(item);
+                result
+            }
+        ),
+        ThfOrFormula
+    )(x)
+}
+
+pub fn thf_apply_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfApplyFormula, E> {
+    let (x, first) = thf_unit_formula(x)?;
+    map(
+        fold_many1(
+            preceded(
+                tuple((ignored, tag("@"), ignored)),
+                thf_unit_formula
+            ),
+            vec![first],
+            |mut result, item| {
+                result.push(item);
+                result
+            }
+        ),
+        ThfApplyFormula
+    )(x)
+}
+
+pub fn thf_binary_assoc<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfBinaryAssoc, E> {
+    alt((
+        map(thf_or_formula, ThfBinaryAssoc::Or),
+        map(thf_apply_formula, ThfBinaryAssoc::Apply),
+    ))(x)
+}
+
+pub fn thf_unitary_type<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfUnitaryType, E> {
+    map(thf_unitary_formula, ThfUnitaryType)(x)
+}
+
+pub fn thf_mapping_type<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfMappingType, E> {
+    let (x, first) = thf_unitary_type(x)?;
+    map(
+        fold_many1(
+            preceded(
+                tuple((ignored, tag(">"), ignored)),
+                thf_unitary_type
+            ),
+            vec![first],
+            |mut result, item| {
+                result.push(item);
+                result
+            }
+        ),
+        ThfMappingType
+    )(x)
+}
+
+pub fn thf_binary_type<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfBinaryType, E> {
+    map(thf_mapping_type, ThfBinaryType::Mapping)(x)
+}
+
+pub fn thf_binary_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfBinaryFormula, E> {
+    alt((
+        map(thf_binary_assoc, ThfBinaryFormula::Assoc),
+        map(thf_binary_type, ThfBinaryFormula::Type),
+    ))(x)
+}
+
+pub fn thf_logic_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfLogicFormula, E> {
+    alt((
+        map(thf_binary_formula, ThfLogicFormula::Binary),
+        map(thf_unary_formula, |f| ThfLogicFormula::Unary(Box::new(f))),
+        map(thf_defined_infix, |f| {
+            ThfLogicFormula::DefinedInfix(Box::new(f))
+        }),
+        map(thf_unitary_formula, |f| {
+            ThfLogicFormula::Unitary(Box::new(f))
+        }),
+    ))(x)
+}
+
+pub fn thf_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfFormula, E> {
+    map(thf_logic_formula, ThfFormula::Logic)(x)
 }
 
 pub fn formula_role<'a, E: ParseError<&'a [u8]>>(

@@ -1,0 +1,19 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Defined(
+    Constant(
+        DefinedConstant(
+            DefinedFunctor(
+                AtomicDefinedWord(
+                    DollarWord(
+                        LowerWord(
+                            "defined_constant",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

@@ -1,0 +1,41 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+DefinedInfix(
+    ThfDefinedInfix {
+        left: Atomic(
+            Plain(
+                Constant(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "c",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        op: DefinedInfixPred(
+            InfixEquality,
+        ),
+        right: Atomic(
+            Plain(
+                Constant(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "d",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    },
+)

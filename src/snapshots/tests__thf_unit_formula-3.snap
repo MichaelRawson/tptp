@@ -1,0 +1,41 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Unary(
+    Infix(
+        ThfInfixUnary {
+            left: Atomic(
+                Plain(
+                    Constant(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "c",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            op: InfixInequality,
+            right: Atomic(
+                Plain(
+                    Constant(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "d",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        },
+    ),
+)

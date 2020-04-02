@@ -1,5 +1,4 @@
 space=" "
-newline="\n"
 comment_block_left="/*"
 comment_block_right="*/"
 comment_line="%"

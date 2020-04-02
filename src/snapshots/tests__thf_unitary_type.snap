@@ -1,0 +1,21 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+ThfUnitaryType(
+    Atomic(
+        Plain(
+            Constant(
+                Constant(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "c",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

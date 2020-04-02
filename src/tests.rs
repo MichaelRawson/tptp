@@ -401,6 +401,111 @@ fn test_cnf_formula() {
 }
 
 #[test]
+fn test_thf_plain_atomic() {
+    parse(thf_plain_atomic, b"c\0");
+}
+
+#[test]
+fn test_thf_defined_atomic() {
+    parse(thf_defined_atomic, b"$defined_constant\0");
+}
+
+#[test]
+fn test_thf_atomic_formula() {
+    parse(thf_atomic_formula, b"c\0");
+    parse(thf_atomic_formula, b"$defined_constant\0");
+}
+
+#[test]
+fn test_thf_unitary_term() {
+    parse(thf_unitary_term, b"c\0");
+    parse(thf_unitary_term, b"X\0");
+    parse(thf_unitary_term, b"( p )\0");
+}
+
+#[test]
+fn test_thf_defined_infix() {
+    parse(thf_defined_infix, b"c = d\0");
+}
+
+#[test]
+fn test_thf_unitary_formula() {
+    parse(thf_unitary_term, b"c\0");
+    parse(thf_unitary_term, b"X\0");
+    parse(thf_unitary_term, b"( p )\0");
+}
+
+#[test]
+fn test_thf_infix_unary() {
+    parse(thf_infix_unary, b"c != d\0");
+}
+
+#[test]
+fn test_thf_unary_formula() {
+    parse(thf_unary_formula, b"c != d\0");
+}
+
+#[test]
+fn test_thf_unit_formula() {
+    parse(thf_unit_formula, b"c = d\0");
+    parse(thf_unit_formula, b"c != d\0");
+    parse(thf_unit_formula, b"c\0");
+}
+
+#[test]
+fn test_thf_or_formula() {
+    parse(thf_or_formula, b"c | d\0");
+    parse(thf_or_formula, b"c | d | e\0");
+}
+
+#[test]
+fn test_thf_apply_formula() {
+    parse(thf_apply_formula, b"c @ d\0");
+    parse(thf_apply_formula, b"c @ d @ e\0");
+}
+
+#[test]
+fn test_thf_binary_assoc() {
+    parse(thf_binary_assoc, b"c | d\0");
+    parse(thf_apply_formula, b"c @ d\0");
+}
+
+#[test]
+fn test_thf_unitary_type() {
+    parse(thf_unitary_type, b"c\0");
+}
+
+#[test]
+fn test_thf_mapping_type() {
+    parse(thf_mapping_type, b"c > d\0");
+    parse(thf_mapping_type, b"c > d > e\0");
+}
+
+#[test]
+fn test_thf_binary_type() {
+    parse(thf_binary_type, b"c > d\0");
+}
+
+#[test]
+fn test_thf_binary_formula() {
+    parse(thf_binary_formula, b"c | d\0");
+    parse(thf_binary_formula, b"c > d\0");
+}
+
+#[test]
+fn test_thf_logic_formula() {
+    parse(thf_logic_formula, b"c | d\0");
+    parse(thf_logic_formula, b"c != d\0");
+    parse(thf_logic_formula, b"c = d\0");
+    parse(thf_logic_formula, b"c\0");
+}
+
+#[test]
+fn test_thf_formula() {
+    parse(thf_formula, b"c\0");
+}
+
+#[test]
 fn test_role() {
     parse(formula_role, b"axiom\0");
     parse(formula_role, b"conjecture\0");
