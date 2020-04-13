@@ -114,6 +114,7 @@ fn test_real() {
     parse(real, b"0.0\0");
     parse(real, b"1E0\0");
     parse(real, b"-1.23E-456\0");
+    parse(real, b"1e-06\0");
 }
 
 #[test]

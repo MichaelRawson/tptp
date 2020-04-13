@@ -8,8 +8,9 @@ use nom::bytes::streaming::{
     escaped, tag, take_until, take_while, take_while1,
 };
 use nom::character::streaming::{
-    digit0, digit1, line_ending, multispace1, not_line_ending, one_of,
+    digit0, digit1, line_ending, not_line_ending, one_of,
 };
+use nom::character::complete::multispace1;
 use nom::combinator::{map, opt, peek, recognize, value};
 use nom::error::ParseError;
 use nom::multi::{fold_many0, fold_many1, separated_nonempty_list};
@@ -187,17 +188,23 @@ pub fn rational<'a, E: ParseError<&'a [u8]>>(
 }
 
 pub fn real<'a, E: ParseError<&'a [u8]>>(x: &'a [u8]) -> ParseResult<Real, E> {
+    fn exp_integer<'a, E: ParseError<&'a [u8]>>(
+        x: &'a [u8],
+    ) -> ParseResult<(), E> {
+        value((), preceded(opt(one_of("+-")), digit1))(x)
+    }
+
     map(
         recognize(tuple((
             integer,
             alt((
-                value((), pair(one_of("eE"), integer)),
+                value((), pair(one_of("eE"), exp_integer)),
                 value(
                     (),
                     tuple((
                         tag("."),
                         digit1,
-                        opt(pair(one_of("eE"), integer)),
+                        opt(pair(one_of("eE"), exp_integer)),
                     )),
                 ),
             )),
