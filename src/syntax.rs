@@ -865,6 +865,10 @@ pub enum FormulaRole {
     Conjecture,
     NegatedConjecture,
     Plain,
+    Type,
+    FiDomain,
+    FiFunctors,
+    FiPredicates,
     Unknown,
 }
 
@@ -882,6 +886,10 @@ impl fmt::Display for FormulaRole {
             Conjecture => write!(f, "conjecture"),
             NegatedConjecture => write!(f, "negated_conjecture"),
             Plain => write!(f, "plain"),
+            Type => write!(f, "type"),
+            FiDomain => write!(f, "fi_domain"),
+            FiFunctors => write!(f, "fi_functors"),
+            FiPredicates => write!(f, "fi_predicates"),
             Unknown => write!(f, "unknown"),
         }
     }

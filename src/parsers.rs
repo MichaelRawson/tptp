@@ -1080,6 +1080,10 @@ pub fn formula_role<'a, E: ParseError<&'a [u8]>>(
         value(FormulaRole::Conjecture, tag("conjecture")),
         value(FormulaRole::NegatedConjecture, tag("negated_conjecture")),
         value(FormulaRole::Plain, tag("plain")),
+        value(FormulaRole::Type, tag("type")),
+        value(FormulaRole::FiDomain, tag("fi_domain")),
+        value(FormulaRole::FiFunctors, tag("fi_functors")),
+        value(FormulaRole::FiPredicates, tag("fi_predicates")),
         value(FormulaRole::Unknown, tag("unknown")),
     ))(x)
 }
