@@ -183,6 +183,12 @@ fn test_constant() {
 }
 
 #[test]
+fn test_untyped_atom() {
+    parse(untyped_atom, b"constant\0");
+    parse(untyped_atom, b"$$system_constant\0");
+}
+
+#[test]
 fn test_fof_arguments() {
     parse(fof_arguments, b"( c )\0");
     parse(fof_arguments, b"( X )\0");
@@ -477,9 +483,27 @@ fn test_thf_unitary_type() {
 }
 
 #[test]
+fn test_thf_apply_type() {
+    parse(thf_apply_type, b"c @ d\0");
+}
+
+#[test]
 fn test_thf_mapping_type() {
     parse(thf_mapping_type, b"c > d\0");
     parse(thf_mapping_type, b"c > d > e\0");
+}
+
+#[test]
+fn test_thf_top_level_type() {
+    parse(thf_top_level_type, b"c\0");
+    parse(thf_top_level_type, b"c > d\0");
+    parse(thf_top_level_type, b"c @ d\0");
+}
+
+#[test]
+fn test_thf_atom_typing() {
+    parse(thf_atom_typing, b"c : t\0");
+    parse(thf_atom_typing, b"( c : t )\0");
 }
 
 #[test]
@@ -504,6 +528,7 @@ fn test_thf_logic_formula() {
 #[test]
 fn test_thf_formula() {
     parse(thf_formula, b"c\0");
+    parse(thf_formula, b"c : t\0");
 }
 
 #[test]

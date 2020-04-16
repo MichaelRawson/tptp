@@ -50,6 +50,13 @@ pub trait Visitor<'a> {
         self.visit_functor(constant.0);
     }
 
+    fn visit_untyped_atom(&mut self, untyped_atom: UntypedAtom<'a>) {
+        match untyped_atom {
+            UntypedAtom::Constant(constant) => self.visit_constant(constant),
+            UntypedAtom::System(system) => self.visit_system_constant(system),
+        }
+    }
+
     fn visit_dollar_word(&mut self, dollar_word: DollarWord<'a>) {
         self.visit_lower_word(dollar_word.0);
     }
@@ -596,6 +603,37 @@ pub trait Visitor<'a> {
         }
     }
 
+    fn visit_thf_apply_type(&mut self, thf_apply_type: ThfApplyType<'a>) {
+        self.visit_thf_apply_formula(thf_apply_type.0)
+    }
+
+    fn visit_thf_top_level_type(
+        &mut self,
+        thf_top_level_type: ThfTopLevelType<'a>,
+    ) {
+        match thf_top_level_type {
+            ThfTopLevelType::Unitary(unitary) => {
+                self.visit_thf_unitary_type(unitary)
+            }
+            ThfTopLevelType::Mapping(mapping) => {
+                self.visit_thf_mapping_type(mapping)
+            }
+            ThfTopLevelType::Apply(apply) => self.visit_thf_apply_type(apply),
+        }
+    }
+
+    fn visit_thf_atom_typing(&mut self, thf_atom_typing: ThfAtomTyping<'a>) {
+        match thf_atom_typing {
+            ThfAtomTyping::Typing(untyped, typ) => {
+                self.visit_untyped_atom(untyped);
+                self.visit_thf_top_level_type(typ);
+            }
+            ThfAtomTyping::Parenthesised(paren) => {
+                self.visit_thf_atom_typing(*paren)
+            }
+        }
+    }
+
     fn visit_thf_binary_type(&mut self, thf_binary_type: ThfBinaryType<'a>) {
         match thf_binary_type {
             ThfBinaryType::Mapping(mapping) => {
@@ -639,6 +677,9 @@ pub trait Visitor<'a> {
     fn visit_thf_formula(&mut self, thf_formula: ThfFormula<'a>) {
         match thf_formula {
             ThfFormula::Logic(logic) => self.visit_thf_logic_formula(logic),
+            ThfFormula::AtomTyping(typing) => {
+                self.visit_thf_atom_typing(typing)
+            }
         }
     }
 

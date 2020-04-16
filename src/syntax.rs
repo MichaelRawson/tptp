@@ -123,6 +123,14 @@ pub struct SystemFunctor<'a>(pub AtomicSystemWord<'a>);
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SystemConstant<'a>(pub SystemFunctor<'a>);
 
+/// `untyped_atom`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum UntypedAtom<'a> {
+    Constant(Constant<'a>),
+    System(SystemConstant<'a>),
+}
+
 /// `number`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -668,6 +676,13 @@ impl<'a> fmt::Display for CnfFormula<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ThfUnitaryType<'a>(pub ThfUnitaryFormula<'a>);
 
+/// `thf_apply_type`
+#[derive(
+    AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct ThfApplyType<'a>(pub ThfApplyFormula<'a>);
+
 /// `thf_mapping_type`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -676,6 +691,33 @@ pub struct ThfMappingType<'a>(pub Vec<ThfUnitaryType<'a>>);
 impl<'a> fmt::Display for ThfMappingType<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt_list(f, ">", &self.0)
+    }
+}
+
+/// `thf_top_level_type`
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum ThfTopLevelType<'a> {
+    Unitary(ThfUnitaryType<'a>),
+    Mapping(ThfMappingType<'a>),
+    Apply(ThfApplyType<'a>),
+}
+
+/// `thf_atom_typing`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum ThfAtomTyping<'a> {
+    Typing(UntypedAtom<'a>, ThfTopLevelType<'a>),
+    Parenthesised(Box<ThfAtomTyping<'a>>),
+}
+
+impl<'a> fmt::Display for ThfAtomTyping<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use ThfAtomTyping::*;
+        match self {
+            Typing(untyped, typ) => write!(f, "{}:{}", untyped, typ),
+            Parenthesised(typing) => write!(f, "({})", typing),
+        }
     }
 }
 
@@ -849,6 +891,7 @@ pub enum ThfLogicFormula<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum ThfFormula<'a> {
     Logic(ThfLogicFormula<'a>),
+    AtomTyping(ThfAtomTyping<'a>),
 }
 
 /// `formula_role`

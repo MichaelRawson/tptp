@@ -7,10 +7,10 @@ use nom::branch::alt;
 use nom::bytes::streaming::{
     escaped, tag, take_until, take_while, take_while1,
 };
+use nom::character::complete::multispace1;
 use nom::character::streaming::{
     digit0, digit1, line_ending, not_line_ending, one_of,
 };
-use nom::character::complete::multispace1;
 use nom::combinator::{map, opt, peek, recognize, value};
 use nom::error::ParseError;
 use nom::multi::{fold_many0, fold_many1, separated_nonempty_list};
@@ -291,6 +291,15 @@ pub fn constant<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<Constant, E> {
     map(functor, Constant)(x)
+}
+
+pub fn untyped_atom<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<UntypedAtom, E> {
+    alt((
+        map(constant, UntypedAtom::Constant),
+        map(system_constant, UntypedAtom::System),
+    ))(x)
 }
 
 pub fn fof_arguments<'a, E: ParseError<&'a [u8]>>(
@@ -1013,6 +1022,12 @@ pub fn thf_unitary_type<'a, E: ParseError<&'a [u8]>>(
     map(thf_unitary_formula, ThfUnitaryType)(x)
 }
 
+pub fn thf_apply_type<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfApplyType, E> {
+    map(thf_apply_formula, ThfApplyType)(x)
+}
+
 pub fn thf_mapping_type<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<ThfMappingType, E> {
@@ -1028,6 +1043,41 @@ pub fn thf_mapping_type<'a, E: ParseError<&'a [u8]>>(
         ),
         ThfMappingType,
     )(x)
+}
+
+pub fn thf_top_level_type<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfTopLevelType, E> {
+    alt((
+        map(thf_mapping_type, ThfTopLevelType::Mapping),
+        map(thf_apply_type, ThfTopLevelType::Apply),
+        map(thf_unitary_type, ThfTopLevelType::Unitary),
+    ))(x)
+}
+
+pub fn thf_atom_typing<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfAtomTyping, E> {
+    alt((
+        map(
+            pair(
+                untyped_atom,
+                preceded(
+                    tuple((ignored, tag(":"), ignored)),
+                    thf_top_level_type,
+                ),
+            ),
+            |(untyped, typ)| ThfAtomTyping::Typing(untyped, typ),
+        ),
+        map(
+            delimited(
+                pair(tag("("), ignored),
+                thf_atom_typing,
+                pair(ignored, tag(")")),
+            ),
+            |typing| ThfAtomTyping::Parenthesised(Box::new(typing)),
+        ),
+    ))(x)
 }
 
 pub fn thf_binary_type<'a, E: ParseError<&'a [u8]>>(
@@ -1063,7 +1113,10 @@ pub fn thf_logic_formula<'a, E: ParseError<&'a [u8]>>(
 pub fn thf_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<ThfFormula, E> {
-    map(thf_logic_formula, ThfFormula::Logic)(x)
+    alt((
+        map(thf_atom_typing, ThfFormula::AtomTyping),
+        map(thf_logic_formula, ThfFormula::Logic),
+    ))(x)
 }
 
 pub fn formula_role<'a, E: ParseError<&'a [u8]>>(

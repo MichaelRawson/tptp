@@ -1,0 +1,36 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Typing(
+    Constant(
+        Constant(
+            Functor(
+                Lower(
+                    LowerWord(
+                        "c",
+                    ),
+                ),
+            ),
+        ),
+    ),
+    Unitary(
+        ThfUnitaryType(
+            Atomic(
+                Plain(
+                    Constant(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "t",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)
