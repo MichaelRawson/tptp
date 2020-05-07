@@ -1111,12 +1111,33 @@ impl<'a> fmt::Display for CnfAnnotated<'a> {
     }
 }
 
+/// `thf_annotated`
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct ThfAnnotated<'a> {
+    pub name: Name<'a>,
+    pub role: FormulaRole,
+    pub formula: ThfFormula<'a>,
+    pub annotations: Annotations<'a>,
+}
+
+impl<'a> fmt::Display for ThfAnnotated<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "thf({},{},{}{}).",
+            self.name, self.role, self.formula, self.annotations
+        )
+    }
+}
+
 /// `annotated_formula`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum AnnotatedFormula<'a> {
     Fof(FofAnnotated<'a>),
     Cnf(CnfAnnotated<'a>),
+    Thf(ThfAnnotated<'a>),
 }
 
 /// `file_name`

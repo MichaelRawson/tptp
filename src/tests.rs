@@ -618,9 +618,20 @@ fn test_cnf_annotated() {
 }
 
 #[test]
+fn test_thf_annotated() {
+    parse(thf_annotated, b"thf ( test , axiom , $true ) .\0");
+    parse(thf_annotated, b"thf ( test , axiom , $true , unknown ) .\0");
+    parse(
+        thf_annotated,
+        b"thf ( test , axiom , $true , unknown , [] ) .\0",
+    );
+}
+
+#[test]
 fn test_annotated_formula() {
     parse(annotated_formula, b"fof ( test , axiom , $true ) .\0");
     parse(annotated_formula, b"cnf ( test , axiom , $true ) .\0");
+    parse(annotated_formula, b"thf ( test , axiom , $true ) .\0");
 }
 
 #[test]
@@ -651,4 +662,5 @@ fn test_tptp_input() {
     parse(tptp_input, b"include ( 'test' ) .\0");
     parse(tptp_input, b"fof ( test , axiom , $true ) .\0");
     parse(tptp_input, b"cnf ( test , axiom , $true ) .\0");
+    parse(tptp_input, b"thf ( test , axiom , $true ) .\0");
 }

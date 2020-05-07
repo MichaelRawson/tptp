@@ -1,0 +1,38 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+ThfAnnotated {
+    name: AtomicWord(
+        Lower(
+            LowerWord(
+                "test",
+            ),
+        ),
+    ),
+    role: Axiom,
+    formula: Logic(
+        Unitary(
+            Atomic(
+                Defined(
+                    Constant(
+                        DefinedConstant(
+                            DefinedFunctor(
+                                AtomicDefinedWord(
+                                    DollarWord(
+                                        LowerWord(
+                                            "true",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+    annotations: Annotations(
+        None,
+    ),
+}

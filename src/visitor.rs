@@ -786,6 +786,13 @@ pub trait Visitor<'a> {
         self.visit_annotations(cnf_annotated.annotations);
     }
 
+    fn visit_thf_annotated(&mut self, thf_annotated: ThfAnnotated<'a>) {
+        self.visit_name(thf_annotated.name);
+        self.visit_formula_role(thf_annotated.role);
+        self.visit_thf_formula(thf_annotated.formula);
+        self.visit_annotations(thf_annotated.annotations);
+    }
+
     fn visit_annotated_formula(&mut self, annotated: AnnotatedFormula<'a>) {
         match annotated {
             AnnotatedFormula::Fof(fof_annotated) => {
@@ -793,6 +800,9 @@ pub trait Visitor<'a> {
             }
             AnnotatedFormula::Cnf(cnf_annotated) => {
                 self.visit_cnf_annotated(cnf_annotated)
+            }
+            AnnotatedFormula::Thf(thf_annotated) => {
+                self.visit_thf_annotated(thf_annotated)
             }
         }
     }

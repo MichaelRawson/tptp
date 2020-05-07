@@ -698,10 +698,10 @@ pub fn fof_and_formula<'a, E: ParseError<&'a [u8]>>(
 
 fn fof_binary_assoc_impl<'a, E: ParseError<&'a [u8]>>(
     first: FofUnitFormula<'a>,
-    sep: &'a [u8],
+    sep: char,
     x: &'a [u8],
 ) -> ParseResult<'a, FofBinaryAssoc<'a>, E> {
-    if sep == b"|" {
+    if sep == '|' {
         let (x, or) = fof_or_impl(first, x)?;
         Ok((x, FofBinaryAssoc::Or(or)))
     } else {
@@ -715,18 +715,18 @@ pub fn fof_binary_assoc<'a, E: ParseError<&'a [u8]>>(
 ) -> ParseResult<FofBinaryAssoc, E> {
     let (x, (first, sep)) = pair(
         fof_unit_formula,
-        preceded(ignored, peek(recognize(one_of("&|")))),
+        preceded(ignored, peek(one_of("&|"))),
     )(x)?;
     fof_binary_assoc_impl(first, sep, x)
 }
 
 fn fof_binary_formula_impl<'a, E: ParseError<&'a [u8]>>(
     first: FofUnitFormula<'a>,
-    sep: &'a [u8],
+    sep: char,
     x: &'a [u8],
 ) -> ParseResult<'a, FofBinaryFormula<'a>, E> {
     match sep {
-        b"&" | b"|" => {
+        '&' | '|' => {
             let (x, assoc) = fof_binary_assoc_impl(first, sep, x)?;
             Ok((x, FofBinaryFormula::Assoc(assoc)))
         }
@@ -742,7 +742,7 @@ pub fn fof_binary_formula<'a, E: ParseError<&'a [u8]>>(
 ) -> ParseResult<FofBinaryFormula, E> {
     let (x, (first, sep)) = pair(
         fof_unit_formula,
-        preceded(ignored, peek(recognize(one_of("&|~<=")))),
+        preceded(ignored, peek(one_of("&|~<="))),
     )(x)?;
     fof_binary_formula_impl(first, sep, x)
 }
@@ -752,7 +752,7 @@ pub fn fof_logic_formula<'a, E: ParseError<&'a [u8]>>(
 ) -> ParseResult<FofLogicFormula, E> {
     let (x_after_first, first) = fof_unit_formula(x)?;
     let (x_after_ignored, _) = ignored(x_after_first)?;
-    let (_, sep) = peek(opt(recognize(one_of("&|~<="))))(x_after_ignored)?;
+    let (_, sep) = peek(opt(one_of("&|~<=")))(x_after_ignored)?;
     match sep {
         Some(sep) => {
             let (x, binary) =
@@ -950,7 +950,7 @@ pub fn thf_infix_unary<'a, E: ParseError<&'a [u8]>>(
     map(
         tuple((
             thf_unitary_term,
-            preceded(ignored, infix_inequality),
+            delimited(ignored, infix_inequality, ignored),
             preceded(ignored, thf_unitary_term),
         )),
         |(left, op, right)| ThfInfixUnary { left, op, right },
@@ -973,31 +973,38 @@ pub fn thf_unit_formula<'a, E: ParseError<&'a [u8]>>(
     ))(x)
 }
 
-pub fn thf_or_formula<'a, E: ParseError<&'a [u8]>>(
+fn thf_or_formula_impl<'a, E: ParseError<&'a [u8]>>(
+    start: ThfUnitFormula<'a>,
     x: &'a [u8],
-) -> ParseResult<ThfOrFormula, E> {
-    let (x, first) = thf_unit_formula(x)?;
+) -> ParseResult<'a, ThfOrFormula<'a>, E> {
     map(
         fold_many1(
             preceded(tuple((ignored, tag("|"), ignored)), thf_unit_formula),
-            vec![first],
+            vec![start],
             |mut result, item| {
                 result.push(item);
                 result
             },
         ),
-        ThfOrFormula,
+        ThfOrFormula
     )(x)
 }
 
-pub fn thf_apply_formula<'a, E: ParseError<&'a [u8]>>(
+pub fn thf_or_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
-) -> ParseResult<ThfApplyFormula, E> {
+) -> ParseResult<ThfOrFormula, E> {
     let (x, first) = thf_unit_formula(x)?;
+    thf_or_formula_impl(first, x)
+}
+
+fn thf_apply_formula_impl<'a, E: ParseError<&'a [u8]>>(
+    start: ThfUnitFormula<'a>,
+    x: &'a [u8],
+) -> ParseResult<'a, ThfApplyFormula<'a>, E> {
     map(
         fold_many1(
             preceded(tuple((ignored, tag("@"), ignored)), thf_unit_formula),
-            vec![first],
+            vec![start],
             |mut result, item| {
                 result.push(item);
                 result
@@ -1007,13 +1014,35 @@ pub fn thf_apply_formula<'a, E: ParseError<&'a [u8]>>(
     )(x)
 }
 
+pub fn thf_apply_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfApplyFormula, E> {
+    let (x, first) = thf_unit_formula(x)?;
+    thf_apply_formula_impl(first, x)
+}
+
+fn thf_binary_assoc_impl<'a, E: ParseError<&'a [u8]>>(
+    first: ThfUnitFormula<'a>,
+    sep: char,
+    x: &'a [u8],
+) -> ParseResult<'a, ThfBinaryAssoc<'a>, E> {
+    if sep == '|' {
+        let (x, or) = thf_or_formula_impl(first, x)?;
+        Ok((x, ThfBinaryAssoc::Or(or)))
+    } else {
+        let (x, and) = thf_apply_formula_impl(first, x)?;
+        Ok((x, ThfBinaryAssoc::Apply(and)))
+    }
+}
+
 pub fn thf_binary_assoc<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<ThfBinaryAssoc, E> {
-    alt((
-        map(thf_or_formula, ThfBinaryAssoc::Or),
-        map(thf_apply_formula, ThfBinaryAssoc::Apply),
-    ))(x)
+    let (x, (first, sep)) = pair(
+        thf_unit_formula,
+        preceded(ignored, peek(one_of("|@"))),
+    )(x)?;
+    thf_binary_assoc_impl(first, sep, x)
 }
 
 pub fn thf_unitary_type<'a, E: ParseError<&'a [u8]>>(
@@ -1324,12 +1353,36 @@ pub fn cnf_annotated<'a, E: ParseError<&'a [u8]>>(
     )(x)
 }
 
+pub fn thf_annotated<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfAnnotated, E> {
+    map(
+        delimited(
+            tuple((tag("thf"), ignored, tag("("), ignored)),
+            tuple((
+                name,
+                preceded(delimited(ignored, tag(","), ignored), formula_role),
+                preceded(delimited(ignored, tag(","), ignored), thf_formula),
+                preceded(ignored, annotations),
+            )),
+            tuple((ignored, tag(")"), ignored, tag("."))),
+        ),
+        |(name, role, formula, annotations)| ThfAnnotated {
+            name,
+            role,
+            formula,
+            annotations,
+        },
+    )(x)
+}
+
 pub fn annotated_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<AnnotatedFormula, E> {
     alt((
         map(fof_annotated, AnnotatedFormula::Fof),
         map(cnf_annotated, AnnotatedFormula::Cnf),
+        map(thf_annotated, AnnotatedFormula::Thf),
     ))(x)
 }
 
