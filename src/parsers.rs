@@ -713,10 +713,8 @@ fn fof_binary_assoc_impl<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_binary_assoc<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofBinaryAssoc, E> {
-    let (x, (first, sep)) = pair(
-        fof_unit_formula,
-        preceded(ignored, peek(one_of("&|"))),
-    )(x)?;
+    let (x, (first, sep)) =
+        pair(fof_unit_formula, preceded(ignored, peek(one_of("&|"))))(x)?;
     fof_binary_assoc_impl(first, sep, x)
 }
 
@@ -740,10 +738,8 @@ fn fof_binary_formula_impl<'a, E: ParseError<&'a [u8]>>(
 pub fn fof_binary_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofBinaryFormula, E> {
-    let (x, (first, sep)) = pair(
-        fof_unit_formula,
-        preceded(ignored, peek(one_of("&|~<="))),
-    )(x)?;
+    let (x, (first, sep)) =
+        pair(fof_unit_formula, preceded(ignored, peek(one_of("&|~<="))))(x)?;
     fof_binary_formula_impl(first, sep, x)
 }
 
@@ -897,6 +893,79 @@ pub fn thf_atomic_formula<'a, E: ParseError<&'a [u8]>>(
     ))(x)
 }
 
+pub fn thf_typed_variable<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfTypedVariable, E> {
+    map(
+        pair(
+            variable,
+            preceded(tuple((ignored, tag(":"), ignored)), thf_top_level_type),
+        ),
+        |(variable, typ)| ThfTypedVariable { variable, typ },
+    )(x)
+}
+
+pub fn thf_variable_list<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfVariableList, E> {
+    map(
+        separated_nonempty_list(
+            tuple((ignored, tag(","), ignored)),
+            thf_typed_variable,
+        ),
+        ThfVariableList,
+    )(x)
+}
+
+pub fn th1_quantifier<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<Th1Quantifier, E> {
+    value(Th1Quantifier::ForallType, tag("!>"))(x)
+}
+
+pub fn thf_quantifier<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfQuantifier, E> {
+    alt((
+        map(th1_quantifier, ThfQuantifier::Th1),
+        map(fof_quantifier, ThfQuantifier::Fof),
+    ))(x)
+}
+
+pub fn thf_quantification<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfQuantification<'a>, E> {
+    map(
+        pair(
+            thf_quantifier,
+            delimited(
+                tuple((ignored, tag("["), ignored)),
+                thf_variable_list,
+                tuple((ignored, tag("]"), ignored, tag(":"))),
+            ),
+        ),
+        |(quantifier, variable_list)| ThfQuantification {
+            quantifier,
+            variable_list,
+        },
+    )(x)
+}
+
+pub fn thf_quantified_formula<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfQuantifiedFormula<'a>, E> {
+    map(
+        pair(
+            terminated(thf_quantification, ignored),
+            map(thf_unit_formula, Box::new),
+        ),
+        |(quantification, formula)| ThfQuantifiedFormula {
+            quantification,
+            formula,
+        },
+    )(x)
+}
+
 pub fn thf_unitary_term<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<ThfUnitaryTerm, E> {
@@ -931,7 +1000,6 @@ pub fn thf_unitary_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<ThfUnitaryFormula, E> {
     alt((
-        map(thf_atomic_formula, ThfUnitaryFormula::Atomic),
         map(variable, ThfUnitaryFormula::Variable),
         map(
             delimited(
@@ -941,6 +1009,8 @@ pub fn thf_unitary_formula<'a, E: ParseError<&'a [u8]>>(
             ),
             ThfUnitaryFormula::Parenthesised,
         ),
+        map(thf_quantified_formula, ThfUnitaryFormula::Quantified),
+        map(thf_atomic_formula, ThfUnitaryFormula::Atomic),
     ))(x)
 }
 
@@ -986,7 +1056,7 @@ fn thf_or_formula_impl<'a, E: ParseError<&'a [u8]>>(
                 result
             },
         ),
-        ThfOrFormula
+        ThfOrFormula,
     )(x)
 }
 
@@ -1038,10 +1108,8 @@ fn thf_binary_assoc_impl<'a, E: ParseError<&'a [u8]>>(
 pub fn thf_binary_assoc<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<ThfBinaryAssoc, E> {
-    let (x, (first, sep)) = pair(
-        thf_unit_formula,
-        preceded(ignored, peek(one_of("|@"))),
-    )(x)?;
+    let (x, (first, sep)) =
+        pair(thf_unit_formula, preceded(ignored, peek(one_of("|@"))))(x)?;
     thf_binary_assoc_impl(first, sep, x)
 }
 
@@ -1051,20 +1119,30 @@ pub fn thf_unitary_type<'a, E: ParseError<&'a [u8]>>(
     map(thf_unitary_formula, ThfUnitaryType)(x)
 }
 
+fn thf_apply_type_impl<'a, E: ParseError<&'a [u8]>>(
+    start: ThfUnitaryFormula<'a>,
+    x: &'a [u8],
+) -> ParseResult<'a, ThfApplyType<'a>, E> {
+    let (x, apply_formula) =
+        thf_apply_formula_impl(ThfUnitFormula::Unitary(start), x)?;
+    Ok((x, ThfApplyType(apply_formula)))
+}
+
 pub fn thf_apply_type<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<ThfApplyType, E> {
-    map(thf_apply_formula, ThfApplyType)(x)
+    let (x, first) = thf_unitary_formula(x)?;
+    thf_apply_type_impl(first, x)
 }
 
-pub fn thf_mapping_type<'a, E: ParseError<&'a [u8]>>(
+fn thf_mapping_type_impl<'a, E: ParseError<&'a [u8]>>(
+    start: ThfUnitaryType<'a>,
     x: &'a [u8],
-) -> ParseResult<ThfMappingType, E> {
-    let (x, first) = thf_unitary_type(x)?;
+) -> ParseResult<'a, ThfMappingType<'a>, E> {
     map(
         fold_many1(
             preceded(tuple((ignored, tag(">"), ignored)), thf_unitary_type),
-            vec![first],
+            vec![start],
             |mut result, item| {
                 result.push(item);
                 result
@@ -1072,6 +1150,13 @@ pub fn thf_mapping_type<'a, E: ParseError<&'a [u8]>>(
         ),
         ThfMappingType,
     )(x)
+}
+
+pub fn thf_mapping_type<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<ThfMappingType, E> {
+    let (x, first) = thf_unitary_type(x)?;
+    thf_mapping_type_impl(first, x)
 }
 
 pub fn thf_top_level_type<'a, E: ParseError<&'a [u8]>>(
@@ -1118,10 +1203,26 @@ pub fn thf_binary_type<'a, E: ParseError<&'a [u8]>>(
 pub fn thf_binary_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<ThfBinaryFormula, E> {
-    alt((
-        map(thf_binary_assoc, ThfBinaryFormula::Assoc),
-        map(thf_binary_type, ThfBinaryFormula::Type),
-    ))(x)
+    if let Ok((x, (first, sep))) = pair::<_, _, _, E, _, _>(
+        thf_unitary_formula,
+        preceded(ignored, peek(one_of("|@>"))),
+    )(x)
+    {
+        if sep == '|' || sep == '@' {
+            let (x, binary_assoc) =
+                thf_binary_assoc_impl(ThfUnitFormula::Unitary(first), sep, x)?;
+            Ok((x, ThfBinaryFormula::Assoc(binary_assoc)))
+        } else {
+            let (x, mapping_type) =
+                thf_mapping_type_impl(ThfUnitaryType(first), x)?;
+            Ok((
+                x,
+                ThfBinaryFormula::Type(ThfBinaryType::Mapping(mapping_type)),
+            ))
+        }
+    } else {
+        map(thf_binary_assoc, ThfBinaryFormula::Assoc)(x)
+    }
 }
 
 pub fn thf_logic_formula<'a, E: ParseError<&'a [u8]>>(

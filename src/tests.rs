@@ -424,6 +424,39 @@ fn test_thf_atomic_formula() {
 }
 
 #[test]
+fn test_thf_typed_variable() {
+    parse(thf_typed_variable, b"X : t\0");
+}
+
+#[test]
+fn test_thf_variable_list() {
+    parse(thf_variable_list, b"X : t\0");
+    parse(thf_variable_list, b"X : t , Y : s\0");
+}
+
+#[test]
+fn test_th1_quantifier() {
+    parse(th1_quantifier, b"!>\0");
+}
+
+#[test]
+fn test_thf_quantifier() {
+    parse(thf_quantifier, b"!\0");
+    parse(thf_quantifier, b"!>\0");
+}
+
+#[test]
+fn test_thf_quantification() {
+    parse(thf_quantification, b"! [ X : t ] :\0");
+    parse(thf_quantification, b"!> [ X : t , Y : S ] :\0");
+}
+
+#[test]
+fn test_thf_quantifier_formula() {
+    parse(thf_quantified_formula, b"! [ X : t ] : p\0");
+}
+
+#[test]
 fn test_thf_unitary_term() {
     parse(thf_unitary_term, b"c\0");
     parse(thf_unitary_term, b"X\0");
@@ -437,9 +470,10 @@ fn test_thf_defined_infix() {
 
 #[test]
 fn test_thf_unitary_formula() {
-    parse(thf_unitary_term, b"c\0");
-    parse(thf_unitary_term, b"X\0");
-    parse(thf_unitary_term, b"( p )\0");
+    parse(thf_unitary_formula, b"c\0");
+    parse(thf_unitary_formula, b"X\0");
+    parse(thf_unitary_formula, b"( p )\0");
+    parse(thf_unitary_formula, b"! [ X : t ] : p\0");
 }
 
 #[test]

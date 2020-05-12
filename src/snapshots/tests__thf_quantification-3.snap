@@ -1,0 +1,57 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+ThfQuantification {
+    quantifier: Th1(
+        ForallType,
+    ),
+    variable_list: ThfVariableList(
+        [
+            ThfTypedVariable {
+                variable: Variable(
+                    UpperWord(
+                        "X",
+                    ),
+                ),
+                typ: Unitary(
+                    ThfUnitaryType(
+                        Atomic(
+                            Plain(
+                                Constant(
+                                    Constant(
+                                        Functor(
+                                            Lower(
+                                                LowerWord(
+                                                    "t",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            },
+            ThfTypedVariable {
+                variable: Variable(
+                    UpperWord(
+                        "Y",
+                    ),
+                ),
+                typ: Unitary(
+                    ThfUnitaryType(
+                        Variable(
+                            Variable(
+                                UpperWord(
+                                    "S",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ],
+    ),
+}

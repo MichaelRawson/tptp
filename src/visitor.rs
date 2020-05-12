@@ -511,11 +511,60 @@ pub trait Visitor<'a> {
         }
     }
 
+    fn visit_th1_quantifier(&mut self, _th1_quantifier: Th1Quantifier) {}
+
+    fn visit_thf_quantifier(&mut self, thf_quantifier: ThfQuantifier) {
+        match thf_quantifier {
+            ThfQuantifier::Fof(fof_quantifier) => {
+                self.visit_fof_quantifier(fof_quantifier)
+            }
+            ThfQuantifier::Th1(th1_quantifier) => {
+                self.visit_th1_quantifier(th1_quantifier)
+            }
+        }
+    }
+
+    fn visit_thf_typed_variable(
+        &mut self,
+        thf_typed_variable: ThfTypedVariable<'a>,
+    ) {
+        self.visit_variable(thf_typed_variable.variable);
+        self.visit_thf_top_level_type(thf_typed_variable.typ);
+    }
+
+    fn visit_thf_variable_list(
+        &mut self,
+        thf_variable_list: ThfVariableList<'a>,
+    ) {
+        for thf_typed_variable in thf_variable_list.0 {
+            self.visit_thf_typed_variable(thf_typed_variable);
+        }
+    }
+
+    fn visit_thf_quantification(
+        &mut self,
+        thf_quantification: ThfQuantification<'a>,
+    ) {
+        self.visit_thf_quantifier(thf_quantification.quantifier);
+        self.visit_thf_variable_list(thf_quantification.variable_list);
+    }
+
+    fn visit_thf_quantified_formula(
+        &mut self,
+        thf_quantified_formula: ThfQuantifiedFormula<'a>,
+    ) {
+        self.visit_thf_quantification(thf_quantified_formula.quantification);
+        self.visit_thf_unit_formula(*thf_quantified_formula.formula);
+    }
+
     fn visit_thf_unitary_formula(
         &mut self,
         thf_unitary_formula: ThfUnitaryFormula<'a>,
     ) {
         match thf_unitary_formula {
+            ThfUnitaryFormula::Quantified(quantified) => {
+                self.visit_thf_quantified_formula(quantified)
+            }
             ThfUnitaryFormula::Atomic(atomic) => {
                 self.visit_thf_atomic_formula(atomic)
             }

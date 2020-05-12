@@ -1,0 +1,60 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Quantified(
+    ThfQuantifiedFormula {
+        quantification: ThfQuantification {
+            quantifier: Fof(
+                Forall,
+            ),
+            variable_list: ThfVariableList(
+                [
+                    ThfTypedVariable {
+                        variable: Variable(
+                            UpperWord(
+                                "X",
+                            ),
+                        ),
+                        typ: Unitary(
+                            ThfUnitaryType(
+                                Atomic(
+                                    Plain(
+                                        Constant(
+                                            Constant(
+                                                Functor(
+                                                    Lower(
+                                                        LowerWord(
+                                                            "t",
+                                                        ),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    },
+                ],
+            ),
+        },
+        formula: Unitary(
+            Atomic(
+                Plain(
+                    Constant(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "p",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    },
+)

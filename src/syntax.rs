@@ -786,10 +786,86 @@ pub enum ThfAtomicFormula<'a> {
     Defined(ThfDefinedAtomic<'a>),
 }
 
+/// `thf_typed_variable`
+#[derive(Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct ThfTypedVariable<'a> {
+    pub variable: Variable<'a>,
+    pub typ: ThfTopLevelType<'a>,
+}
+
+impl<'a> fmt::Display for ThfTypedVariable<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}:{}", &self.variable, &self.typ)
+    }
+}
+
+/// `thf_variable_list`
+#[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct ThfVariableList<'a>(pub Vec<ThfTypedVariable<'a>>);
+
+impl<'a> fmt::Display for ThfVariableList<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt_list(f, ",", &self.0)
+    }
+}
+
+/// `th1_quantifier`
+#[derive(Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum Th1Quantifier {
+    /// `!>`
+    ForallType,
+}
+
+impl fmt::Display for Th1Quantifier {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "!>")
+    }
+}
+
+/// `thf_quantifier`
+#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub enum ThfQuantifier {
+    Fof(FofQuantifier),
+    Th1(Th1Quantifier),
+}
+
+/// `thf_quantification`
+#[derive(Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct ThfQuantification<'a> {
+    pub quantifier: ThfQuantifier,
+    pub variable_list: ThfVariableList<'a>,
+}
+
+impl<'a> fmt::Display for ThfQuantification<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}[{}]:", &self.quantifier, &self.variable_list)
+    }
+}
+
+/// `thf_quantified_formula`
+#[derive(Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct ThfQuantifiedFormula<'a> {
+    pub quantification: ThfQuantification<'a>,
+    pub formula: Box<ThfUnitFormula<'a>>,
+}
+
+impl<'a> fmt::Display for ThfQuantifiedFormula<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}{}", &self.quantification, &self.formula)
+    }
+}
+
 /// `thf_unitary_formula`
 #[derive(Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum ThfUnitaryFormula<'a> {
+    Quantified(ThfQuantifiedFormula<'a>),
     Atomic(ThfAtomicFormula<'a>),
     Variable(Variable<'a>),
     Parenthesised(ThfLogicFormula<'a>),
@@ -798,6 +874,9 @@ pub enum ThfUnitaryFormula<'a> {
 impl<'a> fmt::Display for ThfUnitaryFormula<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            ThfUnitaryFormula::Quantified(quantified) => {
+                write!(f, "{}", quantified)
+            }
             ThfUnitaryFormula::Atomic(atomic) => write!(f, "{}", atomic),
             ThfUnitaryFormula::Variable(variable) => write!(f, "{}", variable),
             ThfUnitaryFormula::Parenthesised(formula) => {
