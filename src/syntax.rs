@@ -123,14 +123,6 @@ pub struct SystemFunctor<'a>(pub AtomicSystemWord<'a>);
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SystemConstant<'a>(pub SystemFunctor<'a>);
 
-/// `untyped_atom`
-#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub enum UntypedAtom<'a> {
-    Constant(Constant<'a>),
-    System(SystemConstant<'a>),
-}
-
 /// `number`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -221,7 +213,7 @@ pub enum FofPlainTerm<'a> {
     /// `constant`
     Constant(Constant<'a>),
     /// `functor`, `fof_arguments`
-    Function(Functor<'a>, FofArguments<'a>),
+    Function(Functor<'a>, Box<FofArguments<'a>>),
 }
 
 impl<'a> fmt::Display for FofPlainTerm<'a> {
@@ -298,7 +290,7 @@ pub enum FofFunctionTerm<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofTerm<'a> {
     /// `fof_function_term`,
-    Function(FofFunctionTerm<'a>),
+    Function(Box<FofFunctionTerm<'a>>),
     /// `variable`
     Variable(Variable<'a>),
 }
@@ -431,9 +423,9 @@ pub struct DefinedInfixPred(pub InfixEquality);
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct FofDefinedInfixFormula<'a> {
-    pub left: FofTerm<'a>,
+    pub left: Box<FofTerm<'a>>,
     pub op: DefinedInfixPred,
-    pub right: FofTerm<'a>,
+    pub right: Box<FofTerm<'a>>,
 }
 
 impl<'a> fmt::Display for FofDefinedInfixFormula<'a> {
@@ -461,9 +453,9 @@ pub enum FofDefinedAtomicFormula<'a> {
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofAtomicFormula<'a> {
-    Plain(FofPlainAtomicFormula<'a>),
-    Defined(FofDefinedAtomicFormula<'a>),
-    System(FofSystemAtomicFormula<'a>),
+    Plain(Box<FofPlainAtomicFormula<'a>>),
+    Defined(Box<FofDefinedAtomicFormula<'a>>),
+    System(Box<FofSystemAtomicFormula<'a>>),
 }
 
 /// `fof_variable_list`
@@ -483,7 +475,7 @@ impl<'a> fmt::Display for FofVariableList<'a> {
 pub struct FofQuantifiedFormula<'a> {
     pub quantifier: FofQuantifier,
     pub bound: FofVariableList<'a>,
-    pub formula: FofUnitFormula<'a>,
+    pub formula: Box<FofUnitFormula<'a>>,
 }
 
 impl<'a> fmt::Display for FofQuantifiedFormula<'a> {
@@ -496,9 +488,9 @@ impl<'a> fmt::Display for FofQuantifiedFormula<'a> {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct FofInfixUnary<'a> {
-    pub left: FofTerm<'a>,
+    pub left: Box<FofTerm<'a>>,
     pub op: InfixInequality,
-    pub right: FofTerm<'a>,
+    pub right: Box<FofTerm<'a>>,
 }
 
 impl<'a> fmt::Display for FofInfixUnary<'a> {
@@ -511,7 +503,7 @@ impl<'a> fmt::Display for FofInfixUnary<'a> {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofUnaryFormula<'a> {
-    Unary(UnaryConnective, FofUnitFormula<'a>),
+    Unary(UnaryConnective, Box<FofUnitFormula<'a>>),
     InfixUnary(FofInfixUnary<'a>),
 }
 
@@ -531,7 +523,7 @@ impl<'a> fmt::Display for FofUnaryFormula<'a> {
 pub enum FofUnitaryFormula<'a> {
     Quantified(FofQuantifiedFormula<'a>),
     Atomic(FofAtomicFormula<'a>),
-    Parenthesised(FofLogicFormula<'a>),
+    Parenthesised(Box<FofLogicFormula<'a>>),
 }
 
 impl<'a> fmt::Display for FofUnitaryFormula<'a> {
@@ -549,8 +541,8 @@ impl<'a> fmt::Display for FofUnitaryFormula<'a> {
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofUnitFormula<'a> {
-    Unitary(Box<FofUnitaryFormula<'a>>),
-    Unary(Box<FofUnaryFormula<'a>>),
+    Unitary(FofUnitaryFormula<'a>),
+    Unary(FofUnaryFormula<'a>),
 }
 
 /// `fof_or_formula`
@@ -587,9 +579,9 @@ pub enum FofBinaryAssoc<'a> {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct FofBinaryNonassoc<'a> {
-    pub left: FofUnitFormula<'a>,
+    pub left: Box<FofUnitFormula<'a>>,
     pub op: NonassocConnective,
-    pub right: FofUnitFormula<'a>,
+    pub right: Box<FofUnitFormula<'a>>,
 }
 
 impl<'a> fmt::Display for FofBinaryNonassoc<'a> {
@@ -602,7 +594,7 @@ impl<'a> fmt::Display for FofBinaryNonassoc<'a> {
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofBinaryFormula<'a> {
-    Nonassoc(FofBinaryNonassoc<'a>),
+    Nonassoc(Box<FofBinaryNonassoc<'a>>),
     Assoc(FofBinaryAssoc<'a>),
 }
 
@@ -611,8 +603,8 @@ pub enum FofBinaryFormula<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum FofLogicFormula<'a> {
     Binary(FofBinaryFormula<'a>),
-    Unary(Box<FofUnaryFormula<'a>>),
-    Unitary(Box<FofUnitaryFormula<'a>>),
+    Unary(FofUnaryFormula<'a>),
+    Unitary(FofUnitaryFormula<'a>),
 }
 
 /// `fof_formula`
@@ -752,11 +744,11 @@ impl<'a> fmt::Display for GeneralFunction<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum GeneralData<'a> {
     Atomic(AtomicWord<'a>),
-    Function(GeneralFunction<'a>),
+    Function(Box<GeneralFunction<'a>>),
     Variable(Variable<'a>),
     Number(Number<'a>),
     DistinctObject(DistinctObject<'a>),
-    Formula(FormulaData<'a>),
+    Formula(Box<FormulaData<'a>>),
 }
 
 /// `general_terms`
@@ -788,8 +780,8 @@ impl<'a> fmt::Display for GeneralList<'a> {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum GeneralTerm<'a> {
-    Data(GeneralData<'a>),
-    Colon(GeneralData<'a>, Box<GeneralTerm<'a>>),
+    Data(Box<GeneralData<'a>>),
+    Colon(Box<GeneralData<'a>>, Box<GeneralTerm<'a>>),
     List(GeneralList<'a>),
 }
 
@@ -850,10 +842,10 @@ impl<'a> fmt::Display for Annotations<'a> {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct FofAnnotated<'a> {
-    pub name: Name<'a>,
+    pub name: Box<Name<'a>>,
     pub role: FormulaRole,
-    pub formula: FofFormula<'a>,
-    pub annotations: Annotations<'a>,
+    pub formula: Box<FofFormula<'a>>,
+    pub annotations: Box<Annotations<'a>>,
 }
 
 impl<'a> fmt::Display for FofAnnotated<'a> {
@@ -870,10 +862,10 @@ impl<'a> fmt::Display for FofAnnotated<'a> {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CnfAnnotated<'a> {
-    pub name: Name<'a>,
+    pub name: Box<Name<'a>>,
     pub role: FormulaRole,
-    pub formula: CnfFormula<'a>,
-    pub annotations: Annotations<'a>,
+    pub formula: Box<CnfFormula<'a>>,
+    pub annotations: Box<Annotations<'a>>,
 }
 
 impl<'a> fmt::Display for CnfAnnotated<'a> {
@@ -944,6 +936,6 @@ impl<'a> fmt::Display for Include<'a> {
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TPTPInput<'a> {
-    Annotated(Box<AnnotatedFormula<'a>>),
+    Annotated(AnnotatedFormula<'a>),
     Include(Include<'a>),
 }

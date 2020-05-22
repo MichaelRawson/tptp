@@ -11,9 +11,9 @@ use nom::character::complete::multispace1;
 use nom::character::streaming::{
     digit0, digit1, line_ending, not_line_ending, one_of,
 };
-use nom::combinator::{map, opt, peek, recognize, value};
+use nom::combinator::{cut, map, opt, peek, recognize, value};
 use nom::error::ParseError;
-use nom::multi::{fold_many0, separated_nonempty_list};
+use nom::multi::{fold_many0, separated_list1};
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 
 use crate::syntax::*;
@@ -62,14 +62,17 @@ pub fn comment_line<'a, E: ParseError<&'a [u8]>>(
 ) -> ParseResult<(), E> {
     preceded(
         tag("%"),
-        terminated(value((), not_line_ending), line_ending),
+        cut(terminated(value((), not_line_ending), line_ending)),
     )(x)
 }
 
 pub fn comment_block<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<(), E> {
-    delimited(tag("/*"), value((), take_until("*/")), tag("*/"))(x)
+    preceded(
+        tag("/*"),
+        cut(terminated(value((), take_until("*/")), tag("*/"))),
+    )(x)
 }
 
 fn single_ignored<'a, E: ParseError<&'a [u8]>>(
@@ -106,7 +109,7 @@ fn alphanumeric<'a, E: ParseError<&'a [u8]>>(
 pub fn lower_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<LowerWord, E> {
-    map(recognize(preceded(lower_alpha1, alphanumeric)), |w| {
+    map(recognize(preceded(lower_alpha1, cut(alphanumeric))), |w| {
         LowerWord(Cow::Borrowed(to_str(w)))
     })(x)
 }
@@ -114,7 +117,7 @@ pub fn lower_word<'a, E: ParseError<&'a [u8]>>(
 pub fn upper_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<UpperWord, E> {
-    map(recognize(preceded(upper_alpha1, alphanumeric)), |w| {
+    map(recognize(preceded(upper_alpha1, cut(alphanumeric))), |w| {
         UpperWord(Cow::Borrowed(to_str(w)))
     })(x)
 }
@@ -123,10 +126,12 @@ pub fn single_quoted<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<SingleQuoted, E> {
     map(
-        delimited(
+        preceded(
             tag("'"),
-            escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
-            tag("'"),
+            cut(terminated(
+                escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
+                tag("'"),
+            )),
         ),
         |w| SingleQuoted(Cow::Borrowed(to_str(w))),
     )(x)
@@ -136,10 +141,12 @@ pub fn distinct_object<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<DistinctObject, E> {
     map(
-        delimited(
+        preceded(
             tag("\""),
-            escaped(take_while1(is_do_char), '\\', one_of("\\\"")),
-            tag("\""),
+            cut(terminated(
+                escaped(take_while1(is_do_char), '\\', one_of("\\\"")),
+                tag("\""),
+            )),
         ),
         |w| DistinctObject(Cow::Borrowed(to_str(w))),
     )(x)
@@ -157,13 +164,13 @@ pub fn atomic_word<'a, E: ParseError<&'a [u8]>>(
 pub fn dollar_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<DollarWord, E> {
-    map(preceded(tag("$"), lower_word), DollarWord)(x)
+    map(preceded(tag("$"), cut(lower_word)), DollarWord)(x)
 }
 
 pub fn dollar_dollar_word<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<DollarDollarWord, E> {
-    map(preceded(tag("$$"), lower_word), DollarDollarWord)(x)
+    map(preceded(tag("$$"), cut(lower_word)), DollarDollarWord)(x)
 }
 
 pub fn integer<'a, E: ParseError<&'a [u8]>>(
@@ -293,25 +300,13 @@ pub fn constant<'a, E: ParseError<&'a [u8]>>(
     map(functor, Constant)(x)
 }
 
-pub fn untyped_atom<'a, E: ParseError<&'a [u8]>>(
-    x: &'a [u8],
-) -> ParseResult<UntypedAtom, E> {
-    alt((
-        map(constant, UntypedAtom::Constant),
-        map(system_constant, UntypedAtom::System),
-    ))(x)
-}
-
 pub fn fof_arguments<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofArguments, E> {
     map(
         delimited(
             tag("("),
-            separated_nonempty_list(
-                tag(","),
-                delimited(ignored, fof_term, ignored),
-            ),
+            separated_list1(tag(","), delimited(ignored, fof_term, ignored)),
             tag(")"),
         ),
         FofArguments,
@@ -337,7 +332,7 @@ pub fn fof_plain_term<'a, E: ParseError<&'a [u8]>>(
         pair(functor, opt(preceded(ignored, fof_arguments))),
         |(f, args)| match args {
             None => FofPlainTerm::Constant(Constant(f)),
-            Some(args) => FofPlainTerm::Function(f, args),
+            Some(args) => FofPlainTerm::Function(f, Box::new(args)),
         },
     )(x)
 }
@@ -377,7 +372,7 @@ pub fn fof_term<'a, E: ParseError<&'a [u8]>>(
 ) -> ParseResult<FofTerm, E> {
     alt((
         map(variable, FofTerm::Variable),
-        map(fof_function_term, FofTerm::Function),
+        map(fof_function_term, |f| FofTerm::Function(Box::new(f))),
     ))(x)
 }
 
@@ -453,7 +448,11 @@ pub fn fof_defined_infix_formula<'a, E: ParseError<&'a [u8]>>(
 ) -> ParseResult<FofDefinedInfixFormula, E> {
     map(
         pair(fof_term, fof_defined_infix_formula_tail),
-        |(left, (op, right))| FofDefinedInfixFormula { left, op, right },
+        |(left, (op, right))| {
+            let left = Box::new(left);
+            let right = Box::new(right);
+            FofDefinedInfixFormula { left, op, right }
+        },
     )(x)
 }
 
@@ -480,16 +479,25 @@ pub fn fof_atomic_formula<'a, E: ParseError<&'a [u8]>>(
             pair(fof_plain_term, opt(fof_defined_infix_formula_tail)),
             |(left, possible_right)| match possible_right {
                 Some((op, right)) => {
-                    let left = FofTerm::Function(FofFunctionTerm::Plain(left));
+                    let left = Box::new(FofTerm::Function(Box::new(
+                        FofFunctionTerm::Plain(left),
+                    )));
+                    let right = Box::new(right);
                     let infix = FofDefinedInfixFormula { left, op, right };
                     let defined = FofDefinedAtomicFormula::Infix(infix);
-                    FofAtomicFormula::Defined(defined)
+                    FofAtomicFormula::Defined(Box::new(defined))
                 }
-                None => FofAtomicFormula::Plain(FofPlainAtomicFormula(left)),
+                None => FofAtomicFormula::Plain(Box::new(
+                    FofPlainAtomicFormula(left),
+                )),
             },
         ),
-        map(fof_defined_atomic_formula, FofAtomicFormula::Defined),
-        map(fof_system_atomic_formula, FofAtomicFormula::System),
+        map(fof_system_atomic_formula, |f| {
+            FofAtomicFormula::System(Box::new(f))
+        }),
+        map(fof_defined_atomic_formula, |f| {
+            FofAtomicFormula::Defined(Box::new(f))
+        }),
     ))(x)
 }
 
@@ -497,7 +505,7 @@ pub fn fof_variable_list<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofVariableList, E> {
     map(
-        separated_nonempty_list(tuple((ignored, tag(","), ignored)), variable),
+        separated_list1(tuple((ignored, tag(","), ignored)), variable),
         FofVariableList,
     )(x)
 }
@@ -513,7 +521,7 @@ pub fn fof_quantified_formula<'a, E: ParseError<&'a [u8]>>(
                 fof_variable_list,
                 tuple((ignored, tag("]"), ignored, tag(":"), ignored)),
             ),
-            fof_unit_formula,
+            map(fof_unit_formula, Box::new),
         )),
         |(quantifier, bound, formula)| FofQuantifiedFormula {
             quantifier,
@@ -523,7 +531,7 @@ pub fn fof_quantified_formula<'a, E: ParseError<&'a [u8]>>(
     )(x)
 }
 
-pub fn fof_infix_unary_tail<'a, E: ParseError<&'a [u8]>>(
+fn fof_infix_unary_tail<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<(InfixInequality, FofTerm), E> {
     pair(
@@ -537,7 +545,11 @@ pub fn fof_infix_unary<'a, E: ParseError<&'a [u8]>>(
 ) -> ParseResult<FofInfixUnary, E> {
     map(
         pair(fof_term, fof_infix_unary_tail),
-        |(left, (op, right))| FofInfixUnary { left, op, right },
+        |(left, (op, right))| {
+            let left = Box::new(left);
+            let right = Box::new(right);
+            FofInfixUnary { left, op, right }
+        },
     )(x)
 }
 
@@ -547,7 +559,7 @@ pub fn fof_unary_formula<'a, E: ParseError<&'a [u8]>>(
     alt((
         map(
             pair(unary_connective, preceded(ignored, fof_unit_formula)),
-            |(c, f)| FofUnaryFormula::Unary(c, f),
+            |(c, f)| FofUnaryFormula::Unary(c, Box::new(f)),
         ),
         map(fof_infix_unary, FofUnaryFormula::InfixUnary),
     ))(x)
@@ -561,7 +573,7 @@ pub fn fof_unitary_formula<'a, E: ParseError<&'a [u8]>>(
         map(
             delimited(
                 pair(tag("("), ignored),
-                fof_logic_formula,
+                map(fof_logic_formula, Box::new),
                 pair(ignored, tag(")")),
             ),
             FofUnitaryFormula::Parenthesised,
@@ -570,67 +582,70 @@ pub fn fof_unitary_formula<'a, E: ParseError<&'a [u8]>>(
     ))(x)
 }
 
+enum FofUnitFormulaTail<'a> {
+    Equal(DefinedInfixPred, Box<FofTerm<'a>>),
+    NotEqual(InfixInequality, Box<FofTerm<'a>>),
+}
+
+fn fof_unit_formula_tail<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<FofUnitFormulaTail, E> {
+    preceded(
+        ignored,
+        alt((
+            map(
+                pair(defined_infix_pred, preceded(ignored, fof_term)),
+                |(op, right)| FofUnitFormulaTail::Equal(op, Box::new(right)),
+            ),
+            map(
+                pair(infix_inequality, preceded(ignored, fof_term)),
+                |(op, right)| {
+                    FofUnitFormulaTail::NotEqual(op, Box::new(right))
+                },
+            ),
+        )),
+    )(x)
+}
+
 pub fn fof_unit_formula<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofUnitFormula, E> {
-    enum FofUnitFormulaTail<'a> {
-        Equal(DefinedInfixPred, FofTerm<'a>),
-        NotEqual(InfixInequality, FofTerm<'a>),
-    }
-
-    fn fof_unit_formula_tail<'a, E: ParseError<&'a [u8]>>(
-        x: &'a [u8],
-    ) -> ParseResult<FofUnitFormulaTail, E> {
-        preceded(
-            ignored,
-            alt((
-                map(
-                    pair(defined_infix_pred, preceded(ignored, fof_term)),
-                    |(op, right)| FofUnitFormulaTail::Equal(op, right),
-                ),
-                map(
-                    pair(infix_inequality, preceded(ignored, fof_term)),
-                    |(op, right)| FofUnitFormulaTail::NotEqual(op, right),
-                ),
-            )),
-        )(x)
-    }
-
     alt((
         map(
             pair(fof_plain_term, opt(fof_unit_formula_tail)),
             |(left, rest)| match rest {
                 Some(rest) => {
-                    let left = FofTerm::Function(FofFunctionTerm::Plain(left));
+                    let left = Box::new(FofTerm::Function(Box::new(
+                        FofFunctionTerm::Plain(left),
+                    )));
                     match rest {
                         FofUnitFormulaTail::Equal(op, right) => {
                             let infix =
                                 FofDefinedInfixFormula { left, op, right };
                             let defined =
                                 FofDefinedAtomicFormula::Infix(infix);
-                            let atomic = FofAtomicFormula::Defined(defined);
+                            let atomic =
+                                FofAtomicFormula::Defined(Box::new(defined));
                             let unitary = FofUnitaryFormula::Atomic(atomic);
-                            FofUnitFormula::Unitary(Box::new(unitary))
+                            FofUnitFormula::Unitary(unitary)
                         }
                         FofUnitFormulaTail::NotEqual(op, right) => {
                             let infix = FofInfixUnary { left, op, right };
                             let unary = FofUnaryFormula::InfixUnary(infix);
-                            FofUnitFormula::Unary(Box::new(unary))
+                            FofUnitFormula::Unary(unary)
                         }
                     }
                 }
                 None => {
                     let plain = FofPlainAtomicFormula(left);
-                    let atomic = FofAtomicFormula::Plain(plain);
+                    let atomic = FofAtomicFormula::Plain(Box::new(plain));
                     let unitary = FofUnitaryFormula::Atomic(atomic);
-                    FofUnitFormula::Unitary(Box::new(unitary))
+                    FofUnitFormula::Unitary(unitary)
                 }
             },
         ),
-        map(fof_unary_formula, |f| FofUnitFormula::Unary(Box::new(f))),
-        map(fof_unitary_formula, |f| {
-            FofUnitFormula::Unitary(Box::new(f))
-        }),
+        map(fof_unary_formula, FofUnitFormula::Unary),
+        map(fof_unitary_formula, FofUnitFormula::Unitary),
     ))(x)
 }
 
@@ -640,6 +655,8 @@ fn fof_binary_nonassoc_impl<'a, E: ParseError<&'a [u8]>>(
 ) -> ParseResult<'a, FofBinaryNonassoc<'a>, E> {
     let (x, (op, right)) =
         pair(nonassoc_connective, preceded(ignored, fof_unit_formula))(x)?;
+    let left = Box::new(left);
+    let right = Box::new(right);
     Ok((x, FofBinaryNonassoc { left, op, right }))
 }
 
@@ -730,7 +747,7 @@ fn fof_binary_formula_impl<'a, E: ParseError<&'a [u8]>>(
         }
         _ => {
             let (x, nonassoc) = fof_binary_nonassoc_impl(first, x)?;
-            Ok((x, FofBinaryFormula::Nonassoc(nonassoc)))
+            Ok((x, FofBinaryFormula::Nonassoc(Box::new(nonassoc))))
         }
     }
 }
@@ -771,32 +788,32 @@ pub fn fof_formula<'a, E: ParseError<&'a [u8]>>(
     map(fof_logic_formula, FofFormula)(x)
 }
 
+enum LiteralTail<'a> {
+    Equal(DefinedInfixPred, Box<FofTerm<'a>>),
+    NotEqual(InfixInequality, Box<FofTerm<'a>>),
+}
+
+fn literal_tail<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<LiteralTail<'a>, E> {
+    preceded(
+        ignored,
+        alt((
+            map(
+                pair(defined_infix_pred, preceded(ignored, fof_term)),
+                |(op, right)| LiteralTail::Equal(op, Box::new(right)),
+            ),
+            map(
+                pair(infix_inequality, preceded(ignored, fof_term)),
+                |(op, right)| LiteralTail::NotEqual(op, Box::new(right)),
+            ),
+        )),
+    )(x)
+}
+
 pub fn literal<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<Literal, E> {
-    enum LiteralTail<'a> {
-        Equal(DefinedInfixPred, FofTerm<'a>),
-        NotEqual(InfixInequality, FofTerm<'a>),
-    }
-
-    fn literal_tail<'a, E: ParseError<&'a [u8]>>(
-        x: &'a [u8],
-    ) -> ParseResult<LiteralTail<'a>, E> {
-        preceded(
-            ignored,
-            alt((
-                map(
-                    pair(defined_infix_pred, preceded(ignored, fof_term)),
-                    |(op, right)| LiteralTail::Equal(op, right),
-                ),
-                map(
-                    pair(infix_inequality, preceded(ignored, fof_term)),
-                    |(op, right)| LiteralTail::NotEqual(op, right),
-                ),
-            )),
-        )(x)
-    }
-
     alt((
         map(
             preceded(pair(tag("~"), ignored), fof_atomic_formula),
@@ -806,14 +823,17 @@ pub fn literal<'a, E: ParseError<&'a [u8]>>(
             pair(fof_plain_term, opt(literal_tail)),
             |(left, rest)| match rest {
                 Some(rest) => {
-                    let left = FofTerm::Function(FofFunctionTerm::Plain(left));
+                    let left = Box::new(FofTerm::Function(Box::new(
+                        FofFunctionTerm::Plain(left),
+                    )));
                     match rest {
                         LiteralTail::Equal(op, right) => {
                             let infix =
                                 FofDefinedInfixFormula { left, op, right };
                             let defined =
                                 FofDefinedAtomicFormula::Infix(infix);
-                            let atomic = FofAtomicFormula::Defined(defined);
+                            let atomic =
+                                FofAtomicFormula::Defined(Box::new(defined));
                             Literal::Atomic(atomic)
                         }
                         LiteralTail::NotEqual(op, right) => {
@@ -824,25 +844,28 @@ pub fn literal<'a, E: ParseError<&'a [u8]>>(
                 }
                 None => {
                     let plain = FofPlainAtomicFormula(left);
-                    let atomic = FofAtomicFormula::Plain(plain);
+                    let atomic = FofAtomicFormula::Plain(Box::new(plain));
                     Literal::Atomic(atomic)
                 }
             },
         ),
-        map(pair(fof_term, literal_tail), |(left, rest)| match rest {
-            LiteralTail::Equal(op, right) => {
-                let infix = FofDefinedInfixFormula { left, op, right };
-                let defined = FofDefinedAtomicFormula::Infix(infix);
-                let atomic = FofAtomicFormula::Defined(defined);
-                Literal::Atomic(atomic)
-            }
-            LiteralTail::NotEqual(op, right) => {
-                let infix = FofInfixUnary { left, op, right };
-                Literal::Infix(infix)
+        map(pair(fof_term, literal_tail), |(left, rest)| {
+            let left = Box::new(left);
+            match rest {
+                LiteralTail::Equal(op, right) => {
+                    let infix = FofDefinedInfixFormula { left, op, right };
+                    let defined = FofDefinedAtomicFormula::Infix(infix);
+                    let atomic = FofAtomicFormula::Defined(Box::new(defined));
+                    Literal::Atomic(atomic)
+                }
+                LiteralTail::NotEqual(op, right) => {
+                    let infix = FofInfixUnary { left, op, right };
+                    Literal::Infix(infix)
+                }
             }
         }),
         map(fof_defined_atomic_formula, |f| {
-            Literal::Atomic(FofAtomicFormula::Defined(f))
+            Literal::Atomic(FofAtomicFormula::Defined(Box::new(f)))
         }),
     ))(x)
 }
@@ -851,7 +874,7 @@ pub fn disjunction<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<Disjunction, E> {
     map(
-        separated_nonempty_list(tuple((ignored, tag("|"), ignored)), literal),
+        separated_list1(tuple((ignored, tag("|"), ignored)), literal),
         Disjunction,
     )(x)
 }
@@ -898,10 +921,7 @@ pub fn general_terms<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<GeneralTerms, E> {
     map(
-        separated_nonempty_list(
-            delimited(ignored, tag(","), ignored),
-            general_term,
-        ),
+        separated_list1(delimited(ignored, tag(","), ignored), general_term),
         GeneralTerms,
     )(x)
 }
@@ -973,12 +993,12 @@ pub fn general_data<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<GeneralData, E> {
     alt((
-        map(general_function, GeneralData::Function),
+        map(general_function, |f| GeneralData::Function(Box::new(f))),
         map(atomic_word, GeneralData::Atomic),
         map(variable, GeneralData::Variable),
         map(number, GeneralData::Number),
         map(distinct_object, GeneralData::DistinctObject),
-        map(formula_data, GeneralData::Formula),
+        map(formula_data, |f| GeneralData::Formula(Box::new(f))),
     ))(x)
 }
 
@@ -992,9 +1012,9 @@ pub fn general_term<'a, E: ParseError<&'a [u8]>>(
                 general_data,
                 preceded(tuple((ignored, tag(":"), ignored)), general_term),
             ),
-            |(d, f)| GeneralTerm::Colon(d, Box::new(f)),
+            |(d, f)| GeneralTerm::Colon(Box::new(d), Box::new(f)),
         ),
-        map(general_data, GeneralTerm::Data),
+        map(general_data, |d| GeneralTerm::Data(Box::new(d))),
     ))(x)
 }
 
@@ -1038,10 +1058,16 @@ pub fn fof_annotated<'a, E: ParseError<&'a [u8]>>(
         delimited(
             tuple((tag("fof"), ignored, tag("("), ignored)),
             tuple((
-                name,
+                map(name, Box::new),
                 preceded(delimited(ignored, tag(","), ignored), formula_role),
-                preceded(delimited(ignored, tag(","), ignored), fof_formula),
-                preceded(ignored, annotations),
+                map(
+                    preceded(
+                        delimited(ignored, tag(","), ignored),
+                        fof_formula,
+                    ),
+                    Box::new,
+                ),
+                map(preceded(ignored, annotations), Box::new),
             )),
             tuple((ignored, tag(")"), ignored, tag("."))),
         ),
@@ -1061,10 +1087,16 @@ pub fn cnf_annotated<'a, E: ParseError<&'a [u8]>>(
         delimited(
             tuple((tag("cnf"), ignored, tag("("), ignored)),
             tuple((
-                name,
+                map(name, Box::new),
                 preceded(delimited(ignored, tag(","), ignored), formula_role),
-                preceded(delimited(ignored, tag(","), ignored), cnf_formula),
-                preceded(ignored, annotations),
+                map(
+                    preceded(
+                        delimited(ignored, tag(","), ignored),
+                        cnf_formula,
+                    ),
+                    Box::new,
+                ),
+                map(preceded(ignored, annotations), Box::new),
             )),
             tuple((ignored, tag(")"), ignored, tag("."))),
         ),
@@ -1096,7 +1128,7 @@ pub fn name_list<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<NameList, E> {
     map(
-        separated_nonempty_list(tuple((ignored, tag(","), ignored)), name),
+        separated_list1(tuple((ignored, tag(","), ignored)), name),
         NameList,
     )(x)
 }
@@ -1134,7 +1166,7 @@ pub fn tptp_input<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<TPTPInput, E> {
     alt((
-        map(annotated_formula, |f| TPTPInput::Annotated(Box::new(f))),
+        map(annotated_formula, TPTPInput::Annotated),
         map(include, TPTPInput::Include),
     ))(x)
 }

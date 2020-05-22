@@ -1,3 +1,0 @@
-#!/bin/sh
-
-AFL_SKIP_CPUFREQ=1 exec afl-fuzz -i bootstrap -o results -x dictionary.txt target/release/fuzz

@@ -8,7 +8,7 @@ A [crate](https://crates.io/crates/tptp) for reading files in the [TPTP](http://
 * convenient abstractions: visitor pattern, input iterator
 * complete CNF/FOF dialect support
 * adherence to TPTP BNF: transform as you wish
-* comprehensive test suite, fuzzing with [AFL](https://lcamtuf.coredump.cx/afl/)
+* comprehensive test suite
 
 ## Documentation
 See [docs.rs](https://docs.rs/tptp).
@@ -20,9 +20,9 @@ Unscientific benchmark:
 ```
 $ cargo bench
 100000 iterations, 2159 bytes of SYN000-1.p
-1.03 seconds total (210.36 MB/s).
+1.03 seconds total (189.87 MB/s).
 100000 iterations, 2702 bytes of SYN000+1.p
-1.89 seconds total (142.68 MB/s).
+1.89 seconds total (123.13 MB/s).
 $
 ```
 
