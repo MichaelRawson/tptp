@@ -28,7 +28,7 @@ features = ["derive"]
 optional = true
 
 [dev-dependencies]
-insta = "0.12"
+insta = "0.16"
 
 [profile.release]
 lto = true
@@ -37,6 +37,7 @@ codegen-units = 1
 [profile.bench]
 lto = true
 codegen-units = 1
+debug = true
 
 [[bench]]
 path = "benches/benchmark.rs"
