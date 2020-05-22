@@ -7,8 +7,7 @@ use tptp::visitor::Visitor;
 #[derive(Default)]
 struct Names;
 
-impl<'a> Visitor<'a> for Names
-{
+impl<'a> Visitor<'a> for Names {
     fn visit_name(&mut self, name: &Name<'a>) {
         println!("{}", name);
     }
