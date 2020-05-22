@@ -415,7 +415,9 @@ pub struct FofSystemAtomicFormula<'a>(pub FofSystemTerm<'a>);
 pub struct FofPlainAtomicFormula<'a>(pub FofPlainTerm<'a>);
 
 /// `defined_infix_pred`
-#[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    Clone, Copy, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DefinedInfixPred(pub InfixEquality);
 
