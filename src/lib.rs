@@ -15,7 +15,7 @@
 //!     for input in &mut parser {
 //!         let input = input.expect("syntax error");
 //!         println!("{}", &input);
-//!         visitor.visit_tptp_input(input);
+//!         visitor.visit_tptp_input(&input);
 //!     }
 //!     assert!(parser.remaining.is_empty());
 //! }

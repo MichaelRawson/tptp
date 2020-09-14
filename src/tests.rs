@@ -592,7 +592,7 @@ fn test_formula_selection() {
 fn test_include() {
     check_size::<Include>();
     parse(include, b"include ( 'test' ) .\0");
-    parse(include, b"include( 'test', [ test ] ) .\0");
+    parse(include, b"include ( 'test', [ test ] ) .\0");
 }
 
 #[test]
@@ -601,4 +601,14 @@ fn test_tptp_input() {
     parse(tptp_input, b"include ( 'test' ) .\0");
     parse(tptp_input, b"fof ( test , axiom , $true ) .\0");
     parse(tptp_input, b"cnf ( test , axiom , $true ) .\0");
+}
+
+// https://github.com/MichaelRawson/tptp/issues/2
+// with thanks to @skbaek
+#[test]
+fn test_large_annotations() {
+    parse(
+        tptp_input,
+        b"cnf(c_0_137, negated_conjecture, $false, inference(cn,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[c_0_134, c_0_95]), c_0_97]), c_0_99]), c_0_101]), c_0_103]), c_0_105]), c_0_107]), c_0_109]), c_0_111]), c_0_113]), c_0_115]), c_0_117]), c_0_119]), c_0_121]), c_0_123]), c_0_125]), c_0_127]), c_0_129]), c_0_131]), c_0_133]), c_0_135])])).\0"
+    );
 }

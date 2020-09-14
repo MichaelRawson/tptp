@@ -939,20 +939,22 @@ pub fn general_list<'a, E: ParseError<&'a [u8]>>(
     )(x)
 }
 
+fn general_function_tail<'a, E: ParseError<&'a [u8]>>(
+    x: &'a [u8],
+) -> ParseResult<GeneralTerms, E> {
+    delimited(
+        delimited(ignored, tag("("), ignored),
+        general_terms,
+        preceded(ignored, tag(")")),
+    )(x)
+}
+
 pub fn general_function<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<GeneralFunction, E> {
-    map(
-        pair(
-            atomic_word,
-            delimited(
-                tuple((ignored, tag("("), ignored)),
-                general_terms,
-                tuple((ignored, tag(")"))),
-            ),
-        ),
-        |(word, terms)| GeneralFunction { word, terms },
-    )(x)
+    map(pair(atomic_word, general_function_tail), |(word, terms)| {
+        GeneralFunction { word, terms }
+    })(x)
 }
 
 pub fn formula_data<'a, E: ParseError<&'a [u8]>>(
@@ -993,8 +995,17 @@ pub fn general_data<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<GeneralData, E> {
     alt((
-        map(general_function, |f| GeneralData::Function(Box::new(f))),
-        map(atomic_word, GeneralData::Atomic),
+        map(
+            pair(atomic_word, opt(general_function_tail)),
+            |(word, tail)| {
+                if let Some(terms) = tail {
+                    let f = GeneralFunction { word, terms };
+                    GeneralData::Function(Box::new(f))
+                } else {
+                    GeneralData::Atomic(word)
+                }
+            },
+        ),
         map(variable, GeneralData::Variable),
         map(number, GeneralData::Number),
         map(distinct_object, GeneralData::DistinctObject),
@@ -1010,11 +1021,20 @@ pub fn general_term<'a, E: ParseError<&'a [u8]>>(
         map(
             pair(
                 general_data,
-                preceded(tuple((ignored, tag(":"), ignored)), general_term),
+                opt(preceded(
+                    delimited(ignored, tag(":"), ignored),
+                    general_term,
+                )),
             ),
-            |(d, f)| GeneralTerm::Colon(Box::new(d), Box::new(f)),
+            |(left, right)| {
+                let left = Box::new(left);
+                if let Some(right) = right {
+                    GeneralTerm::Colon(left, Box::new(right))
+                } else {
+                    GeneralTerm::Data(left)
+                }
+            },
         ),
-        map(general_data, |d| GeneralTerm::Data(Box::new(d))),
     ))(x)
 }
 
