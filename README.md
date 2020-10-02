@@ -20,9 +20,9 @@ Unscientific benchmark:
 ```
 $ cargo bench
 100000 iterations, 2159 bytes of SYN000-1.p
-1.03 seconds total (189.87 MB/s).
+0.91 seconds total (237.98 MB/s).
 100000 iterations, 2702 bytes of SYN000+1.p
-1.89 seconds total (123.13 MB/s).
+1.84 seconds total (146.53 MB/s).
 $
 ```
 

@@ -1,4 +1,3 @@
-use alloc::borrow::Cow;
 use alloc::boxed::Box;
 use alloc::fmt;
 use alloc::vec::Vec;
@@ -27,40 +26,40 @@ fn fmt_list<T: fmt::Display>(
 #[derive(
     AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Integer<'a>(pub Cow<'a, str>);
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct Integer<'a>(pub &'a str);
 
 /// `rational`
 #[derive(
     AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Rational<'a>(pub Cow<'a, str>);
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct Rational<'a>(pub &'a str);
 
 /// `rational`
 #[derive(
     AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct Real<'a>(pub Cow<'a, str>);
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct Real<'a>(pub &'a str);
 
 /// `lower_word`
 #[derive(
     AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct LowerWord<'a>(pub Cow<'a, str>);
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct LowerWord<'a>(pub &'a str);
 
 /// `upper_word`
 #[derive(
     AsRef, Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct UpperWord<'a>(pub Cow<'a, str>);
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct UpperWord<'a>(pub &'a str);
 
 /// `dollar_word`
 #[derive(AsRef, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DollarWord<'a>(pub LowerWord<'a>);
 
 impl<'a> fmt::Display for DollarWord<'a> {
@@ -71,7 +70,7 @@ impl<'a> fmt::Display for DollarWord<'a> {
 
 /// `dollar_dollar_word`
 #[derive(AsRef, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DollarDollarWord<'a>(pub LowerWord<'a>);
 
 impl<'a> fmt::Display for DollarDollarWord<'a> {
@@ -82,8 +81,8 @@ impl<'a> fmt::Display for DollarDollarWord<'a> {
 
 /// `single_quoted`
 #[derive(AsRef, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct SingleQuoted<'a>(pub Cow<'a, str>);
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct SingleQuoted<'a>(pub &'a str);
 
 impl<'a> fmt::Display for SingleQuoted<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -93,8 +92,8 @@ impl<'a> fmt::Display for SingleQuoted<'a> {
 
 /// `distinct_object`
 #[derive(AsRef, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct DistinctObject<'a>(pub Cow<'a, str>);
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct DistinctObject<'a>(pub &'a str);
 
 impl<'a> fmt::Display for DistinctObject<'a> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -106,26 +105,26 @@ impl<'a> fmt::Display for DistinctObject<'a> {
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct AtomicSystemWord<'a>(pub DollarDollarWord<'a>);
 
 /// `system_functor`
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SystemFunctor<'a>(pub AtomicSystemWord<'a>);
 
 /// `system_constant`
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SystemConstant<'a>(pub SystemFunctor<'a>);
 
 /// `number`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum Number<'a> {
     Integer(Integer<'a>),
     Rational(Rational<'a>),
@@ -134,7 +133,7 @@ pub enum Number<'a> {
 
 /// `atomic_word`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum AtomicWord<'a> {
     Lower(LowerWord<'a>),
     SingleQuoted(SingleQuoted<'a>),
@@ -142,7 +141,7 @@ pub enum AtomicWord<'a> {
 
 /// `name`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum Name<'a> {
     AtomicWord(AtomicWord<'a>),
     Integer(Integer<'a>),
@@ -152,26 +151,26 @@ pub enum Name<'a> {
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Variable<'a>(pub UpperWord<'a>);
 
 /// `functor`
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Functor<'a>(pub AtomicWord<'a>);
 
 /// `constant`
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Constant<'a>(pub Functor<'a>);
 
 /// `fof_arguments`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofArguments<'a>(pub Vec<FofTerm<'a>>);
 
 impl<'a> fmt::Display for FofArguments<'a> {
@@ -188,7 +187,7 @@ impl<'a> fmt::Display for FofArguments<'a> {
 
 /// `fof_system_term`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofSystemTerm<'a> {
     /// `system_constant`
     Constant(SystemConstant<'a>),
@@ -208,12 +207,12 @@ impl<'a> fmt::Display for FofSystemTerm<'a> {
 
 /// `fof_plain_term`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofPlainTerm<'a> {
     /// `constant`
     Constant(Constant<'a>),
     /// `functor`, `fof_arguments`
-    Function(Functor<'a>, Box<FofArguments<'a>>),
+    Function(Functor<'a>, FofArguments<'a>),
 }
 
 impl<'a> fmt::Display for FofPlainTerm<'a> {
@@ -230,38 +229,38 @@ impl<'a> fmt::Display for FofPlainTerm<'a> {
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct AtomicDefinedWord<'a>(pub DollarWord<'a>);
 
 /// `defined_functor`
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedFunctor<'a>(pub AtomicDefinedWord<'a>);
 
 /// `defined_constant`
 #[derive(
     AsRef, Clone, Display, From, Debug, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedConstant<'a>(pub DefinedFunctor<'a>);
 
 /// `fof_defined_plain_term`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofDefinedPlainTerm<'a>(pub DefinedConstant<'a>);
 
 /// `fof_defined_atomic_term`
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofDefinedAtomicTerm<'a>(pub FofDefinedPlainTerm<'a>);
 
 /// `defined_term`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum DefinedTerm<'a> {
     Number(Number<'a>),
     Distinct(DistinctObject<'a>),
@@ -269,7 +268,7 @@ pub enum DefinedTerm<'a> {
 
 /// `fof_defined_term`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofDefinedTerm<'a> {
     Defined(DefinedTerm<'a>),
     Atomic(FofDefinedAtomicTerm<'a>),
@@ -277,7 +276,7 @@ pub enum FofDefinedTerm<'a> {
 
 /// `fof_function_term`
 #[derive(Clone, Debug, From, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofFunctionTerm<'a> {
     /// `fof_plain_term`
     Plain(FofPlainTerm<'a>),
@@ -287,17 +286,17 @@ pub enum FofFunctionTerm<'a> {
 
 /// `fof_term`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofTerm<'a> {
     /// `fof_function_term`,
-    Function(Box<FofFunctionTerm<'a>>),
+    Function(FofFunctionTerm<'a>),
     /// `variable`
     Variable(Variable<'a>),
 }
 
 /// `unary_connective`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct UnaryConnective;
 
 impl fmt::Display for UnaryConnective {
@@ -308,7 +307,7 @@ impl fmt::Display for UnaryConnective {
 
 /// `infix_equality`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct InfixEquality;
 
 impl fmt::Display for InfixEquality {
@@ -319,7 +318,7 @@ impl fmt::Display for InfixEquality {
 
 /// `infix_inequality`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct InfixInequality;
 
 impl fmt::Display for InfixInequality {
@@ -330,7 +329,7 @@ impl fmt::Display for InfixInequality {
 
 /// `nonassoc_connective`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum NonassocConnective {
     /// `=>`
     LRImplies,
@@ -362,7 +361,7 @@ impl fmt::Display for NonassocConnective {
 
 /// `assoc_connective`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum AssocConnective {
     /// `&`
     And,
@@ -382,7 +381,7 @@ impl fmt::Display for AssocConnective {
 
 /// `fof_quantifier`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofQuantifier {
     /// `!`
     Forall,
@@ -404,26 +403,26 @@ impl fmt::Display for FofQuantifier {
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofSystemAtomicFormula<'a>(pub FofSystemTerm<'a>);
 
 /// `fof_plain_atomic_formula`
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofPlainAtomicFormula<'a>(pub FofPlainTerm<'a>);
 
 /// `defined_infix_pred`
 #[derive(
     Clone, Copy, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedInfixPred(pub InfixEquality);
 
 /// `fof_defined_infix_formula`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofDefinedInfixFormula<'a> {
     pub left: Box<FofTerm<'a>>,
     pub op: DefinedInfixPred,
@@ -440,12 +439,12 @@ impl<'a> fmt::Display for FofDefinedInfixFormula<'a> {
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofDefinedPlainFormula<'a>(pub FofDefinedPlainTerm<'a>);
 
 /// `fof_defined_atomic_formula`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofDefinedAtomicFormula<'a> {
     Plain(FofDefinedPlainFormula<'a>),
     Infix(FofDefinedInfixFormula<'a>),
@@ -453,16 +452,16 @@ pub enum FofDefinedAtomicFormula<'a> {
 
 /// `fof_atomic_formula`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofAtomicFormula<'a> {
-    Plain(Box<FofPlainAtomicFormula<'a>>),
-    Defined(Box<FofDefinedAtomicFormula<'a>>),
-    System(Box<FofSystemAtomicFormula<'a>>),
+    Plain(FofPlainAtomicFormula<'a>),
+    Defined(FofDefinedAtomicFormula<'a>),
+    System(FofSystemAtomicFormula<'a>),
 }
 
 /// `fof_variable_list`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofVariableList<'a>(pub Vec<Variable<'a>>);
 
 impl<'a> fmt::Display for FofVariableList<'a> {
@@ -473,7 +472,7 @@ impl<'a> fmt::Display for FofVariableList<'a> {
 
 /// `fof_quantified_formula`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofQuantifiedFormula<'a> {
     pub quantifier: FofQuantifier,
     pub bound: FofVariableList<'a>,
@@ -488,7 +487,7 @@ impl<'a> fmt::Display for FofQuantifiedFormula<'a> {
 
 /// `fof_infix_unary`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofInfixUnary<'a> {
     pub left: Box<FofTerm<'a>>,
     pub op: InfixInequality,
@@ -503,7 +502,7 @@ impl<'a> fmt::Display for FofInfixUnary<'a> {
 
 /// `fof_unary_formula`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofUnaryFormula<'a> {
     Unary(UnaryConnective, Box<FofUnitFormula<'a>>),
     InfixUnary(FofInfixUnary<'a>),
@@ -521,7 +520,7 @@ impl<'a> fmt::Display for FofUnaryFormula<'a> {
 
 /// `fof_unitary_formula`
 #[derive(Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofUnitaryFormula<'a> {
     Quantified(FofQuantifiedFormula<'a>),
     Atomic(FofAtomicFormula<'a>),
@@ -541,7 +540,7 @@ impl<'a> fmt::Display for FofUnitaryFormula<'a> {
 
 /// `fof_unit_formula`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofUnitFormula<'a> {
     Unitary(FofUnitaryFormula<'a>),
     Unary(FofUnaryFormula<'a>),
@@ -549,7 +548,7 @@ pub enum FofUnitFormula<'a> {
 
 /// `fof_or_formula`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofOrFormula<'a>(pub Vec<FofUnitFormula<'a>>);
 
 impl<'a> fmt::Display for FofOrFormula<'a> {
@@ -560,7 +559,7 @@ impl<'a> fmt::Display for FofOrFormula<'a> {
 
 /// `fof_and_formula`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofAndFormula<'a>(pub Vec<FofUnitFormula<'a>>);
 
 impl<'a> fmt::Display for FofAndFormula<'a> {
@@ -571,7 +570,7 @@ impl<'a> fmt::Display for FofAndFormula<'a> {
 
 /// `fof_binary_assoc`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofBinaryAssoc<'a> {
     Or(FofOrFormula<'a>),
     And(FofAndFormula<'a>),
@@ -579,7 +578,7 @@ pub enum FofBinaryAssoc<'a> {
 
 /// `fof_binary_nonassoc`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofBinaryNonassoc<'a> {
     pub left: Box<FofUnitFormula<'a>>,
     pub op: NonassocConnective,
@@ -594,15 +593,15 @@ impl<'a> fmt::Display for FofBinaryNonassoc<'a> {
 
 /// `fof_binary_formula`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofBinaryFormula<'a> {
-    Nonassoc(Box<FofBinaryNonassoc<'a>>),
+    Nonassoc(FofBinaryNonassoc<'a>),
     Assoc(FofBinaryAssoc<'a>),
 }
 
 /// `fof_logic_formula`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FofLogicFormula<'a> {
     Binary(FofBinaryFormula<'a>),
     Unary(FofUnaryFormula<'a>),
@@ -611,12 +610,12 @@ pub enum FofLogicFormula<'a> {
 
 /// `fof_formula`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofFormula<'a>(pub FofLogicFormula<'a>);
 
 /// `literal`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum Literal<'a> {
     Atomic(FofAtomicFormula<'a>),
     NegatedAtomic(FofAtomicFormula<'a>),
@@ -636,7 +635,7 @@ impl<'a> fmt::Display for Literal<'a> {
 
 /// `disjunction`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Disjunction<'a>(pub Vec<Literal<'a>>);
 
 impl<'a> fmt::Display for Disjunction<'a> {
@@ -647,7 +646,7 @@ impl<'a> fmt::Display for Disjunction<'a> {
 
 /// `cnf_formula`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum CnfFormula<'a> {
     Disjunction(Disjunction<'a>),
     Parenthesised(Disjunction<'a>),
@@ -665,7 +664,7 @@ impl<'a> fmt::Display for CnfFormula<'a> {
 
 /// `formula_role`
 #[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FormulaRole {
     Axiom,
     Hypothesis,
@@ -709,11 +708,11 @@ impl fmt::Display for FormulaRole {
 
 /// `formula_data`
 #[derive(Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FormulaData<'a> {
-    Fof(FofFormula<'a>),
-    Cnf(CnfFormula<'a>),
-    Fot(FofTerm<'a>),
+    Fof(Box<FofFormula<'a>>),
+    Cnf(Box<CnfFormula<'a>>),
+    Fot(Box<FofTerm<'a>>),
 }
 
 impl<'a> fmt::Display for FormulaData<'a> {
@@ -729,7 +728,7 @@ impl<'a> fmt::Display for FormulaData<'a> {
 
 /// `general_function`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct GeneralFunction<'a> {
     pub word: AtomicWord<'a>,
     pub terms: GeneralTerms<'a>,
@@ -743,19 +742,19 @@ impl<'a> fmt::Display for GeneralFunction<'a> {
 
 /// `general_data`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum GeneralData<'a> {
     Atomic(AtomicWord<'a>),
-    Function(Box<GeneralFunction<'a>>),
+    Function(GeneralFunction<'a>),
     Variable(Variable<'a>),
     Number(Number<'a>),
     DistinctObject(DistinctObject<'a>),
-    Formula(Box<FormulaData<'a>>),
+    Formula(FormulaData<'a>),
 }
 
 /// `general_terms`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct GeneralTerms<'a>(pub Vec<GeneralTerm<'a>>);
 
 impl<'a> fmt::Display for GeneralTerms<'a> {
@@ -766,7 +765,7 @@ impl<'a> fmt::Display for GeneralTerms<'a> {
 
 /// `general_list`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct GeneralList<'a>(pub Option<GeneralTerms<'a>>);
 
 impl<'a> fmt::Display for GeneralList<'a> {
@@ -780,10 +779,10 @@ impl<'a> fmt::Display for GeneralList<'a> {
 
 /// `general_term`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum GeneralTerm<'a> {
-    Data(Box<GeneralData<'a>>),
-    Colon(Box<GeneralData<'a>>, Box<GeneralTerm<'a>>),
+    Data(GeneralData<'a>),
+    Colon(GeneralData<'a>, Box<GeneralTerm<'a>>),
     List(GeneralList<'a>),
 }
 
@@ -802,19 +801,19 @@ impl<'a> fmt::Display for GeneralTerm<'a> {
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Source<'a>(pub GeneralTerm<'a>);
 
 /// `useful_info`
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct UsefulInfo<'a>(pub GeneralList<'a>);
 
 /// `optional_info`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct OptionalInfo<'a>(pub Option<UsefulInfo<'a>>);
 
 impl<'a> fmt::Display for OptionalInfo<'a> {
@@ -828,7 +827,7 @@ impl<'a> fmt::Display for OptionalInfo<'a> {
 
 /// `annotations`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Annotations<'a>(pub Option<(Source<'a>, OptionalInfo<'a>)>);
 
 impl<'a> fmt::Display for Annotations<'a> {
@@ -842,9 +841,9 @@ impl<'a> fmt::Display for Annotations<'a> {
 
 /// `fof_annotated`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofAnnotated<'a> {
-    pub name: Box<Name<'a>>,
+    pub name: Name<'a>,
     pub role: FormulaRole,
     pub formula: Box<FofFormula<'a>>,
     pub annotations: Box<Annotations<'a>>,
@@ -862,9 +861,9 @@ impl<'a> fmt::Display for FofAnnotated<'a> {
 
 /// `cnf_annotated`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct CnfAnnotated<'a> {
-    pub name: Box<Name<'a>>,
+    pub name: Name<'a>,
     pub role: FormulaRole,
     pub formula: Box<CnfFormula<'a>>,
     pub annotations: Box<Annotations<'a>>,
@@ -882,7 +881,7 @@ impl<'a> fmt::Display for CnfAnnotated<'a> {
 
 /// `annotated_formula`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum AnnotatedFormula<'a> {
     Fof(FofAnnotated<'a>),
     Cnf(CnfAnnotated<'a>),
@@ -892,12 +891,12 @@ pub enum AnnotatedFormula<'a> {
 #[derive(
     AsRef, Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash,
 )]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FileName<'a>(pub SingleQuoted<'a>);
 
 /// `name_list`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct NameList<'a>(pub Vec<Name<'a>>);
 
 impl<'a> fmt::Display for NameList<'a> {
@@ -908,7 +907,7 @@ impl<'a> fmt::Display for NameList<'a> {
 
 /// `formula_selection`
 #[derive(AsRef, Clone, Debug, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FormulaSelection<'a>(pub Option<NameList<'a>>);
 
 impl<'a> fmt::Display for FormulaSelection<'a> {
@@ -922,7 +921,7 @@ impl<'a> fmt::Display for FormulaSelection<'a> {
 
 /// `include`
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Include<'a> {
     pub file_name: FileName<'a>,
     pub selection: FormulaSelection<'a>,
@@ -936,7 +935,7 @@ impl<'a> fmt::Display for Include<'a> {
 
 /// `TPTP_input`
 #[derive(Clone, Debug, Display, From, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum TPTPInput<'a> {
     Annotated(AnnotatedFormula<'a>),
     Include(Include<'a>),

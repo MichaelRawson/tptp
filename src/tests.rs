@@ -6,7 +6,7 @@ use crate::parsers::*;
 use crate::syntax::*;
 
 fn check_size<T>() {
-    assert!(core::mem::size_of::<T>() <= 64);
+    assert!(core::mem::size_of::<T>() <= 128);
 }
 
 fn do_parse<'a, P, T: 'a>(parser: P, input: &'a [u8]) -> T
