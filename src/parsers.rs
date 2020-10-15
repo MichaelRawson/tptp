@@ -12,7 +12,7 @@ use nom::character::streaming::{
 };
 use nom::combinator::{cut, map, opt, peek, recognize, value};
 use nom::error::ParseError;
-use nom::multi::{fold_many0, separated_list1};
+use nom::multi::{fold_many0, separated_nonempty_list};
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 
 use crate::syntax::*;
@@ -305,7 +305,10 @@ pub fn fof_arguments<'a, E: ParseError<&'a [u8]>>(
     map(
         delimited(
             tag("("),
-            separated_list1(tag(","), delimited(ignored, fof_term, ignored)),
+            separated_nonempty_list(
+                tag(","),
+                delimited(ignored, fof_term, ignored),
+            ),
             tag(")"),
         ),
         FofArguments,
@@ -492,7 +495,7 @@ pub fn fof_variable_list<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<FofVariableList, E> {
     map(
-        separated_list1(tuple((ignored, tag(","), ignored)), variable),
+        separated_nonempty_list(tuple((ignored, tag(","), ignored)), variable),
         FofVariableList,
     )(x)
 }
@@ -853,7 +856,7 @@ pub fn disjunction<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<Disjunction, E> {
     map(
-        separated_list1(tuple((ignored, tag("|"), ignored)), literal),
+        separated_nonempty_list(tuple((ignored, tag("|"), ignored)), literal),
         Disjunction,
     )(x)
 }
@@ -900,7 +903,10 @@ pub fn general_terms<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<GeneralTerms, E> {
     map(
-        separated_list1(delimited(ignored, tag(","), ignored), general_term),
+        separated_nonempty_list(
+            delimited(ignored, tag(","), ignored),
+            general_term,
+        ),
         GeneralTerms,
     )(x)
 }
@@ -1126,7 +1132,7 @@ pub fn name_list<'a, E: ParseError<&'a [u8]>>(
     x: &'a [u8],
 ) -> ParseResult<NameList, E> {
     map(
-        separated_list1(tuple((ignored, tag(","), ignored)), name),
+        separated_nonempty_list(tuple((ignored, tag(","), ignored)), name),
         NameList,
     )(x)
 }

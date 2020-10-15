@@ -23,7 +23,6 @@
 
 #![no_std]
 extern crate alloc;
-extern crate derive_more;
 
 /// `nom` parsers corresponding to [TPTP BNF](http://www.tptp.org/TPTP/SyntaxBNF.html)
 pub mod parsers;

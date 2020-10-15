@@ -2,7 +2,7 @@
 name = "tptp"
 description = "Parse the TPTP format"
 edition = "2018"
-version = "0.24.0"
+version = "0.25.0"
 authors = ["Michael Rawson <michael@rawsons.uk>"]
 license = "MIT"
 homepage = "https://github.com/MichaelRawson/tptp"
@@ -13,22 +13,17 @@ include = [
 	"src/*.rs",
 ]
 
-[dependencies.derive_more]
-version = "0.99"
-default-features = false
-features = ["as_ref", "from", "display"]
-
 [dependencies.nom]
-version = "6.0.0-alpha2"
+version = "5"
 features = ["lexical"]
 
 [dependencies.serde]
-version = "1.0"
+version = "1"
 features = ["derive"]
 optional = true
 
 [dev-dependencies]
-insta = "1.0"
+insta = "1"
 
 [profile.release]
 lto = true
