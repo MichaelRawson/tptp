@@ -1,8 +1,8 @@
 use serde_json::ser::to_writer;
 use std::io;
 use std::io::Read;
-use tptp::parsers::TPTPIterator;
-use tptp::syntax::TPTPInput;
+use tptp::TPTPIterator;
+use tptp::meta::TPTPInput;
 
 const BUFSIZE: usize = 1024;
 

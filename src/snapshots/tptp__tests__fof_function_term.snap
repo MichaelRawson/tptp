@@ -11,7 +11,7 @@ Plain(
                 ),
             ),
         ),
-        FofArguments(
+        Arguments(
             [
                 Variable(
                     Variable(

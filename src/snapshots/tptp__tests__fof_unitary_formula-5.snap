@@ -3,9 +3,9 @@ source: src/tests.rs
 expression: parsed
 ---
 Quantified(
-    FofQuantifiedFormula {
+    QuantifiedFormula {
         quantifier: Forall,
-        bound: FofVariableList(
+        bound: VariableList(
             [
                 Variable(
                     UpperWord(
@@ -18,8 +18,8 @@ Quantified(
             Atomic(
                 Defined(
                     Plain(
-                        FofDefinedPlainFormula(
-                            FofDefinedPlainTerm(
+                        DefinedPlainFormula(
+                            DefinedPlainTerm(
                                 DefinedConstant(
                                     DefinedFunctor(
                                         AtomicDefinedWord(

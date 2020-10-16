@@ -4,11 +4,11 @@ expression: parsed
 ---
 Binary(
     Nonassoc(
-        FofBinaryNonassoc {
+        BinaryNonassoc {
             left: Unitary(
                 Atomic(
                     Plain(
-                        FofPlainAtomicFormula(
+                        PlainAtomicFormula(
                             Constant(
                                 Constant(
                                     Functor(
@@ -28,7 +28,7 @@ Binary(
             right: Unitary(
                 Atomic(
                     Plain(
-                        FofPlainAtomicFormula(
+                        PlainAtomicFormula(
                             Constant(
                                 Constant(
                                     Functor(

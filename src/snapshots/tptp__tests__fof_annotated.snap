@@ -2,28 +2,30 @@
 source: src/tests.rs
 expression: parsed
 ---
-FofAnnotated {
-    name: AtomicWord(
-        Lower(
-            LowerWord(
-                "test",
+FofAnnotated(
+    Annotated {
+        name: AtomicWord(
+            Lower(
+                LowerWord(
+                    "test",
+                ),
             ),
         ),
-    ),
-    role: Axiom,
-    formula: FofFormula(
-        Unitary(
-            Atomic(
-                Defined(
-                    Plain(
-                        FofDefinedPlainFormula(
-                            FofDefinedPlainTerm(
-                                DefinedConstant(
-                                    DefinedFunctor(
-                                        AtomicDefinedWord(
-                                            DollarWord(
-                                                LowerWord(
-                                                    "true",
+        role: Axiom,
+        formula: Formula(
+            Unitary(
+                Atomic(
+                    Defined(
+                        Plain(
+                            DefinedPlainFormula(
+                                DefinedPlainTerm(
+                                    DefinedConstant(
+                                        DefinedFunctor(
+                                            AtomicDefinedWord(
+                                                DollarWord(
+                                                    LowerWord(
+                                                        "true",
+                                                    ),
                                                 ),
                                             ),
                                         ),
@@ -35,8 +37,8 @@ FofAnnotated {
                 ),
             ),
         ),
-    ),
-    annotations: Annotations(
-        None,
-    ),
-}
+        annotations: Annotations(
+            None,
+        ),
+    },
+)

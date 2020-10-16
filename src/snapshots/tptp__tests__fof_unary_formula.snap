@@ -8,8 +8,8 @@ Unary(
         Atomic(
             Defined(
                 Plain(
-                    FofDefinedPlainFormula(
-                        FofDefinedPlainTerm(
+                    DefinedPlainFormula(
+                        DefinedPlainTerm(
                             DefinedConstant(
                                 DefinedFunctor(
                                     AtomicDefinedWord(

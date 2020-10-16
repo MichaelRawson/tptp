@@ -3,29 +3,31 @@ source: src/tests.rs
 expression: parsed
 ---
 Cnf(
-    CnfAnnotated {
-        name: AtomicWord(
-            Lower(
-                LowerWord(
-                    "test",
+    CnfAnnotated(
+        Annotated {
+            name: AtomicWord(
+                Lower(
+                    LowerWord(
+                        "test",
+                    ),
                 ),
             ),
-        ),
-        role: Axiom,
-        formula: Disjunction(
-            Disjunction(
-                [
-                    Atomic(
-                        Defined(
-                            Plain(
-                                FofDefinedPlainFormula(
-                                    FofDefinedPlainTerm(
-                                        DefinedConstant(
-                                            DefinedFunctor(
-                                                AtomicDefinedWord(
-                                                    DollarWord(
-                                                        LowerWord(
-                                                            "true",
+            role: Axiom,
+            formula: Disjunction(
+                Disjunction(
+                    [
+                        Atomic(
+                            Defined(
+                                Plain(
+                                    DefinedPlainFormula(
+                                        DefinedPlainTerm(
+                                            DefinedConstant(
+                                                DefinedFunctor(
+                                                    AtomicDefinedWord(
+                                                        DollarWord(
+                                                            LowerWord(
+                                                                "true",
+                                                            ),
                                                         ),
                                                     ),
                                                 ),
@@ -35,12 +37,12 @@ Cnf(
                                 ),
                             ),
                         ),
-                    ),
-                ],
+                    ],
+                ),
             ),
-        ),
-        annotations: Annotations(
-            None,
-        ),
-    },
+            annotations: Annotations(
+                None,
+            ),
+        },
+    ),
 )

@@ -3,12 +3,12 @@ source: src/tests.rs
 expression: parsed
 ---
 Or(
-    FofOrFormula(
+    OrFormula(
         [
             Unitary(
                 Atomic(
                     Plain(
-                        FofPlainAtomicFormula(
+                        PlainAtomicFormula(
                             Constant(
                                 Constant(
                                     Functor(
@@ -27,7 +27,7 @@ Or(
             Unitary(
                 Atomic(
                     Plain(
-                        FofPlainAtomicFormula(
+                        PlainAtomicFormula(
                             Constant(
                                 Constant(
                                     Functor(
@@ -46,7 +46,7 @@ Or(
             Unitary(
                 Atomic(
                     Plain(
-                        FofPlainAtomicFormula(
+                        PlainAtomicFormula(
                             Constant(
                                 Constant(
                                     Functor(

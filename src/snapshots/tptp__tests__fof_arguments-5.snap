@@ -2,7 +2,7 @@
 source: src/tests.rs
 expression: parsed
 ---
-FofArguments(
+Arguments(
     [
         Variable(
             Variable(
@@ -21,7 +21,7 @@ FofArguments(
                             ),
                         ),
                     ),
-                    FofArguments(
+                    Arguments(
                         [
                             Variable(
                                 Variable(

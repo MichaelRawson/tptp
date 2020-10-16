@@ -2,7 +2,7 @@
 source: src/tests.rs
 expression: parsed
 ---
-FofInfixUnary {
+InfixUnary {
     left: Function(
         Plain(
             Function(
@@ -13,7 +13,7 @@ FofInfixUnary {
                         ),
                     ),
                 ),
-                FofArguments(
+                Arguments(
                     [
                         Variable(
                             Variable(

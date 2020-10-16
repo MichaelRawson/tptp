@@ -10,7 +10,7 @@ Function(
             ),
         ),
     ),
-    FofArguments(
+    Arguments(
         [
             Variable(
                 Variable(
@@ -29,7 +29,7 @@ Function(
                                 ),
                             ),
                         ),
-                        FofArguments(
+                        Arguments(
                             [
                                 Variable(
                                     Variable(

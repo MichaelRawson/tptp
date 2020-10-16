@@ -5,11 +5,11 @@ expression: parsed
 Data(
     Formula(
         Fof(
-            FofFormula(
+            Formula(
                 Unitary(
                     Atomic(
                         Plain(
-                            FofPlainAtomicFormula(
+                            PlainAtomicFormula(
                                 Constant(
                                     Constant(
                                         Functor(

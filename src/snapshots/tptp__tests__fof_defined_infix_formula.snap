@@ -2,7 +2,7 @@
 source: src/tests.rs
 expression: parsed
 ---
-FofDefinedInfixFormula {
+DefinedInfixFormula {
     left: Function(
         Plain(
             Function(
@@ -13,7 +13,7 @@ FofDefinedInfixFormula {
                         ),
                     ),
                 ),
-                FofArguments(
+                Arguments(
                     [
                         Variable(
                             Variable(

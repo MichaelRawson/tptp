@@ -2,8 +2,8 @@
 source: src/tests.rs
 expression: parsed
 ---
-FofDefinedAtomicTerm(
-    FofDefinedPlainTerm(
+DefinedAtomicTerm(
+    DefinedPlainTerm(
         DefinedConstant(
             DefinedFunctor(
                 AtomicDefinedWord(

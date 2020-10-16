@@ -1,6 +1,6 @@
 use std::io;
 use std::io::Read;
-use tptp::parsers::TPTPIterator;
+use tptp::TPTPIterator;
 
 fn read_stdin() -> io::Result<Box<[u8]>> {
     let mut buffer = vec![];

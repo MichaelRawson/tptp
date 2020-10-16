@@ -1,5 +1,5 @@
 use std::time::Instant;
-use tptp::parsers::TPTPIterator;
+use tptp::TPTPIterator;
 
 const ITERATIONS: usize = 100_000;
 const FOF: &[u8] = include_bytes!("SYN000+1.p");

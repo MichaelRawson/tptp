@@ -2,29 +2,31 @@
 source: src/tests.rs
 expression: parsed
 ---
-CnfAnnotated {
-    name: AtomicWord(
-        Lower(
-            LowerWord(
-                "test",
+CnfAnnotated(
+    Annotated {
+        name: AtomicWord(
+            Lower(
+                LowerWord(
+                    "test",
+                ),
             ),
         ),
-    ),
-    role: Axiom,
-    formula: Disjunction(
-        Disjunction(
-            [
-                Atomic(
-                    Defined(
-                        Plain(
-                            FofDefinedPlainFormula(
-                                FofDefinedPlainTerm(
-                                    DefinedConstant(
-                                        DefinedFunctor(
-                                            AtomicDefinedWord(
-                                                DollarWord(
-                                                    LowerWord(
-                                                        "true",
+        role: Axiom,
+        formula: Disjunction(
+            Disjunction(
+                [
+                    Atomic(
+                        Defined(
+                            Plain(
+                                DefinedPlainFormula(
+                                    DefinedPlainTerm(
+                                        DefinedConstant(
+                                            DefinedFunctor(
+                                                AtomicDefinedWord(
+                                                    DollarWord(
+                                                        LowerWord(
+                                                            "true",
+                                                        ),
                                                     ),
                                                 ),
                                             ),
@@ -34,34 +36,34 @@ CnfAnnotated {
                             ),
                         ),
                     ),
-                ),
-            ],
+                ],
+            ),
         ),
-    ),
-    annotations: Annotations(
-        Some(
-            (
-                Source(
-                    Data(
-                        Atomic(
-                            Lower(
-                                LowerWord(
-                                    "unknown",
+        annotations: Annotations(
+            Some(
+                (
+                    Source(
+                        Data(
+                            Atomic(
+                                Lower(
+                                    LowerWord(
+                                        "unknown",
+                                    ),
                                 ),
                             ),
                         ),
                     ),
-                ),
-                OptionalInfo(
-                    Some(
-                        UsefulInfo(
-                            GeneralList(
-                                None,
+                    OptionalInfo(
+                        Some(
+                            UsefulInfo(
+                                GeneralList(
+                                    None,
+                                ),
                             ),
                         ),
                     ),
                 ),
             ),
         ),
-    ),
-}
+    },
+)

@@ -12,7 +12,7 @@ Function(
                     ),
                 ),
             ),
-            FofArguments(
+            Arguments(
                 [
                     Variable(
                         Variable(

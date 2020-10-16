@@ -2,19 +2,19 @@
 source: src/tests.rs
 expression: parsed
 ---
-FofFormula(
+Formula(
     Binary(
         Assoc(
             And(
-                FofAndFormula(
+                AndFormula(
                     [
                         Unitary(
                             Parenthesised(
                                 Unitary(
                                     Quantified(
-                                        FofQuantifiedFormula {
+                                        QuantifiedFormula {
                                             quantifier: Forall,
-                                            bound: FofVariableList(
+                                            bound: VariableList(
                                                 [
                                                     Variable(
                                                         UpperWord(
@@ -35,9 +35,9 @@ FofFormula(
                                             ),
                                             formula: Unitary(
                                                 Quantified(
-                                                    FofQuantifiedFormula {
+                                                    QuantifiedFormula {
                                                         quantifier: Exists,
-                                                        bound: FofVariableList(
+                                                        bound: VariableList(
                                                             [
                                                                 Variable(
                                                                     UpperWord(
@@ -48,7 +48,7 @@ FofFormula(
                                                         ),
                                                         formula: Unary(
                                                             InfixUnary(
-                                                                FofInfixUnary {
+                                                                InfixUnary {
                                                                     left: Variable(
                                                                         Variable(
                                                                             UpperWord(
@@ -67,7 +67,7 @@ FofFormula(
                                                                                         ),
                                                                                     ),
                                                                                 ),
-                                                                                FofArguments(
+                                                                                Arguments(
                                                                                     [
                                                                                         Variable(
                                                                                             Variable(
@@ -95,7 +95,7 @@ FofFormula(
                         Unitary(
                             Atomic(
                                 Plain(
-                                    FofPlainAtomicFormula(
+                                    PlainAtomicFormula(
                                         Constant(
                                             Constant(
                                                 Functor(
@@ -115,11 +115,11 @@ FofFormula(
                             Parenthesised(
                                 Binary(
                                     Nonassoc(
-                                        FofBinaryNonassoc {
+                                        BinaryNonassoc {
                                             left: Unitary(
                                                 Atomic(
                                                     Plain(
-                                                        FofPlainAtomicFormula(
+                                                        PlainAtomicFormula(
                                                             Constant(
                                                                 Constant(
                                                                     Functor(
@@ -139,7 +139,7 @@ FofFormula(
                                             right: Unitary(
                                                 Atomic(
                                                     Plain(
-                                                        FofPlainAtomicFormula(
+                                                        PlainAtomicFormula(
                                                             Constant(
                                                                 Constant(
                                                                     Functor(

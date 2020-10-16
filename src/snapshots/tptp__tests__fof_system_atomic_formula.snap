@@ -2,7 +2,7 @@
 source: src/tests.rs
 expression: parsed
 ---
-FofSystemAtomicFormula(
+SystemAtomicFormula(
     Constant(
         SystemConstant(
             SystemFunctor(

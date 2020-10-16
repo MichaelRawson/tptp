@@ -3,11 +3,11 @@ source: src/tests.rs
 expression: parsed
 ---
 Fof(
-    FofFormula(
+    Formula(
         Unitary(
             Atomic(
                 Plain(
-                    FofPlainAtomicFormula(
+                    PlainAtomicFormula(
                         Constant(
                             Constant(
                                 Functor(

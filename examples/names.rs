@@ -1,8 +1,8 @@
 use std::io;
 use std::io::Read;
-use tptp::parsers::TPTPIterator;
-use tptp::syntax::Name;
+use tptp::common::Name;
 use tptp::visitor::Visitor;
+use tptp::TPTPIterator;
 
 #[derive(Default)]
 struct Names;

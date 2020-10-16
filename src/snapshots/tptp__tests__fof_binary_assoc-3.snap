@@ -3,12 +3,12 @@ source: src/tests.rs
 expression: parsed
 ---
 And(
-    FofAndFormula(
+    AndFormula(
         [
             Unitary(
                 Atomic(
                     Plain(
-                        FofPlainAtomicFormula(
+                        PlainAtomicFormula(
                             Constant(
                                 Constant(
                                     Functor(
@@ -27,7 +27,7 @@ And(
             Unitary(
                 Atomic(
                     Plain(
-                        FofPlainAtomicFormula(
+                        PlainAtomicFormula(
                             Constant(
                                 Constant(
                                     Functor(

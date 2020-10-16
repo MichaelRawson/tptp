@@ -2,18 +2,18 @@
 source: src/tests.rs
 expression: parsed
 ---
-FofFormula(
+Formula(
     Binary(
         Assoc(
             Or(
-                FofOrFormula(
+                OrFormula(
                     [
                         Unitary(
                             Atomic(
                                 Defined(
                                     Plain(
-                                        FofDefinedPlainFormula(
-                                            FofDefinedPlainTerm(
+                                        DefinedPlainFormula(
+                                            DefinedPlainTerm(
                                                 DefinedConstant(
                                                     DefinedFunctor(
                                                         AtomicDefinedWord(
@@ -35,8 +35,8 @@ FofFormula(
                             Atomic(
                                 Defined(
                                     Plain(
-                                        FofDefinedPlainFormula(
-                                            FofDefinedPlainTerm(
+                                        DefinedPlainFormula(
+                                            DefinedPlainTerm(
                                                 DefinedConstant(
                                                     DefinedFunctor(
                                                         AtomicDefinedWord(

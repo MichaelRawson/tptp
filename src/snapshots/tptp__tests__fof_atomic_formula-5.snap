@@ -3,7 +3,7 @@ source: src/tests.rs
 expression: parsed
 ---
 Plain(
-    FofPlainAtomicFormula(
+    PlainAtomicFormula(
         Function(
             Functor(
                 Lower(
@@ -12,7 +12,7 @@ Plain(
                     ),
                 ),
             ),
-            FofArguments(
+            Arguments(
                 [
                     Variable(
                         Variable(

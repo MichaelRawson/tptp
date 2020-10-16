@@ -7,7 +7,7 @@ Disjunction(
         [
             Atomic(
                 Plain(
-                    FofPlainAtomicFormula(
+                    PlainAtomicFormula(
                         Constant(
                             Constant(
                                 Functor(

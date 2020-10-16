@@ -4,8 +4,8 @@ expression: parsed
 ---
 Defined(
     Atomic(
-        FofDefinedAtomicTerm(
-            FofDefinedPlainTerm(
+        DefinedAtomicTerm(
+            DefinedPlainTerm(
                 DefinedConstant(
                     DefinedFunctor(
                         AtomicDefinedWord(

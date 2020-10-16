@@ -5,7 +5,7 @@ expression: parsed
 Atomic(
     Defined(
         Infix(
-            FofDefinedInfixFormula {
+            DefinedInfixFormula {
                 left: Function(
                     Plain(
                         Function(
@@ -16,7 +16,7 @@ Atomic(
                                     ),
                                 ),
                             ),
-                            FofArguments(
+                            Arguments(
                                 [
                                     Variable(
                                         Variable(

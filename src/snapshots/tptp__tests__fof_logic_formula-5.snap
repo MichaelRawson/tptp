@@ -5,12 +5,12 @@ expression: parsed
 Binary(
     Assoc(
         And(
-            FofAndFormula(
+            AndFormula(
                 [
                     Unitary(
                         Atomic(
                             Plain(
-                                FofPlainAtomicFormula(
+                                PlainAtomicFormula(
                                     Constant(
                                         Constant(
                                             Functor(
@@ -29,7 +29,7 @@ Binary(
                     Unitary(
                         Atomic(
                             Plain(
-                                FofPlainAtomicFormula(
+                                PlainAtomicFormula(
                                     Constant(
                                         Constant(
                                             Functor(

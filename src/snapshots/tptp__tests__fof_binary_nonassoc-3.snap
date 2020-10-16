@@ -2,11 +2,11 @@
 source: src/tests.rs
 expression: parsed
 ---
-FofBinaryNonassoc {
+BinaryNonassoc {
     left: Unitary(
         Atomic(
             Plain(
-                FofPlainAtomicFormula(
+                PlainAtomicFormula(
                     Constant(
                         Constant(
                             Functor(
@@ -26,7 +26,7 @@ FofBinaryNonassoc {
     right: Unitary(
         Atomic(
             Plain(
-                FofPlainAtomicFormula(
+                PlainAtomicFormula(
                     Constant(
                         Constant(
                             Functor(
