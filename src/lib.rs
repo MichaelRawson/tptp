@@ -12,8 +12,8 @@
 //!
 //! Parsers are streaming, so they will signal "incomplete" on EOF, rather than success or failure, until the outcome is known.
 //! Most of the time this is obvious, but the behaviour can be surprising.
-//! For example, parsing `fooX` as a `lower_word` succeeds, returning the trailing `X` to parse next.
-//! However, `foo` is "incomplete" as there might be more input coming.
+//! For example, parsing `foo$` as a `lower_word` succeeds, returning the trailing `$` to parse next.
+//! However, parsing `foo` is "incomplete" as there might be more input coming.
 //!
 //! Support for `serde` can be switched on with a feature flag as usual.
 //! Structures can then be serialised, but not deseralised due to ownership issues.
@@ -49,7 +49,7 @@ pub mod common;
 /// the FOF dialect
 pub mod fof;
 /// top-level inputs, formula annotations, etc.
-pub mod meta;
+pub mod top;
 
 #[cfg(test)]
 mod tests;
@@ -86,7 +86,7 @@ impl<'a, E> TPTPIterator<'a, E> {
 }
 
 impl<'a, E: Error<'a>> Iterator for TPTPIterator<'a, E> {
-    type Item = core::result::Result<meta::TPTPInput<'a>, E>;
+    type Item = core::result::Result<top::TPTPInput<'a>, E>;
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -103,7 +103,7 @@ impl<'a, E: Error<'a>> Iterator for TPTPIterator<'a, E> {
             }
         }
 
-        match meta::TPTPInput::parse(self.remaining) {
+        match top::TPTPInput::parse(self.remaining) {
             Ok((remaining, input)) => {
                 self.remaining = remaining;
                 Some(Ok(input))

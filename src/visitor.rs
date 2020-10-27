@@ -1,7 +1,7 @@
 use crate::cnf;
 use crate::common::*;
 use crate::fof;
-use crate::meta::*;
+use crate::top::*;
 
 /// [visitor pattern](https://en.wikipedia.org/wiki/Visitor_pattern) trait
 ///

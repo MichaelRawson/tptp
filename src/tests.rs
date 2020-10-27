@@ -5,7 +5,7 @@ use insta::{assert_debug_snapshot, assert_display_snapshot};
 use crate::cnf;
 use crate::common::*;
 use crate::fof;
-use crate::meta::*;
+use crate::top::*;
 use crate::{Parse, Result};
 
 fn check_size<T>() {
