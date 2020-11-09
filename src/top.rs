@@ -3,7 +3,7 @@ use alloc::fmt;
 use alloc::vec::Vec;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
-use nom::combinator::{map, opt, value};
+use nom::combinator::{map, opt};
 use nom::sequence::{delimited, pair, preceded, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
@@ -48,68 +48,14 @@ parser! {
 }
 
 /// [`formula_role`](http://tptp.org/TPTP/SyntaxBNF.html#formula_role)
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
-pub enum FormulaRole {
-    Axiom,
-    Hypothesis,
-    Definition,
-    Assumption,
-    Lemma,
-    Theorem,
-    Corollary,
-    Conjecture,
-    NegatedConjecture,
-    Plain,
-    Type,
-    FiDomain,
-    FiFunctors,
-    FiPredicates,
-    Unknown,
-}
+pub struct FormulaRole<'a>(pub LowerWord<'a>);
+impl_unit_anon_display! {FormulaRole}
 
-impl fmt::Display for FormulaRole {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FormulaRole::*;
-        match self {
-            Axiom => write!(f, "axiom"),
-            Hypothesis => write!(f, "hypothesis"),
-            Definition => write!(f, "definition"),
-            Assumption => write!(f, "assumption"),
-            Lemma => write!(f, "lemma"),
-            Theorem => write!(f, "theorem"),
-            Corollary => write!(f, "corollary"),
-            Conjecture => write!(f, "conjecture"),
-            NegatedConjecture => write!(f, "negated_conjecture"),
-            Plain => write!(f, "plain"),
-            Type => write!(f, "type"),
-            FiDomain => write!(f, "fi_domain"),
-            FiFunctors => write!(f, "fi_functors"),
-            FiPredicates => write!(f, "fi_predicates"),
-            Unknown => write!(f, "unknown"),
-        }
-    }
-}
-
-parser_no_lifetime! {
+parser! {
     FormulaRole,
-    alt((
-        value(Self::Axiom, tag("axiom")),
-        value(Self::Hypothesis, tag("hypothesis")),
-        value(Self::Definition, tag("definition")),
-        value(Self::Assumption, tag("assumption")),
-        value(Self::Lemma, tag("lemma")),
-        value(Self::Theorem, tag("theorem")),
-        value(Self::Corollary, tag("corollary")),
-        value(Self::Conjecture, tag("conjecture")),
-        value(Self::NegatedConjecture, tag("negated_conjecture")),
-        value(Self::Plain, tag("plain")),
-        value(Self::Type, tag("type")),
-        value(Self::FiDomain, tag("fi_domain")),
-        value(Self::FiFunctors, tag("fi_functors")),
-        value(Self::FiPredicates, tag("fi_predicates")),
-        value(Self::Unknown, tag("unknown")),
-    ))
+    map(LowerWord::parse, FormulaRole)
 }
 
 /// [`formula_data`](http://tptp.org/TPTP/SyntaxBNF.html#formula_data)
@@ -462,7 +408,7 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Annotated<'a, T> {
     pub name: Name<'a>,
-    pub role: FormulaRole,
+    pub role: FormulaRole<'a>,
     pub formula: Box<T>,
     pub annotations: Annotations<'a>,
 }
@@ -550,16 +496,16 @@ parser! {
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum AnnotatedFormula<'a> {
-    Fof(FofAnnotated<'a>),
-    Cnf(CnfAnnotated<'a>),
+    Fof(Box<FofAnnotated<'a>>),
+    Cnf(Box<CnfAnnotated<'a>>),
 }
 impl_enum_anon_display! {AnnotatedFormula, Fof, Cnf}
 
 parser! {
     AnnotatedFormula,
     alt((
-        map(FofAnnotated::parse, Self::Fof),
-        map(CnfAnnotated::parse, Self::Cnf),
+        map(map(FofAnnotated::parse, Box::new), Self::Fof),
+        map(map(CnfAnnotated::parse, Box::new), Self::Cnf),
     ))
 }
 
@@ -585,7 +531,7 @@ mod tests {
     use super::*;
     use crate::tests::*;
     #[test]
-    fn test_role() {
+    fn test_formula_role() {
         check_size::<FormulaRole>();
         parse::<FormulaRole>(b"axiom\0");
         parse::<FormulaRole>(b"conjecture\0");

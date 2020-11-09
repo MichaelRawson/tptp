@@ -11,7 +11,11 @@ CnfAnnotated(
                 ),
             ),
         ),
-        role: Axiom,
+        role: FormulaRole(
+            LowerWord(
+                "axiom",
+            ),
+        ),
         formula: Disjunction(
             Disjunction(
                 [

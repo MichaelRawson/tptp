@@ -458,7 +458,9 @@ pub trait Visitor<'a> {
         }
     }
 
-    fn visit_formula_role(&mut self, _formula_role: FormulaRole) {}
+    fn visit_formula_role(&mut self, formula_role: &FormulaRole<'a>) {
+        self.visit_lower_word(&formula_role.0);
+    }
 
     fn visit_general_terms(&mut self, general_terms: &GeneralTerms<'a>) {
         for general_term in &*general_terms.0 {
@@ -549,14 +551,14 @@ pub trait Visitor<'a> {
 
     fn visit_fof_annotated(&mut self, fof_annotated: &FofAnnotated<'a>) {
         self.visit_name(&fof_annotated.0.name);
-        self.visit_formula_role(fof_annotated.0.role);
+        self.visit_formula_role(&fof_annotated.0.role);
         self.visit_fof_formula(&fof_annotated.0.formula);
         self.visit_annotations(&fof_annotated.0.annotations);
     }
 
     fn visit_cnf_annotated(&mut self, cnf_annotated: &CnfAnnotated<'a>) {
         self.visit_name(&cnf_annotated.0.name);
-        self.visit_formula_role(cnf_annotated.0.role);
+        self.visit_formula_role(&cnf_annotated.0.role);
         self.visit_cnf_formula(&cnf_annotated.0.formula);
         self.visit_annotations(&cnf_annotated.0.annotations);
     }

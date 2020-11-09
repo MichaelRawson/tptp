@@ -12,7 +12,11 @@ Fof(
                     ),
                 ),
             ),
-            role: Axiom,
+            role: FormulaRole(
+                LowerWord(
+                    "axiom",
+                ),
+            ),
             formula: Formula(
                 Unitary(
                     Atomic(
