@@ -111,6 +111,24 @@ parser! {
     )
 }
 
+struct GeneralFunctionTail<'a>(GeneralTerms<'a>);
+
+impl<'a> GeneralFunctionTail<'a> {
+    fn finish(self, word: AtomicWord<'a>) -> GeneralFunction<'a> {
+        let terms = self.0;
+        GeneralFunction { word, terms }
+    }
+}
+
+parser! {
+    GeneralFunctionTail,
+    delimited(
+        delimited(ignored, tag("("), ignored),
+        map(GeneralTerms::parse, Self),
+        preceded(ignored, tag(")")),
+    )
+}
+
 /// [`general_function`](http://tptp.org/TPTP/SyntaxBNF.html#general_function)
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
@@ -125,21 +143,11 @@ impl<'a> fmt::Display for GeneralFunction<'a> {
     }
 }
 
-fn general_function_tail<'a, E: Error<'a>>(
-    x: &'a [u8],
-) -> Result<GeneralTerms, E> {
-    delimited(
-        delimited(ignored, tag("("), ignored),
-        GeneralTerms::parse,
-        preceded(ignored, tag(")")),
-    )(x)
-}
-
 parser! {
     GeneralFunction,
     map(
-        pair(AtomicWord::parse, general_function_tail),
-        |(word, terms)| Self { word, terms },
+        pair(AtomicWord::parse, GeneralFunctionTail::parse),
+        |(word, tail)| tail.finish(word)
     )
 }
 
@@ -168,15 +176,12 @@ parser! {
     GeneralData,
     alt((
         map(
-            pair(AtomicWord::parse, opt(general_function_tail)),
-            |(word, tail)| {
-                if let Some(terms) = tail {
-                    let f = GeneralFunction { word, terms };
-                    Self::Function(Box::new(f))
-                } else {
-                    Self::Atomic(word)
-                }
-            },
+            pair(AtomicWord::parse, opt(GeneralFunctionTail::parse)),
+            |(word, tail)| if let Some(tail) = tail {
+                Self::Function(Box::new(tail.finish(word)))
+            } else {
+                Self::Atomic(word)
+            }
         ),
         map(Variable::parse, Self::Variable),
         map(Number::parse, Self::Number),

@@ -1,6 +1,7 @@
 use alloc::fmt;
 use alloc::vec;
 use alloc::vec::Vec;
+use core::mem;
 use nom::Parser;
 
 use crate::{Error, Result};
@@ -96,7 +97,7 @@ pub(crate) fn fmt_list<T: fmt::Display>(
     Ok(())
 }
 
-pub fn fold_many0<'a, E, Item, Acc, F, G>(
+pub(crate) fn fold_many0<'a, E, Item, Acc, F, G>(
     mut item: F,
     mut acc: Acc,
     mut fold: G,
@@ -136,5 +137,25 @@ where
             }
         }
         Ok((start, list))
+    }
+}
+
+pub(crate) struct GarbageFirstVec<T>(Vec<T>);
+
+impl<T> Default for GarbageFirstVec<T> {
+    fn default() -> Self {
+        let first = unsafe { mem::MaybeUninit::uninit().assume_init() };
+        Self(vec![first])
+    }
+}
+
+impl<T> GarbageFirstVec<T> {
+    pub(crate) fn push(&mut self, t: T) {
+        self.0.push(t);
+    }
+
+    pub(crate) fn finish(mut self, t: T) -> Vec<T> {
+        mem::forget(mem::replace(&mut self.0[0], t));
+        self.0
     }
 }

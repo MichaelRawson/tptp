@@ -13,6 +13,52 @@ use crate::fof;
 use crate::utils::{fmt_list, separated_list1};
 use crate::{Error, Parse, Result};
 
+enum LiteralTail<'a> {
+    Equal(DefinedInfixPred, Box<fof::Term<'a>>),
+    NotEqual(InfixInequality, Box<fof::Term<'a>>),
+}
+
+impl<'a> LiteralTail<'a> {
+    fn finish(self, left: fof::Term<'a>) -> Literal<'a> {
+        let left = Box::new(left);
+        match self {
+            Self::Equal(op, right) => {
+                let infix = fof::DefinedInfixFormula { left, op, right };
+                let defined = fof::DefinedAtomicFormula::Infix(infix);
+                let atomic = fof::AtomicFormula::Defined(defined);
+                Literal::Atomic(atomic)
+            }
+            Self::NotEqual(op, right) => {
+                let infix = fof::InfixUnary { left, op, right };
+                Literal::Infix(infix)
+            }
+        }
+    }
+}
+
+parser! {
+    LiteralTail,
+    preceded(
+        ignored,
+        alt((
+            map(
+                pair(
+                    DefinedInfixPred::parse,
+                    preceded(ignored, map(fof::Term::parse, Box::new)),
+                ),
+                |(op, right)| LiteralTail::Equal(op, right),
+            ),
+            map(
+                pair(
+                    InfixInequality::parse,
+                    preceded(ignored, map(fof::Term::parse, Box::new)),
+                ),
+                |(op, right)| LiteralTail::NotEqual(op, right),
+            ),
+        )),
+    )
+}
+
 /// [`literal`](http://tptp.org/TPTP/SyntaxBNF.html#literal)
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
@@ -33,33 +79,6 @@ impl<'a> fmt::Display for Literal<'a> {
     }
 }
 
-enum LiteralTail<'a> {
-    Equal(DefinedInfixPred, Box<fof::Term<'a>>),
-    NotEqual(InfixInequality, Box<fof::Term<'a>>),
-}
-
-fn literal_tail<'a, E: Error<'a>>(x: &'a [u8]) -> Result<LiteralTail<'a>, E> {
-    preceded(
-        ignored,
-        alt((
-            map(
-                pair(
-                    DefinedInfixPred::parse,
-                    preceded(ignored, map(fof::Term::parse, Box::new)),
-                ),
-                |(op, right)| LiteralTail::Equal(op, right),
-            ),
-            map(
-                pair(
-                    InfixInequality::parse,
-                    preceded(ignored, map(fof::Term::parse, Box::new)),
-                ),
-                |(op, right)| LiteralTail::NotEqual(op, right),
-            ),
-        )),
-    )(x)
-}
-
 parser! {
     Literal,
     alt((
@@ -68,25 +87,12 @@ parser! {
             Self::NegatedAtomic,
         ),
         map(
-            pair(fof::PlainTerm::parse, opt(literal_tail)),
-            |(left, rest)| match rest {
-                Some(rest) => {
+            pair(fof::PlainTerm::parse, opt(LiteralTail::parse)),
+            |(left, tail)| match tail {
+                Some(tail) => {
                     let left = Box::new(fof::FunctionTerm::Plain(left));
-                    let left = Box::new(fof::Term::Function(left));
-                    match rest {
-                        LiteralTail::Equal(op, right) => {
-                            let infix =
-                                fof::DefinedInfixFormula { left, op, right };
-                            let defined =
-                                fof::DefinedAtomicFormula::Infix(infix);
-                            let atomic = fof::AtomicFormula::Defined(defined);
-                            Self::Atomic(atomic)
-                        }
-                        LiteralTail::NotEqual(op, right) => {
-                            let infix = fof::InfixUnary { left, op, right };
-                            Self::Infix(infix)
-                        }
-                    }
+                    let left = fof::Term::Function(left);
+                    tail.finish(left)
                 }
                 None => {
                     let plain = fof::PlainAtomicFormula(left);
@@ -96,19 +102,8 @@ parser! {
             },
         ),
         map(
-            pair(map(fof::Term::parse, Box::new), literal_tail),
-            |(left, rest)| match rest {
-                LiteralTail::Equal(op, right) => {
-                    let infix = fof::DefinedInfixFormula { left, op, right };
-                    let defined = fof::DefinedAtomicFormula::Infix(infix);
-                    let atomic = fof::AtomicFormula::Defined(defined);
-                    Self::Atomic(atomic)
-                }
-                LiteralTail::NotEqual(op, right) => {
-                    let infix = fof::InfixUnary { left, op, right };
-                    Self::Infix(infix)
-                }
-            },
+            pair(fof::Term::parse, LiteralTail::parse),
+            |(left, tail)| tail.finish(left)
         ),
         map(fof::DefinedAtomicFormula::parse, |f| {
             Self::Atomic(fof::AtomicFormula::Defined(f))
