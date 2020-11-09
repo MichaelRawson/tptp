@@ -4,14 +4,13 @@ use alloc::vec::Vec;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::combinator::{map, opt};
-use nom::multi::separated_nonempty_list;
 use nom::sequence::{delimited, pair, preceded, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
 use crate::common::*;
 use crate::fof;
-use crate::utils::fmt_list;
+use crate::utils::{fmt_list, separated_list1};
 use crate::{Error, Parse, Result};
 
 /// [`literal`](http://tptp.org/TPTP/SyntaxBNF.html#literal)
@@ -131,7 +130,7 @@ impl<'a> fmt::Display for Disjunction<'a> {
 parser! {
     Disjunction,
     map(
-        separated_nonempty_list(
+        separated_list1(
             tuple((ignored, tag("|"), ignored)),
             Literal::parse,
         ),
@@ -170,4 +169,34 @@ parser! {
         ),
         map(Disjunction::parse, Self::Disjunction),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::*;
+
+    #[test]
+    fn test_literal() {
+        check_size::<Literal>();
+        parse::<Literal>(b"p\0");
+        parse::<Literal>(b"~ p\0");
+        parse::<Literal>(b"f(X) = c\0");
+    }
+
+    #[test]
+    fn test_disjunction() {
+        check_size::<Disjunction>();
+        parse::<Disjunction>(b"p\0");
+        parse::<Disjunction>(b"p | ~q\0");
+        parse::<Disjunction>(b"p | ~q | r\0");
+    }
+
+    #[test]
+    fn test_cnf_formula() {
+        check_size::<Formula>();
+        parse::<Formula>(b"p\0");
+        parse::<Formula>(b"( p )\0");
+        parse::<Formula>(b"p | ~q\0");
+    }
 }

@@ -14,8 +14,8 @@ include = [
 ]
 
 [dependencies.nom]
-version = "5"
-features = ["lexical"]
+version = "6"
+default-features = false
 
 [dependencies.serde]
 version = "1"

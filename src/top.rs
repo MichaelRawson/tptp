@@ -4,7 +4,6 @@ use alloc::vec::Vec;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::combinator::{map, opt, value};
-use nom::multi::separated_nonempty_list;
 use nom::sequence::{delimited, pair, preceded, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
@@ -12,7 +11,7 @@ use serde::Serialize;
 use crate::cnf;
 use crate::common::*;
 use crate::fof;
-use crate::utils::fmt_list;
+use crate::utils::{fmt_list, separated_list1};
 use crate::{Error, Parse, Result};
 
 /// [`file_name`](http://tptp.org/TPTP/SyntaxBNF.html#file_name)
@@ -40,7 +39,7 @@ impl<'a> fmt::Display for NameList<'a> {
 parser! {
     NameList,
     map(
-        separated_nonempty_list(
+        separated_list1(
             tuple((ignored, tag(","), ignored)),
             Name::parse,
         ),
@@ -254,7 +253,7 @@ impl<'a> fmt::Display for GeneralTerms<'a> {
 parser! {
     GeneralTerms,
     map(
-        separated_nonempty_list(
+        separated_list1(
             delimited(ignored, tag(","), ignored),
             GeneralTerm::parse,
         ),
@@ -579,4 +578,156 @@ parser! {
         map(map(AnnotatedFormula::parse, Box::new), Self::Annotated),
         map(map(Include::parse, Box::new), Self::Include),
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::*;
+    #[test]
+    fn test_role() {
+        check_size::<FormulaRole>();
+        parse::<FormulaRole>(b"axiom\0");
+        parse::<FormulaRole>(b"conjecture\0");
+    }
+
+    #[test]
+    fn test_general_terms() {
+        check_size::<GeneralTerms>();
+        parse::<GeneralTerms>(b"X\0");
+        parse::<GeneralTerms>(b"X , Y\0");
+    }
+
+    #[test]
+    fn test_general_list() {
+        check_size::<GeneralList>();
+        parse::<GeneralList>(b"[ ]\0");
+        parse::<GeneralList>(b"[ X ]\0");
+        parse::<GeneralList>(b"[ X , Y ]\0");
+    }
+
+    #[test]
+    fn test_general_function() {
+        check_size::<GeneralFunction>();
+        parse::<GeneralFunction>(b"atomic ( X )\0");
+    }
+
+    #[test]
+    fn test_formula_data() {
+        check_size::<FormulaData>();
+        parse::<FormulaData>(b"$fof ( p )\0");
+        parse::<FormulaData>(b"$cnf ( p )\0");
+        parse::<FormulaData>(b"$fot ( t )\0");
+    }
+
+    #[test]
+    fn test_general_data() {
+        check_size::<GeneralData>();
+        parse::<GeneralData>(b"c\0");
+        parse::<GeneralData>(b"X\0");
+        parse::<GeneralData>(b"atomic ( X )\0");
+        parse::<GeneralData>(b"$fof ( p )\0");
+        parse::<GeneralData>(b"123\0");
+        parse::<GeneralData>(b"\"distinct object\"\0");
+    }
+
+    #[test]
+    fn test_general_term() {
+        check_size::<GeneralTerm>();
+        parse::<GeneralTerm>(b"[ X , Y ]\0");
+        parse::<GeneralTerm>(b"$fof ( p )\0");
+        parse::<GeneralTerm>(b"X : Y\0");
+    }
+
+    #[test]
+    fn test_useful_info() {
+        check_size::<UsefulInfo>();
+        parse::<UsefulInfo>(b"[ X , Y ]\0");
+    }
+
+    #[test]
+    fn test_optional_info() {
+        check_size::<OptionalInfo>();
+        parse::<OptionalInfo>(b"\0");
+        parse::<OptionalInfo>(b", [ X , Y ]\0");
+    }
+
+    #[test]
+    fn test_annotations() {
+        check_size::<Annotations>();
+        parse::<Annotations>(b"\0");
+        parse::<Annotations>(b", c\0");
+        parse::<Annotations>(b", c , [X]\0");
+    }
+
+    #[test]
+    fn test_fof_annotated() {
+        check_size::<FofAnnotated>();
+        parse::<FofAnnotated>(b"fof ( test , axiom , $true ) .\0");
+        parse::<FofAnnotated>(b"fof ( test , axiom , $true , unknown ) .\0");
+        parse::<FofAnnotated>(
+            b"fof ( test , axiom , $true , unknown , [] ) .\0",
+        );
+    }
+
+    #[test]
+    fn test_cnf_annotated() {
+        check_size::<CnfAnnotated>();
+        parse::<CnfAnnotated>(b"cnf ( test , axiom , $true ) .\0");
+        parse::<CnfAnnotated>(b"cnf ( test , axiom , $true , unknown ) .\0");
+        parse::<CnfAnnotated>(
+            b"cnf ( test , axiom , $true , unknown , [] ) .\0",
+        )
+    }
+
+    #[test]
+    fn test_annotated_formula() {
+        check_size::<AnnotatedFormula>();
+        parse::<AnnotatedFormula>(b"fof ( test , axiom , $true ) .\0");
+        parse::<AnnotatedFormula>(b"cnf ( test , axiom , $true ) .\0");
+    }
+
+    #[test]
+    fn test_file_name() {
+        check_size::<FileName>();
+        parse::<FileName>(b"'test'\0");
+    }
+
+    #[test]
+    fn test_name_list() {
+        check_size::<NameList>();
+        parse::<NameList>(b"name , 'name' , 123\0");
+        parse::<NameList>(b"name\0");
+    }
+
+    #[test]
+    fn test_formula_selection() {
+        check_size::<FormulaSelection>();
+        parse::<FormulaSelection>(b", [ name , 'name' , 123 ]\0");
+        parse::<FormulaSelection>(b", [ name ]\0");
+    }
+
+    #[test]
+    fn test_include() {
+        check_size::<Include>();
+        parse::<Include>(b"include ( 'test' ) .\0");
+        parse::<Include>(b"include ( 'test', [ test ] ) .\0");
+    }
+
+    #[test]
+    fn test_tptp_input() {
+        check_size::<TPTPInput>();
+        parse::<TPTPInput>(b"include ( 'test' ) .\0");
+        parse::<TPTPInput>(b"fof ( test , axiom , $true ) .\0");
+        parse::<TPTPInput>(b"cnf ( test , axiom , $true ) .\0");
+    }
+
+    // https://github.com/MichaelRawson/tptp/issues/2
+    // with thanks to @skbaek
+    #[test]
+    fn test_large_annotations() {
+        parse::<TPTPInput>(
+        b"cnf(c_0_137, negated_conjecture, $false, inference(cn,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[c_0_134, c_0_95]), c_0_97]), c_0_99]), c_0_101]), c_0_103]), c_0_105]), c_0_107]), c_0_109]), c_0_111]), c_0_113]), c_0_115]), c_0_117]), c_0_119]), c_0_121]), c_0_123]), c_0_125]), c_0_127]), c_0_129]), c_0_131]), c_0_133]), c_0_135])])).\0"
+    );
+    }
 }

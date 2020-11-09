@@ -1,4 +1,9 @@
 use alloc::fmt;
+use alloc::vec;
+use alloc::vec::Vec;
+use nom::Parser;
+
+use crate::{Error, Result};
 
 macro_rules! impl_unit_display {
     ($Type:ident) => {
@@ -89,4 +94,47 @@ pub(crate) fn fmt_list<T: fmt::Display>(
         write!(f, "{}{}", sep, arg)?;
     }
     Ok(())
+}
+
+pub fn fold_many0<'a, E, Item, Acc, F, G>(
+    mut item: F,
+    mut acc: Acc,
+    mut fold: G,
+) -> impl FnOnce(&'a [u8]) -> Result<'a, Acc, E>
+where
+    F: Parser<&'a [u8], Item, E>,
+    G: FnMut(Acc, Item) -> Acc,
+    E: Error<'a>,
+{
+    move |x| {
+        let mut start = x;
+        while let Ok((x, item)) = item.parse(start) {
+            acc = fold(acc, item);
+            start = x;
+        }
+        Ok((start, acc))
+    }
+}
+
+pub(crate) fn separated_list1<'a, E, Item, Sep, F, G>(
+    mut sep: G,
+    mut item: F,
+) -> impl FnMut(&'a [u8]) -> Result<'a, Vec<Item>, E>
+where
+    F: Parser<&'a [u8], Item, E>,
+    G: Parser<&'a [u8], Sep, E>,
+    E: Error<'a>,
+{
+    move |x| {
+        let (x, first) = item.parse(x)?;
+        let mut start = x;
+        let mut list = vec![first];
+        while let Ok((x, _)) = sep.parse(start) {
+            if let Ok((x, item)) = item.parse(x) {
+                list.push(item);
+                start = x;
+            }
+        }
+        Ok((start, list))
+    }
 }

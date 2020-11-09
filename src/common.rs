@@ -9,11 +9,11 @@ use nom::character::streaming::{
     digit0, digit1, line_ending, not_line_ending, one_of,
 };
 use nom::combinator::{cut, map, opt, recognize, value};
-use nom::multi::fold_many0;
 use nom::sequence::{pair, preceded, terminated, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
+use crate::utils::fold_many0;
 use crate::{Error, Parse, Result};
 
 fn to_str(bytes: &[u8]) -> &str {
@@ -73,35 +73,30 @@ unit_parser! {
 
 unit_parser! {
     /// `whitespace`, `comment_line`, or `comment_block`
-    #[inline(always)]
     single_ignored,
     alt((whitespace, comment_line, comment_block))
 }
 
 unit_parser! {
     /// zero or more `whitespace`, `comment_line`, or `comment_block`
-    #[inline(always)]
     ignored,
     fold_many0(single_ignored, (), |_, _| ())
 }
 
 slice_parser! {
     /// one or more lowercase letters
-    #[inline(always)]
     lower_alpha1,
     take_while1(is_lower_alpha)
 }
 
 slice_parser! {
     /// one or more uppercase letters
-    #[inline(always)]
     upper_alpha1,
     take_while1(is_upper_alpha)
 }
 
 slice_parser! {
     /// one or more letters or digits
-    #[inline(always)]
     alphanumeric,
     take_while(is_alphanumeric)
 }
@@ -180,7 +175,6 @@ pub struct LowerWord<'a>(pub &'a str);
 impl_unit_anon_display! {LowerWord}
 
 parser! {
-    #[inline(always)]
     LowerWord,
     map(recognize(preceded(lower_alpha1, cut(alphanumeric))), |w| {
         Self(to_str(w))
@@ -194,7 +188,6 @@ pub struct UpperWord<'a>(pub &'a str);
 impl_unit_anon_display! {UpperWord}
 
 parser! {
-    #[inline(always)]
     UpperWord,
     map(recognize(preceded(upper_alpha1, cut(alphanumeric))), |w| {
         Self(to_str(w))
@@ -345,7 +338,6 @@ pub enum AtomicWord<'a> {
 impl_enum_anon_display! {AtomicWord, Lower, SingleQuoted}
 
 parser! {
-    #[inline(always)]
     AtomicWord,
     alt((
         map(LowerWord::parse, Self::Lower),
@@ -363,7 +355,6 @@ pub enum Name<'a> {
 impl_enum_anon_display! {Name, AtomicWord, Integer}
 
 parser! {
-    #[inline(always)]
     Name,
     alt((
         map(AtomicWord::parse, Self::AtomicWord),
@@ -583,4 +574,221 @@ impl_unit_display! {DefinedInfixPred}
 parser_no_lifetime! {
     DefinedInfixPred,
     map(InfixEquality::parse, DefinedInfixPred)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::*;
+    #[test]
+    fn test_whitespace() {
+        parse_unit(whitespace, b" \t\n\0");
+    }
+
+    #[test]
+    fn test_comment_line() {
+        parse_unit(comment_line, b"% a comment\n\0");
+    }
+
+    #[test]
+    fn test_comment_block() {
+        parse_unit(comment_block, b"/* a\n block * / comment\n*/\0");
+    }
+
+    #[test]
+    fn test_ignored() {
+        parse_unit(ignored, b"\0");
+        parse_unit(ignored, b"   %test\n  /* test\ntest */  \0");
+    }
+
+    #[test]
+    fn test_lower_word() {
+        check_size::<LowerWord>();
+        parse::<LowerWord>(b"x\0");
+        parse::<LowerWord>(b"aA123\0");
+    }
+
+    #[test]
+    fn test_upper_word() {
+        check_size::<UpperWord>();
+        parse::<UpperWord>(b"X\0");
+        parse::<UpperWord>(b"Aa123\0");
+    }
+
+    #[test]
+    fn test_single_quoted() {
+        check_size::<SingleQuoted>();
+        parse::<SingleQuoted>(b"'single quoted'\0");
+        parse::<SingleQuoted>(b"'\\'\\\\'\0");
+    }
+
+    #[test]
+    fn test_dollar_word() {
+        check_size::<DollarWord>();
+        parse::<DollarWord>(b"$dollar\0");
+    }
+
+    #[test]
+    fn test_dollar_dollar_word() {
+        check_size::<DollarDollarWord>();
+        parse::<DollarDollarWord>(b"$$dollar\0");
+    }
+
+    #[test]
+    fn test_distinct_object() {
+        check_size::<DistinctObject>();
+        parse::<DistinctObject>(b"\"distinct object\"\0");
+        parse::<DistinctObject>(b"\"\\\"\\\\\"\0");
+    }
+
+    #[test]
+    fn test_atomic_word() {
+        check_size::<AtomicWord>();
+        parse::<AtomicWord>(b"x\0");
+        parse::<AtomicWord>(b"'single quoted'\0");
+    }
+
+    #[test]
+    fn test_integer() {
+        check_size::<Integer>();
+        parse::<Integer>(b"0\0");
+        parse::<Integer>(b"123\0");
+        parse::<Integer>(b"-123\0");
+    }
+
+    #[test]
+    fn test_rational() {
+        check_size::<Rational>();
+        parse::<Rational>(b"0/1\0");
+        parse::<Rational>(b"123/456\0");
+        parse::<Rational>(b"-123/456\0");
+    }
+
+    #[test]
+    fn test_real() {
+        check_size::<Real>();
+        parse::<Real>(b"0.0\0");
+        parse::<Real>(b"1E0\0");
+        parse::<Real>(b"-1.23E-456\0");
+        parse::<Real>(b"1e-06\0");
+    }
+
+    #[test]
+    fn test_number() {
+        check_size::<Number>();
+        parse::<Number>(b"-123\0");
+        parse::<Number>(b"-123/456\0");
+        parse::<Number>(b"-1.23E-456\0");
+    }
+
+    #[test]
+    fn test_name() {
+        check_size::<Name>();
+        parse::<Name>(b"lower_word2\0");
+        parse::<Name>(b"'single quoted'\0");
+        parse::<Name>(b"123\0");
+    }
+
+    #[test]
+    fn test_variable() {
+        check_size::<Variable>();
+        parse::<Variable>(b"X\0");
+    }
+
+    #[test]
+    fn test_atomic_system_word() {
+        check_size::<AtomicSystemWord>();
+        parse::<AtomicSystemWord>(b"$$atomic\0");
+    }
+
+    #[test]
+    fn test_atomic_defined_word() {
+        check_size::<AtomicDefinedWord>();
+        parse::<AtomicDefinedWord>(b"$atomic\0");
+    }
+
+    #[test]
+    fn test_system_functor() {
+        check_size::<SystemFunctor>();
+        parse::<SystemFunctor>(b"$$system_functor\0");
+    }
+
+    #[test]
+    fn test_system_constant() {
+        check_size::<SystemConstant>();
+        parse::<SystemConstant>(b"$$system_constant\0");
+    }
+
+    #[test]
+    fn test_defined_functor() {
+        check_size::<DefinedFunctor>();
+        parse::<DefinedFunctor>(b"$defined_functor\0");
+    }
+
+    #[test]
+    fn test_defined_constant() {
+        check_size::<DefinedConstant>();
+        parse::<DefinedConstant>(b"$defined_constant\0");
+    }
+
+    #[test]
+    fn test_defined_term() {
+        check_size::<DefinedTerm>();
+        parse::<DefinedTerm>(b"-123\0");
+        parse::<DefinedTerm>(b"\"distinct object\"\0");
+    }
+
+    #[test]
+    fn test_functor() {
+        check_size::<Functor>();
+        parse::<Functor>(b"functor\0");
+    }
+
+    #[test]
+    fn test_constant() {
+        check_size::<Constant>();
+        parse::<Constant>(b"constant\0");
+    }
+
+    #[test]
+    fn test_infix_equality() {
+        check_size::<InfixEquality>();
+        parse::<InfixEquality>(b"=\0");
+    }
+
+    #[test]
+    fn test_infix_inequality() {
+        check_size::<InfixInequality>();
+        parse::<InfixInequality>(b"!=\0");
+    }
+
+    #[test]
+    fn test_unary_connective() {
+        check_size::<UnaryConnective>();
+        parse::<UnaryConnective>(b"~\0");
+    }
+
+    #[test]
+    fn test_nonassoc_connective() {
+        check_size::<NonassocConnective>();
+        parse::<NonassocConnective>(b"<=\0");
+        parse::<NonassocConnective>(b"<=>\0");
+        parse::<NonassocConnective>(b"=>\0");
+        parse::<NonassocConnective>(b"<~>\0");
+        parse::<NonassocConnective>(b"~&\0");
+        parse::<NonassocConnective>(b"~|\0");
+    }
+
+    #[test]
+    fn test_assoc_connective() {
+        check_size::<AssocConnective>();
+        parse::<AssocConnective>(b"&\0");
+        parse::<AssocConnective>(b"|\0");
+    }
+
+    #[test]
+    fn test_defined_infix_pred() {
+        check_size::<DefinedInfixPred>();
+        parse::<DefinedInfixPred>(b"=\0");
+    }
 }
