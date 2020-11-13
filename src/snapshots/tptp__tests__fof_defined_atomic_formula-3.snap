@@ -4,7 +4,7 @@ expression: parsed
 ---
 Plain(
     DefinedPlainFormula(
-        DefinedPlainTerm(
+        Constant(
             DefinedConstant(
                 DefinedFunctor(
                     AtomicDefinedWord(

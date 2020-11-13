@@ -2,14 +2,14 @@
 source: src/tests.rs
 expression: parsed
 ---
-DefinedPlainFormula(
+System(
     Constant(
-        DefinedConstant(
-            DefinedFunctor(
-                AtomicDefinedWord(
-                    DollarWord(
+        SystemConstant(
+            SystemFunctor(
+                AtomicSystemWord(
+                    DollarDollarWord(
                         LowerWord(
-                            "defined_plain_formula",
+                            "system",
                         ),
                     ),
                 ),

@@ -154,7 +154,15 @@ pub trait Visitor<'a> {
         &mut self,
         fof_defined_plain_term: &fof::DefinedPlainTerm<'a>,
     ) {
-        self.visit_defined_constant(&fof_defined_plain_term.0);
+        match fof_defined_plain_term {
+            fof::DefinedPlainTerm::Constant(constant) => {
+                self.visit_defined_constant(constant)
+            }
+            fof::DefinedPlainTerm::Function(functor, fof_arguments) => {
+                self.visit_defined_functor(functor);
+                self.visit_fof_arguments(&fof_arguments);
+            }
+        }
     }
 
     fn visit_fof_defined_atomic_term(
@@ -188,6 +196,9 @@ pub trait Visitor<'a> {
             }
             fof::FunctionTerm::Defined(fof_defined_term) => {
                 self.visit_fof_defined_term(fof_defined_term)
+            }
+            fof::FunctionTerm::System(fof_system_term) => {
+                self.visit_fof_system_term(fof_system_term)
             }
         }
     }

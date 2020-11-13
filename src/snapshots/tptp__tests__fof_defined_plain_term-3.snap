@@ -1,0 +1,26 @@
+---
+source: src/tests.rs
+expression: parsed
+---
+Function(
+    DefinedFunctor(
+        AtomicDefinedWord(
+            DollarWord(
+                LowerWord(
+                    "f",
+                ),
+            ),
+        ),
+    ),
+    Arguments(
+        [
+            Variable(
+                Variable(
+                    UpperWord(
+                        "X",
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

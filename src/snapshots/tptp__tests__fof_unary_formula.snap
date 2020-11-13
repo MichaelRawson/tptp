@@ -9,7 +9,7 @@ Unary(
             Defined(
                 Plain(
                     DefinedPlainFormula(
-                        DefinedPlainTerm(
+                        Constant(
                             DefinedConstant(
                                 DefinedFunctor(
                                     AtomicDefinedWord(

@@ -96,8 +96,8 @@ parser! {
             opt(preceded(common::ignored, Arguments::parse)),
         ),
         |(f, args)| match args {
-            None => PlainTerm::Constant(common::Constant(f)),
-            Some(args) => PlainTerm::Function(f, Box::new(args)),
+            None => Self::Constant(common::Constant(f)),
+            Some(args) => Self::Function(f, Box::new(args)),
         },
     )
 }
@@ -105,12 +105,32 @@ parser! {
 /// [`fof_defined_plain_term`](http://tptp.org/TPTP/SyntaxBNF.html#fof_defined_plain_term)
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
-pub struct DefinedPlainTerm<'a>(pub common::DefinedConstant<'a>);
-impl_unit_anon_display! {DefinedPlainTerm}
+pub enum DefinedPlainTerm<'a> {
+    Constant(common::DefinedConstant<'a>),
+    Function(common::DefinedFunctor<'a>, Box<Arguments<'a>>),
+}
+
+impl<'a> fmt::Display for DefinedPlainTerm<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Constant(c) => write!(f, "{}", c),
+            Self::Function(name, args) => write!(f, "{}{}", name, args),
+        }
+    }
+}
 
 parser! {
     DefinedPlainTerm,
-    map(common::DefinedConstant::parse, Self)
+    map(
+        pair(
+            common::DefinedFunctor::parse,
+            opt(preceded(common::ignored, Arguments::parse)),
+        ),
+        |(f, args)| match args {
+            None => Self::Constant(common::DefinedConstant(f)),
+            Some(args) => Self::Function(f, Box::new(args)),
+        },
+    )
 }
 
 /// [`fof_defined_atomic_term`](http://tptp.org/TPTP/SyntaxBNF.html#fof_defined_atomic_term)
@@ -146,14 +166,16 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FunctionTerm<'a> {
     Plain(PlainTerm<'a>),
-    Defined(DefinedTerm<'a>),
+    System(SystemTerm<'a>),
+    Defined(DefinedTerm<'a>)
 }
-impl_enum_anon_display! {FunctionTerm, Plain, Defined}
+impl_enum_anon_display! {FunctionTerm, Plain, Defined, System}
 
 parser! {
     FunctionTerm,
     alt((
         map(PlainTerm::parse, Self::Plain),
+        map(SystemTerm::parse, Self::System),
         map(DefinedTerm::parse, Self::Defined),
     ))
 }
@@ -874,7 +896,8 @@ mod tests {
     #[test]
     fn test_fof_defined_plain_term() {
         check_size::<DefinedPlainTerm>();
-        parse::<DefinedPlainTerm>(b"$defined_plain_term\0");
+        parse::<DefinedPlainTerm>(b"$c\0");
+        parse::<DefinedPlainTerm>(b"$f ( X )\0");
     }
 
     #[test]
@@ -895,6 +918,7 @@ mod tests {
         check_size::<FunctionTerm>();
         parse::<FunctionTerm>(b"f(X)\0");
         parse::<FunctionTerm>(b"$defined\0");
+        parse::<FunctionTerm>(b"$$system\0");
     }
 
     #[test]

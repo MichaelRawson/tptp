@@ -5,7 +5,7 @@ expression: parsed
 Defined(
     Atomic(
         DefinedAtomicTerm(
-            DefinedPlainTerm(
+            Constant(
                 DefinedConstant(
                     DefinedFunctor(
                         AtomicDefinedWord(

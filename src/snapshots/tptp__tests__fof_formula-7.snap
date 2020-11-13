@@ -13,7 +13,7 @@ Formula(
                                 Defined(
                                     Plain(
                                         DefinedPlainFormula(
-                                            DefinedPlainTerm(
+                                            Constant(
                                                 DefinedConstant(
                                                     DefinedFunctor(
                                                         AtomicDefinedWord(
@@ -36,7 +36,7 @@ Formula(
                                 Defined(
                                     Plain(
                                         DefinedPlainFormula(
-                                            DefinedPlainTerm(
+                                            Constant(
                                                 DefinedConstant(
                                                     DefinedFunctor(
                                                         AtomicDefinedWord(
