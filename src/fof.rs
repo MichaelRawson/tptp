@@ -4,12 +4,13 @@ use alloc::vec::Vec;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::combinator::{map, opt, value};
+use nom::multi::separated_list1;
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
 use crate::common;
-use crate::utils::{fmt_list, fold_many0, separated_list1, GarbageFirstVec};
+use crate::utils::{fmt_list, fold_many0_once, GarbageFirstVec};
 use crate::{Error, Parse, Result};
 
 /// [`fof_arguments`](http://tptp.org/TPTP/SyntaxBNF.html#fof_arguments)
@@ -167,7 +168,7 @@ parser! {
 pub enum FunctionTerm<'a> {
     Plain(PlainTerm<'a>),
     System(SystemTerm<'a>),
-    Defined(DefinedTerm<'a>)
+    Defined(DefinedTerm<'a>),
 }
 impl_enum_anon_display! {FunctionTerm, Plain, Defined, System}
 
@@ -613,7 +614,7 @@ fn assoc_tail<'a, E: Error<'a>>(
         )(x)?;
         let mut result = GarbageFirstVec::default();
         result.push(second);
-        fold_many0(
+        fold_many0_once(
             preceded(
                 delimited(common::ignored, tag(sep), common::ignored),
                 UnitFormula::parse,

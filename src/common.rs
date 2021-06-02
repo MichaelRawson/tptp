@@ -9,11 +9,11 @@ use nom::character::streaming::{
     digit0, digit1, line_ending, not_line_ending, one_of,
 };
 use nom::combinator::{cut, map, opt, recognize, value};
+use nom::multi::fold_many0;
 use nom::sequence::{pair, preceded, terminated, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
-use crate::utils::fold_many0;
 use crate::{Error, Parse, Result};
 
 fn to_str(bytes: &[u8]) -> &str {
@@ -21,22 +21,23 @@ fn to_str(bytes: &[u8]) -> &str {
 }
 
 fn is_lower_alpha(c: u8) -> bool {
-    c >= b'a' && c <= b'z'
+    (b'a'..=b'z').contains(&c)
 }
 
 fn is_upper_alpha(c: u8) -> bool {
-    c >= b'A' && c <= b'Z'
+    (b'A'..=b'Z').contains(&c)
+}
+
+fn is_digit(c: u8) -> bool {
+    (b'0'..=b'9').contains(&c)
 }
 
 fn is_alphanumeric(c: u8) -> bool {
-    (c >= b'a' && c <= b'z')
-        || (c >= b'A' && c <= b'Z')
-        || (c >= b'0' && c <= b'9')
-        || (c == b'_')
+    is_lower_alpha(c) || is_upper_alpha(c) || is_digit(c) || (c == b'_')
 }
 
 fn is_visible(c: u8) -> bool {
-    c >= b' ' && c <= b'~'
+    (b' '..=b'~').contains(&c)
 }
 
 fn is_sq_char(c: u8) -> bool {

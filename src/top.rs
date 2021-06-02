@@ -4,6 +4,7 @@ use alloc::vec::Vec;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::combinator::{map, opt};
+use nom::multi::separated_list1;
 use nom::sequence::{delimited, pair, preceded, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
@@ -11,7 +12,7 @@ use serde::Serialize;
 use crate::cnf;
 use crate::common::*;
 use crate::fof;
-use crate::utils::{fmt_list, separated_list1};
+use crate::utils::fmt_list;
 use crate::{Error, Parse, Result};
 
 /// [`file_name`](http://tptp.org/TPTP/SyntaxBNF.html#file_name)
@@ -680,5 +681,12 @@ mod tests {
         parse::<TPTPInput>(
         b"cnf(c_0_137, negated_conjecture, $false, inference(cn,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[c_0_134, c_0_95]), c_0_97]), c_0_99]), c_0_101]), c_0_103]), c_0_105]), c_0_107]), c_0_109]), c_0_111]), c_0_113]), c_0_115]), c_0_117]), c_0_119]), c_0_121]), c_0_123]), c_0_125]), c_0_127]), c_0_129]), c_0_131]), c_0_133]), c_0_135])])).\0"
     );
+    }
+
+    // reported by Michael Färber
+    #[test]
+    #[should_panic]
+    fn test_cnf_trailing() {
+        parse::<TPTPInput>(b"cnf(classical, conjecture, p(X) | ~p(X)");
     }
 }

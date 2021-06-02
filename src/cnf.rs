@@ -4,13 +4,14 @@ use alloc::vec::Vec;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::combinator::{map, opt};
+use nom::multi::separated_list1;
 use nom::sequence::{delimited, pair, preceded, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
 use crate::common::*;
 use crate::fof;
-use crate::utils::{fmt_list, separated_list1};
+use crate::utils::fmt_list;
 use crate::{Error, Parse, Result};
 
 enum LiteralTail<'a> {

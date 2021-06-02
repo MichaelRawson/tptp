@@ -97,7 +97,8 @@ pub(crate) fn fmt_list<T: fmt::Display>(
     Ok(())
 }
 
-pub(crate) fn fold_many0<'a, E, Item, Acc, F, G>(
+// https://github.com/Geal/nom/issues/898
+pub(crate) fn fold_many0_once<'a, E, Item, Acc, F, G>(
     mut item: F,
     mut acc: Acc,
     mut fold: G,
@@ -114,29 +115,6 @@ where
             start = x;
         }
         Ok((start, acc))
-    }
-}
-
-pub(crate) fn separated_list1<'a, E, Item, Sep, F, G>(
-    mut sep: G,
-    mut item: F,
-) -> impl FnMut(&'a [u8]) -> Result<'a, Vec<Item>, E>
-where
-    F: Parser<&'a [u8], Item, E>,
-    G: Parser<&'a [u8], Sep, E>,
-    E: Error<'a>,
-{
-    move |x| {
-        let (x, first) = item.parse(x)?;
-        let mut start = x;
-        let mut list = vec![first];
-        while let Ok((x, _)) = sep.parse(start) {
-            if let Ok((x, item)) = item.parse(x) {
-                list.push(item);
-                start = x;
-            }
-        }
-        Ok((start, list))
     }
 }
 
