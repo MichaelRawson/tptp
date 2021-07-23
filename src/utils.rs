@@ -118,22 +118,26 @@ where
     }
 }
 
-pub(crate) struct GarbageFirstVec<T>(Vec<T>);
+pub(crate) struct GarbageFirstVec<T>(Vec<mem::MaybeUninit<T>>);
 
 impl<T> Default for GarbageFirstVec<T> {
     fn default() -> Self {
-        let first = unsafe { mem::MaybeUninit::uninit().assume_init() };
+        let first = mem::MaybeUninit::uninit();
         Self(vec![first])
     }
 }
 
 impl<T> GarbageFirstVec<T> {
     pub(crate) fn push(&mut self, t: T) {
-        self.0.push(t);
+        self.0.push(mem::MaybeUninit::new(t));
     }
 
     pub(crate) fn finish(mut self, t: T) -> Vec<T> {
-        mem::forget(mem::replace(&mut self.0[0], t));
-        self.0
+        self.0[0] = mem::MaybeUninit::new(t);
+        let original = mem::ManuallyDrop::new(self.0);
+        let ptr = original.as_ptr() as *mut T;
+        let len = original.len();
+        let cap = original.capacity();
+        unsafe { Vec::from_raw_parts(ptr, len, cap) }
     }
 }
