@@ -1,6 +1,7 @@
 ---
 source: src/tests.rs
 expression: parsed
+
 ---
 SingleQuoted(
     "single quoted",
