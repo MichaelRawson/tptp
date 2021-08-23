@@ -28,12 +28,8 @@ fn is_upper_alpha(c: u8) -> bool {
     (b'A'..=b'Z').contains(&c)
 }
 
-fn is_digit(c: u8) -> bool {
-    (b'0'..=b'9').contains(&c)
-}
-
 fn is_alphanumeric(c: u8) -> bool {
-    is_lower_alpha(c) || is_upper_alpha(c) || is_digit(c) || (c == b'_')
+    nom::character::is_alphanumeric(c) || (c == b'_')
 }
 
 fn is_visible(c: u8) -> bool {
@@ -81,7 +77,7 @@ unit_parser! {
 unit_parser! {
     /// zero or more `whitespace`, `comment_line`, or `comment_block`
     ignored,
-    fold_many0(single_ignored, (), |_, _| ())
+    fold_many0(single_ignored, || (), |_, _| ())
 }
 
 slice_parser! {

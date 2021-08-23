@@ -2,7 +2,7 @@
 name = "tptp"
 description = "Parse the TPTP format"
 edition = "2018"
-version = "0.29.1"
+version = "0.30.0"
 authors = ["Michael Rawson <michael@rawsons.uk>"]
 license = "MIT"
 homepage = "https://github.com/MichaelRawson/tptp"
@@ -14,7 +14,7 @@ include = [
 ]
 
 [dependencies.nom]
-version = "6"
+version = "7"
 default-features = false
 features = ["alloc"]
 
