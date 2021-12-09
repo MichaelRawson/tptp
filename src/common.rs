@@ -224,6 +224,9 @@ parser! {
 }
 
 /// [`single_quoted`](http://tptp.org/TPTP/SyntaxBNF.html#single_quoted)
+///
+/// NB: the spec says that `'cat'` should be treated as a `lower_word` `cat`:
+/// this transformation is not implemented here as it might be confusing
 #[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SingleQuoted<'a>(pub &'a str);

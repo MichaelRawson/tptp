@@ -1,22 +1,7 @@
-//! A crate for reading files in the TPTP format.
+//! A crate of parsers for the FOF and CNF dialects of the [TPTP](http://tptp.org) format.
 //!
-//! Most users will want to use the `TPTPIterator` interface to parse statements from a TPTP file.
-//! After you have a parsed statement, you can either manipulate it manually, or use the `Visitor` interface to ease writing traversals.
-//! Individual parsers for each item of the TPTP BNF are available: generally this is a one-to-one map, but for efficiency/sanity reasons items like `integer` are not split into `signed_integer` and `unsigned_integer`.
+//! Most users will want to use the `TPTPIterator` interface to parse statements from TPTP-encoded byte slices.
 //!
-//! Parsers are built with [nom](https://github.com/Geal/nom), and this implementation detail is kept deliberately transparent.
-//! If you need it, you can use nom's facilities such as error handling or streaming.
-//! All parsers are a function from byte slices to `Result`.
-//! The input will never be copied, only references made.
-//! The crate is `#![no_std]`, but syntax trees must allocate with the current design so the `alloc` crate is required.
-//!
-//! Parsers are streaming, so they will signal "incomplete" on EOF, rather than success or failure, until the outcome is known.
-//! Most of the time this is obvious, but the behaviour can be surprising.
-//! For example, parsing `foo$` as a `lower_word` succeeds, returning the trailing `$` to parse next.
-//! However, parsing `foo` is "incomplete" as there might be more input coming.
-//!
-//! Support for `serde` can be switched on with a feature flag as usual.
-//! Structures can then be serialised, but not deseralised due to ownership issues.
 //! # Quickstart
 //! ```rust
 //! use tptp::TPTPIterator;
@@ -36,6 +21,24 @@
 //!     assert!(parser.remaining.is_empty());
 //! }
 //! ```
+//!
+//! # Design
+//! Parsers are built with [nom](https://github.com/Geal/nom), and this implementation detail is kept deliberately transparent.
+//! If you need it, you can use nom's facilities such as error handling or streaming.
+//! All parsers are a function from byte slices to `Result`.
+//! The input will never be copied, only references made.
+//! The crate is `#![no_std]`, but syntax trees must allocate with the current design so the `alloc` crate is required.
+//!
+//! After you have a parsed statement, you can either manipulate it manually, or use the `Visitor` interface to ease writing traversals.
+//! Individual parsers for each item of the [TPTP BNF](http://tptp.org/TPTP/SyntaxBNF.html) are available: generally this is a one-to-one map, but for efficiency/sanity reasons items like `integer` are not split into `signed_integer` and `unsigned_integer`.
+//!
+//! Parsers are streaming, so they will signal "incomplete" on EOF, rather than success or failure, until the outcome is known.
+//! Most of the time this is obvious, but the behaviour can be surprising.
+//! For example, parsing `foo$` as a `lower_word` succeeds, returning the trailing `$` to parse next.
+//! However, parsing `foo` is "incomplete" as there might be more input coming.
+//!
+//! Support for `serde` can be switched on with a feature flag as usual.
+//! Structures can then be serialised, but not deseralised due to ownership issues.
 
 #![no_std]
 extern crate alloc;
