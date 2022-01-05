@@ -1,6 +1,6 @@
 use alloc::boxed::Box;
-use alloc::fmt;
 use alloc::vec::Vec;
+use derive_more::Display;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::combinator::{map, opt};
@@ -11,7 +11,7 @@ use serde::Serialize;
 
 use crate::common::*;
 use crate::fof;
-use crate::utils::fmt_list;
+use crate::utils::Separated;
 use crate::{Error, Parse, Result};
 
 enum LiteralTail<'a> {
@@ -61,23 +61,13 @@ parser! {
 }
 
 /// [`literal`](http://tptp.org/TPTP/SyntaxBNF.html#literal)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum Literal<'a> {
     Atomic(fof::AtomicFormula<'a>),
+    #[display(fmt = "~{}", _0)]
     NegatedAtomic(fof::AtomicFormula<'a>),
     Infix(fof::InfixUnary<'a>),
-}
-
-impl<'a> fmt::Display for Literal<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Literal::*;
-        match self {
-            Atomic(a) => write!(f, "{}", a),
-            NegatedAtomic(n) => write!(f, "~{}", n),
-            Infix(i) => write!(f, "{}", i),
-        }
-    }
 }
 
 parser! {
@@ -113,15 +103,10 @@ parser! {
 }
 
 /// [`disjunction`](http://tptp.org/TPTP/SyntaxBNF.html#disjunction)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "{}", "Separated('|', _0)")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Disjunction<'a>(pub Vec<Literal<'a>>);
-
-impl<'a> fmt::Display for Disjunction<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt_list(f, "|", &self.0)
-    }
-}
 
 parser! {
     Disjunction,
@@ -135,21 +120,12 @@ parser! {
 }
 
 /// [`cnf_formula`](http://tptp.org/TPTP/SyntaxBNF.html#cnf_formula)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum Formula<'a> {
     Disjunction(Disjunction<'a>),
+    #[display(fmt = "({})", _0)]
     Parenthesised(Disjunction<'a>),
-}
-
-impl<'a> fmt::Display for Formula<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Formula::*;
-        match self {
-            Disjunction(d) => write!(f, "{}", d),
-            Parenthesised(d) => write!(f, "({})", d),
-        }
-    }
 }
 
 parser! {

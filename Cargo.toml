@@ -13,6 +13,11 @@ include = [
 	"src/*.rs",
 ]
 
+[dependencies.derive_more]
+version = "0.99"
+default-features = false
+features = ["display"]
+
 [dependencies.nom]
 version = "7"
 default-features = false

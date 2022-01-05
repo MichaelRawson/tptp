@@ -1,5 +1,5 @@
-use alloc::fmt;
 use alloc::str;
+use derive_more::Display;
 use nom::branch::alt;
 use nom::bytes::streaming::{
     escaped, tag, take_until, take_while, take_while1,
@@ -99,10 +99,9 @@ slice_parser! {
 }
 
 /// [`integer`](http://tptp.org/TPTP/SyntaxBNF.html#integer)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Integer<'a>(pub &'a str);
-impl_unit_anon_display! {Integer}
 
 parser! {
     Integer,
@@ -116,10 +115,9 @@ parser! {
 }
 
 /// [`rational`](http://tptp.org/TPTP/SyntaxBNF.html#rational)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Rational<'a>(pub &'a str);
-impl_unit_anon_display! {Rational}
 
 parser! {
     Rational,
@@ -135,10 +133,9 @@ parser! {
 }
 
 /// [`real`](http://tptp.org/TPTP/SyntaxBNF.html#real)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Real<'a>(pub &'a str);
-impl_unit_anon_display! {Real}
 
 fn exp_integer<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
     value((), preceded(opt(one_of("+-")), digit1))(x)
@@ -166,10 +163,9 @@ parser! {
 }
 
 /// [`lower_word`](http://tptp.org/TPTP/SyntaxBNF.html#lower_word)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct LowerWord<'a>(pub &'a str);
-impl_unit_anon_display! {LowerWord}
 
 parser! {
     LowerWord,
@@ -179,10 +175,9 @@ parser! {
 }
 
 /// [`upper_word`](http://tptp.org/TPTP/SyntaxBNF.html#upper_word)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct UpperWord<'a>(pub &'a str);
-impl_unit_anon_display! {UpperWord}
 
 parser! {
     UpperWord,
@@ -192,15 +187,10 @@ parser! {
 }
 
 /// [`dollar_word`](http://tptp.org/TPTP/SyntaxBNF.html#dollar_word)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "${}", _0)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DollarWord<'a>(pub LowerWord<'a>);
-
-impl<'a> fmt::Display for DollarWord<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "${}", self.0)
-    }
-}
 
 parser! {
     DollarWord,
@@ -208,15 +198,10 @@ parser! {
 }
 
 /// [`dollar_dollar_word`](http://tptp.org/TPTP/SyntaxBNF.html#dollar_dollar_word)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "$${}", _0)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DollarDollarWord<'a>(pub LowerWord<'a>);
-
-impl<'a> fmt::Display for DollarDollarWord<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "$${}", self.0)
-    }
-}
 
 parser! {
     DollarDollarWord,
@@ -227,15 +212,10 @@ parser! {
 ///
 /// NB: the spec says that `'cat'` should be treated as a `lower_word` `cat`:
 /// this transformation is not implemented here as it might be confusing
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "'{}'", _0)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SingleQuoted<'a>(pub &'a str);
-
-impl<'a> fmt::Display for SingleQuoted<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "'{}'", self.0)
-    }
-}
 
 parser! {
     SingleQuoted,
@@ -252,15 +232,10 @@ parser! {
 }
 
 /// [`distinct_object`](http://tptp.org/TPTP/SyntaxBNF.html#distinct_object)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "\"{}\"", _0)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DistinctObject<'a>(pub &'a str);
-
-impl<'a> fmt::Display for DistinctObject<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "\"{}\"", self.0)
-    }
-}
 
 parser! {
     DistinctObject,
@@ -277,10 +252,9 @@ parser! {
 }
 
 /// [`atomic_system_word`](http://tptp.org/TPTP/SyntaxBNF.html#atomic_system_word)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct AtomicSystemWord<'a>(pub DollarDollarWord<'a>);
-impl_unit_anon_display! {AtomicSystemWord}
 
 parser! {
     AtomicSystemWord,
@@ -288,10 +262,9 @@ parser! {
 }
 
 /// [`system_functor`](http://tptp.org/TPTP/SyntaxBNF.html#system_functor)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SystemFunctor<'a>(pub AtomicSystemWord<'a>);
-impl_unit_anon_display! {SystemFunctor}
 
 parser! {
     SystemFunctor,
@@ -299,10 +272,9 @@ parser! {
 }
 
 /// [`system_constant`](http://tptp.org/TPTP/SyntaxBNF.html#system_constant)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SystemConstant<'a>(pub SystemFunctor<'a>);
-impl_unit_anon_display! {SystemConstant}
 
 parser! {
     SystemConstant,
@@ -310,14 +282,13 @@ parser! {
 }
 
 /// [`number`](http://tptp.org/TPTP/SyntaxBNF.html#number)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum Number<'a> {
     Integer(Integer<'a>),
     Rational(Rational<'a>),
     Real(Real<'a>),
 }
-impl_enum_anon_display! {Number, Integer, Rational, Real}
 
 parser! {
     Number,
@@ -329,13 +300,12 @@ parser! {
 }
 
 /// [`atomic_word`](http://tptp.org/TPTP/SyntaxBNF.html#atomic_word)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum AtomicWord<'a> {
     Lower(LowerWord<'a>),
     SingleQuoted(SingleQuoted<'a>),
 }
-impl_enum_anon_display! {AtomicWord, Lower, SingleQuoted}
 
 parser! {
     AtomicWord,
@@ -346,13 +316,12 @@ parser! {
 }
 
 /// [`name`](http://tptp.org/TPTP/SyntaxBNF.html#name)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum Name<'a> {
     AtomicWord(AtomicWord<'a>),
     Integer(Integer<'a>),
 }
-impl_enum_anon_display! {Name, AtomicWord, Integer}
 
 parser! {
     Name,
@@ -363,10 +332,9 @@ parser! {
 }
 
 /// [`variable`](http://tptp.org/TPTP/SyntaxBNF.html#variable)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Variable<'a>(pub UpperWord<'a>);
-impl_unit_anon_display! {Variable}
 
 parser! {
     Variable,
@@ -374,10 +342,9 @@ parser! {
 }
 
 /// [`functor`](http://tptp.org/TPTP/SyntaxBNF.html#functor)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Functor<'a>(pub AtomicWord<'a>);
-impl_unit_anon_display! {Functor}
 
 parser! {
     Functor,
@@ -385,10 +352,9 @@ parser! {
 }
 
 /// [`constant`](http://tptp.org/TPTP/SyntaxBNF.html#constant)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Constant<'a>(pub Functor<'a>);
-impl_unit_anon_display! {Constant}
 
 parser! {
     Constant,
@@ -396,10 +362,9 @@ parser! {
 }
 
 /// [`atomic_defined_word`](http://tptp.org/TPTP/SyntaxBNF.html#atomic_defined_word)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct AtomicDefinedWord<'a>(pub DollarWord<'a>);
-impl_unit_anon_display! {AtomicDefinedWord}
 
 parser! {
     AtomicDefinedWord,
@@ -407,10 +372,9 @@ parser! {
 }
 
 /// [`defined_functor`](http://tptp.org/TPTP/SyntaxBNF.html#defined_functor)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedFunctor<'a>(pub AtomicDefinedWord<'a>);
-impl_unit_anon_display! {DefinedFunctor}
 
 parser! {
     DefinedFunctor,
@@ -418,10 +382,9 @@ parser! {
 }
 
 /// [`defined_constant`](http://tptp.org/TPTP/SyntaxBNF.html#defined_constant)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedConstant<'a>(pub DefinedFunctor<'a>);
-impl_unit_anon_display! {DefinedConstant}
 
 parser! {
     DefinedConstant,
@@ -429,13 +392,12 @@ parser! {
 }
 
 /// [`defined_term`](http://tptp.org/TPTP/SyntaxBNF.html#defined_term)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum DefinedTerm<'a> {
     Number(Number<'a>),
     Distinct(DistinctObject<'a>),
 }
-impl_enum_anon_display! {DefinedTerm, Number, Distinct}
 
 parser! {
     DefinedTerm,
@@ -446,15 +408,12 @@ parser! {
 }
 
 /// [`unary_connective`](http://tptp.org/TPTP/SyntaxBNF.html#unary_connective)
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    Clone, Copy, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[display(fmt = "~")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct UnaryConnective;
-
-impl fmt::Display for UnaryConnective {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "~")
-    }
-}
 
 parser_no_lifetime! {
     UnaryConnective,
@@ -462,15 +421,12 @@ parser_no_lifetime! {
 }
 
 /// [`infix_equality`](http://tptp.org/TPTP/SyntaxBNF.html#infix_equality)
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    Clone, Copy, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[display(fmt = "=")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct InfixEquality;
-
-impl fmt::Display for InfixEquality {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "=")
-    }
-}
 
 parser_no_lifetime! {
     InfixEquality,
@@ -478,15 +434,12 @@ parser_no_lifetime! {
 }
 
 /// [`infix_inequality`](http://tptp.org/TPTP/SyntaxBNF.html#infix_inequality)
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    Clone, Copy, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
+#[display(fmt = "!=")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct InfixInequality;
-
-impl fmt::Display for InfixInequality {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "!=")
-    }
-}
 
 parser_no_lifetime! {
     InfixInequality,
@@ -494,35 +447,29 @@ parser_no_lifetime! {
 }
 
 /// [`nonassoc_connective`](http://tptp.org/TPTP/SyntaxBNF.html#nonassoc_connective)
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    Clone, Copy, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum NonassocConnective {
     /// `=>`
+    #[display(fmt = "=>")]
     LRImplies,
     /// `<=`
+    #[display(fmt = "<=")]
     RLImplies,
     /// `<=>`
+    #[display(fmt = "<=>")]
     Equivalent,
     /// `<~>`
+    #[display(fmt = "<~>")]
     NotEquivalent,
     /// `~|`
+    #[display(fmt = "~|")]
     NotOr,
     /// `~&`
+    #[display(fmt = "~&")]
     NotAnd,
-}
-
-impl fmt::Display for NonassocConnective {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::NonassocConnective::*;
-        match self {
-            LRImplies => write!(f, "=>"),
-            RLImplies => write!(f, "<="),
-            Equivalent => write!(f, "<=>"),
-            NotEquivalent => write!(f, "<~>"),
-            NotOr => write!(f, "~|"),
-            NotAnd => write!(f, "~&"),
-        }
-    }
 }
 
 parser_no_lifetime! {
@@ -538,23 +485,17 @@ parser_no_lifetime! {
 }
 
 /// [`assoc_connective`](http://tptp.org/TPTP/SyntaxBNF.html#assoc_connective)
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    Clone, Copy, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum AssocConnective {
     /// `&`
+    #[display(fmt = "&")]
     And,
     /// `|`
+    #[display(fmt = "|")]
     Or,
-}
-
-impl fmt::Display for AssocConnective {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::AssocConnective::*;
-        match self {
-            And => write!(f, "&"),
-            Or => write!(f, "|"),
-        }
-    }
 }
 
 parser_no_lifetime! {
@@ -566,10 +507,11 @@ parser_no_lifetime! {
 }
 
 /// [`defined_infix_pred`](http://tptp.org/TPTP/SyntaxBNF.html#defined_infix_pred)
-#[derive(Clone, Copy, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(
+    Clone, Copy, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash,
+)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedInfixPred(pub InfixEquality);
-impl_unit_display! {DefinedInfixPred}
 
 parser_no_lifetime! {
     DefinedInfixPred,

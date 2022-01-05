@@ -1,6 +1,7 @@
 use alloc::boxed::Box;
 use alloc::fmt;
 use alloc::vec::Vec;
+use derive_more::Display;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
 use nom::combinator::{map, opt};
@@ -12,14 +13,13 @@ use serde::Serialize;
 use crate::cnf;
 use crate::common::*;
 use crate::fof;
-use crate::utils::fmt_list;
+use crate::utils::Separated;
 use crate::{Error, Parse, Result};
 
 /// [`file_name`](http://tptp.org/TPTP/SyntaxBNF.html#file_name)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FileName<'a>(pub SingleQuoted<'a>);
-impl_unit_anon_display! {FileName}
 
 parser! {
     FileName,
@@ -27,15 +27,10 @@ parser! {
 }
 
 /// [`name_list`](http://tptp.org/TPTP/SyntaxBNF.html#name_list)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "{}", "Separated(',', _0)")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct NameList<'a>(pub Vec<Name<'a>>);
-
-impl<'a> fmt::Display for NameList<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt_list(f, ",", &self.0)
-    }
-}
 
 parser! {
     NameList,
@@ -49,10 +44,9 @@ parser! {
 }
 
 /// [`formula_role`](http://tptp.org/TPTP/SyntaxBNF.html#formula_role)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FormulaRole<'a>(pub LowerWord<'a>);
-impl_unit_anon_display! {FormulaRole}
 
 parser! {
     FormulaRole,
@@ -60,23 +54,15 @@ parser! {
 }
 
 /// [`formula_data`](http://tptp.org/TPTP/SyntaxBNF.html#formula_data)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FormulaData<'a> {
+    #[display(fmt = "$fof({})", _0)]
     Fof(fof::Formula<'a>),
+    #[display(fmt = "$cnf({})", _0)]
     Cnf(cnf::Formula<'a>),
+    #[display(fmt = "$fot({})", _0)]
     Fot(fof::Term<'a>),
-}
-
-impl<'a> fmt::Display for FormulaData<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::FormulaData::*;
-        match self {
-            Fof(fof) => write!(f, "$fof({})", fof),
-            Cnf(cnf) => write!(f, "$cnf({})", cnf),
-            Fot(cnf) => write!(f, "$fot({})", cnf),
-        }
-    }
 }
 
 parser! {
@@ -131,17 +117,12 @@ parser! {
 }
 
 /// [`general_function`](http://tptp.org/TPTP/SyntaxBNF.html#general_function)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "{}({})", word, terms)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct GeneralFunction<'a> {
     pub word: AtomicWord<'a>,
     pub terms: GeneralTerms<'a>,
-}
-
-impl<'a> fmt::Display for GeneralFunction<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}({})", self.word, self.terms)
-    }
 }
 
 parser! {
@@ -153,7 +134,7 @@ parser! {
 }
 
 /// [`general_data`](http://tptp.org/TPTP/SyntaxBNF.html#general_data)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum GeneralData<'a> {
     Atomic(AtomicWord<'a>),
@@ -163,15 +144,6 @@ pub enum GeneralData<'a> {
     DistinctObject(DistinctObject<'a>),
     Formula(Box<FormulaData<'a>>),
 }
-impl_enum_anon_display!(
-    GeneralData,
-    Atomic,
-    Function,
-    Variable,
-    Number,
-    DistinctObject,
-    Formula
-);
 
 parser! {
     GeneralData,
@@ -192,15 +164,10 @@ parser! {
 }
 
 /// [`general_terms`](http://tptp.org/TPTP/SyntaxBNF.html#general_terms)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "{}", "Separated(',', _0)")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct GeneralTerms<'a>(pub Vec<GeneralTerm<'a>>);
-
-impl<'a> fmt::Display for GeneralTerms<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt_list(f, ",", &self.0)
-    }
-}
 
 parser! {
     GeneralTerms,
@@ -240,23 +207,13 @@ parser! {
 }
 
 /// [`general_term`](http://tptp.org/TPTP/SyntaxBNF.html#general_term)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum GeneralTerm<'a> {
     Data(GeneralData<'a>),
+    #[display(fmt = "{}:{}", _0, _1)]
     Colon(GeneralData<'a>, Box<GeneralTerm<'a>>),
     List(GeneralList<'a>),
-}
-
-impl<'a> fmt::Display for GeneralTerm<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::GeneralTerm::*;
-        match self {
-            Data(d) => write!(f, "{}", d),
-            Colon(d, t) => write!(f, "{}:{}", d, t),
-            List(l) => write!(f, "{}", l),
-        }
-    }
 }
 
 parser! {
@@ -283,10 +240,9 @@ parser! {
 }
 
 /// [`source`](http://tptp.org/TPTP/SyntaxBNF.html#source)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Source<'a>(pub GeneralTerm<'a>);
-impl_unit_anon_display! {Source}
 
 parser! {
     Source,
@@ -294,10 +250,9 @@ parser! {
 }
 
 /// [`useful_info`](http://tptp.org/TPTP/SyntaxBNF.html#useful_info)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct UsefulInfo<'a>(pub GeneralList<'a>);
-impl_unit_anon_display! {UsefulInfo}
 
 parser! {
     UsefulInfo,
@@ -381,17 +336,12 @@ parser! {
 }
 
 /// [`include`](http://tptp.org/TPTP/SyntaxBNF.html#include)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "include({}{}).", file_name, selection)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Include<'a> {
     pub file_name: FileName<'a>,
     pub selection: FormulaSelection<'a>,
-}
-
-impl<'a> fmt::Display for Include<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "include({}{}).", self.file_name, self.selection)
-    }
 }
 
 parser! {
@@ -410,23 +360,14 @@ parser! {
 }
 
 /// helper struct to share common fields - thanks to Michael Färber
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "({},{},{}{}).", name, role, formula, annotations)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Annotated<'a, T> {
     pub name: Name<'a>,
     pub role: FormulaRole<'a>,
     pub formula: Box<T>,
     pub annotations: Annotations<'a>,
-}
-
-impl<'a, T: fmt::Display> fmt::Display for Annotated<'a, T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "({},{},{}{}).",
-            self.name, self.role, self.formula, self.annotations
-        )
-    }
 }
 
 impl<'a, E: Error<'a>, T: Parse<'a, E>> Parse<'a, E> for Annotated<'a, T> {
@@ -459,15 +400,10 @@ impl<'a, E: Error<'a>, T: Parse<'a, E>> Parse<'a, E> for Annotated<'a, T> {
 }
 
 /// [`fof_annotated`](http://tptp.org/TPTP/SyntaxBNF.html#fof_annotated)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "fof{}", _0)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofAnnotated<'a>(pub Annotated<'a, fof::Formula<'a>>);
-
-impl<'a> fmt::Display for FofAnnotated<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "fof{}", self.0)
-    }
-}
 
 parser! {
     FofAnnotated,
@@ -479,15 +415,10 @@ parser! {
 }
 
 /// [`cnf_annotated`](http://tptp.org/TPTP/SyntaxBNF.html#cnf_annotated)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "cnf{}", _0)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct CnfAnnotated<'a>(pub Annotated<'a, cnf::Formula<'a>>);
-
-impl<'a> fmt::Display for CnfAnnotated<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "cnf{}", self.0)
-    }
-}
 
 parser! {
     CnfAnnotated,
@@ -499,13 +430,12 @@ parser! {
 }
 
 /// [`annotated_formula`](http://tptp.org/TPTP/SyntaxBNF.html#annotated_formula)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum AnnotatedFormula<'a> {
     Fof(Box<FofAnnotated<'a>>),
     Cnf(Box<CnfAnnotated<'a>>),
 }
-impl_enum_anon_display! {AnnotatedFormula, Fof, Cnf}
 
 parser! {
     AnnotatedFormula,
@@ -516,13 +446,12 @@ parser! {
 }
 
 /// [`TPTP_input`](http://tptp.org/TPTP/SyntaxBNF.html#TPTP_input)
-#[derive(Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum TPTPInput<'a> {
     Annotated(Box<AnnotatedFormula<'a>>),
     Include(Box<Include<'a>>),
 }
-impl_enum_anon_display! {TPTPInput, Annotated, Include}
 
 parser! {
     TPTPInput,
