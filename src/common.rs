@@ -118,8 +118,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Rational<'a> {
             recognize(tuple((
                 Integer::parse,
                 tag(b"/"),
-                one_of("123456789"),
-                digit0,
+                cut(pair(one_of("123456789"), digit0)),
             ))),
             |w| Self(to_str(w)),
         )(x)
@@ -133,22 +132,21 @@ pub struct Real<'a>(pub &'a str);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for Real<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        fn exp_integer<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
-            value((), preceded(opt(one_of("+-")), digit1))(x)
+        fn exponent_part<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+            preceded(
+                one_of("eE"),
+                cut(preceded(opt(one_of("+-")), value((), digit1))),
+            )(x)
         }
 
         map(
             recognize(tuple((
                 Integer::parse,
                 alt((
-                    value((), pair(one_of("eE"), exp_integer)),
-                    value(
-                        (),
-                        tuple((
-                            tag("."),
-                            digit1,
-                            opt(pair(one_of("eE"), exp_integer)),
-                        )),
+                    exponent_part,
+                    preceded(
+                        tag("."),
+                        cut(preceded(digit1, value((), opt(exponent_part)))),
                     ),
                 )),
             ))),

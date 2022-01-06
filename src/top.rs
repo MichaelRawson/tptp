@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use derive_more::Display;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
-use nom::combinator::{map, opt};
+use nom::combinator::{cut, map, opt};
 use nom::multi::separated_list1;
 use nom::sequence::{delimited, pair, preceded, tuple};
 #[cfg(feature = "serde")]
@@ -69,32 +69,41 @@ impl<'a, E: Error<'a>> Parse<'a, E> for FormulaData<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         preceded(
             tag("$"),
-            alt((
-                map(
-                    delimited(
-                        tuple((tag("fof"), ignored, tag("("), ignored)),
-                        fof::Formula::parse,
-                        tuple((ignored, tag(")"))),
-                    ),
-                    Self::Fof,
+            cut(alt((
+                preceded(
+                    tag("fof"),
+                    cut(map(
+                        delimited(
+                            tuple((ignored, tag("("), ignored)),
+                            fof::Formula::parse,
+                            tuple((ignored, tag(")"))),
+                        ),
+                        Self::Fof,
+                    )),
                 ),
-                map(
-                    delimited(
-                        tuple((tag("cnf"), ignored, tag("("), ignored)),
-                        cnf::Formula::parse,
-                        tuple((ignored, tag(")"))),
-                    ),
-                    Self::Cnf,
+                preceded(
+                    tag("cnf"),
+                    cut(map(
+                        delimited(
+                            tuple((ignored, tag("("), ignored)),
+                            cnf::Formula::parse,
+                            tuple((ignored, tag(")"))),
+                        ),
+                        Self::Cnf,
+                    )),
                 ),
-                map(
-                    delimited(
-                        tuple((tag("fot"), ignored, tag("("), ignored)),
-                        fof::Term::parse,
-                        tuple((ignored, tag(")"))),
-                    ),
-                    Self::Fot,
+                preceded(
+                    tag("fot"),
+                    cut(map(
+                        delimited(
+                            tuple((ignored, tag("("), ignored)),
+                            fof::Term::parse,
+                            tuple((ignored, tag(")"))),
+                        ),
+                        Self::Fot,
+                    )),
                 ),
-            )),
+            ))),
         )(x)
     }
 }
@@ -110,10 +119,13 @@ impl<'a> GeneralFunctionTail<'a> {
 
 impl<'a, E: Error<'a>> Parse<'a, E> for GeneralFunctionTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        delimited(
-            delimited(ignored, tag("("), ignored),
-            map(GeneralTerms::parse, Self),
-            preceded(ignored, tag(")")),
+        preceded(
+            pair(ignored, tag("(")),
+            cut(delimited(
+                ignored,
+                map(GeneralTerms::parse, Self),
+                preceded(ignored, tag(")")),
+            )),
         )(x)
     }
 }
@@ -232,8 +244,8 @@ impl<'a, E: Error<'a>> Parse<'a, E> for GeneralTerm<'a> {
                 pair(
                     GeneralData::parse,
                     opt(preceded(
-                        delimited(ignored, tag(":"), ignored),
-                        Self::parse,
+                        pair(ignored, tag(":")),
+                        cut(preceded(ignored, Self::parse)),
                     )),
                 ),
                 |(left, right)| {
@@ -287,7 +299,10 @@ impl<'a> fmt::Display for OptionalInfo<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for OptionalInfo<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            opt(preceded(pair(tag(","), ignored), UsefulInfo::parse)),
+            opt(preceded(
+                tag(","),
+                cut(preceded(ignored, UsefulInfo::parse)),
+            )),
             Self,
         )(x)
     }
@@ -315,7 +330,10 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Annotations<'a> {
                 map(
                     pair(
                         Source::parse,
-                        preceded(ignored, OptionalInfo::parse),
+                        map(
+                            opt(preceded(ignored, OptionalInfo::parse)),
+                            |info| info.unwrap_or(OptionalInfo(None)),
+                        ),
                     ),
                     Box::new,
                 ),
@@ -342,10 +360,13 @@ impl<'a> fmt::Display for FormulaSelection<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for FormulaSelection<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            opt(delimited(
-                tuple((tag(","), ignored, tag("["), ignored)),
-                NameList::parse,
-                tuple((ignored, tag("]"))),
+            opt(preceded(
+                tag(","),
+                cut(delimited(
+                    tuple((ignored, tag("["), ignored)),
+                    NameList::parse,
+                    tuple((ignored, tag("]"))),
+                )),
             )),
             Self,
         )(x)
@@ -364,13 +385,16 @@ pub struct Include<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for Include<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            delimited(
-                tuple((tag("include"), ignored, tag("("), ignored)),
-                pair(
-                    FileName::parse,
-                    preceded(ignored, FormulaSelection::parse),
-                ),
-                tuple((ignored, tag(")"), ignored, tag("."))),
+            preceded(
+                tag("include"),
+                cut(delimited(
+                    tuple((ignored, tag("("), ignored)),
+                    pair(
+                        FileName::parse,
+                        preceded(ignored, FormulaSelection::parse),
+                    ),
+                    tuple((ignored, tag(")"), ignored, tag("."))),
+                )),
             ),
             |(file_name, selection)| Self {
                 file_name,
@@ -394,21 +418,24 @@ pub struct Annotated<'a, T> {
 impl<'a, E: Error<'a>, T: Parse<'a, E>> Parse<'a, E> for Annotated<'a, T> {
     fn parse(x: &'a [u8]) -> Result<'a, Self, E> {
         map(
-            delimited(
-                pair(tag("("), ignored),
-                tuple((
-                    Name::parse,
-                    preceded(
-                        delimited(ignored, tag(","), ignored),
-                        FormulaRole::parse,
-                    ),
-                    preceded(
-                        delimited(ignored, tag(","), ignored),
-                        map(T::parse, Box::new),
-                    ),
-                    preceded(ignored, Annotations::parse),
+            preceded(
+                tag("("),
+                cut(delimited(
+                    ignored,
+                    tuple((
+                        Name::parse,
+                        preceded(
+                            delimited(ignored, tag(","), ignored),
+                            FormulaRole::parse,
+                        ),
+                        preceded(
+                            delimited(ignored, tag(","), ignored),
+                            map(T::parse, Box::new),
+                        ),
+                        preceded(ignored, Annotations::parse),
+                    )),
+                    tuple((ignored, tag(")"), ignored, tag("."))),
                 )),
-                pair(ignored, tag(")")),
             ),
             |(name, role, formula, annotations)| Self {
                 name,
@@ -428,10 +455,9 @@ pub struct FofAnnotated<'a>(pub Annotated<'a, fof::Formula<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for FofAnnotated<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        delimited(
-            pair(tag("fof"), ignored),
-            map(Annotated::parse, Self),
-            pair(ignored, tag(".")),
+        preceded(
+            tag("fof"),
+            cut(preceded(ignored, map(Annotated::parse, Self))),
         )(x)
     }
 }
@@ -444,10 +470,9 @@ pub struct CnfAnnotated<'a>(pub Annotated<'a, cnf::Formula<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for CnfAnnotated<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        delimited(
-            pair(tag("cnf"), ignored),
-            map(Annotated::parse, Self),
-            pair(ignored, tag(".")),
+        preceded(
+            tag("cnf"),
+            cut(preceded(ignored, map(Annotated::parse, Self))),
         )(x)
     }
 }

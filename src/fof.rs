@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use derive_more::Display;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
-use nom::combinator::{map, opt, value};
+use nom::combinator::{cut, map, opt, value};
 use nom::multi::separated_list1;
 use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 #[cfg(feature = "serde")]
@@ -21,16 +21,22 @@ pub struct Arguments<'a>(pub Vec<Term<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for Arguments<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        map(
-            delimited(
-                tag("("),
-                separated_list1(
-                    tag(","),
-                    delimited(common::ignored, Term::parse, common::ignored),
+        preceded(
+            tag("("),
+            cut(map(
+                terminated(
+                    separated_list1(
+                        tag(","),
+                        delimited(
+                            common::ignored,
+                            Term::parse,
+                            common::ignored,
+                        ),
+                    ),
+                    tag(")"),
                 ),
-                tag(")"),
-            ),
-            Self,
+                Self,
+            )),
         )(x)
     }
 }
@@ -344,22 +350,24 @@ pub struct QuantifiedFormula<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for QuantifiedFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            tuple((
+            pair(
                 Quantifier::parse,
-                delimited(
-                    tuple((common::ignored, tag("["), common::ignored)),
-                    VariableList::parse,
-                    tuple((
-                        common::ignored,
-                        tag("]"),
-                        common::ignored,
-                        tag(":"),
-                        common::ignored,
-                    )),
-                ),
-                map(UnitFormula::parse, Box::new),
-            )),
-            |(quantifier, bound, formula)| Self {
+                cut(pair(
+                    delimited(
+                        tuple((common::ignored, tag("["), common::ignored)),
+                        VariableList::parse,
+                        tuple((
+                            common::ignored,
+                            tag("]"),
+                            common::ignored,
+                            tag(":"),
+                            common::ignored,
+                        )),
+                    ),
+                    map(UnitFormula::parse, Box::new),
+                )),
+            ),
+            |(quantifier, (bound, formula))| Self {
                 quantifier,
                 bound,
                 formula,
@@ -447,13 +455,16 @@ impl<'a, E: Error<'a>> Parse<'a, E> for UnitaryFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
             map(QuantifiedFormula::parse, Self::Quantified),
-            map(
-                delimited(
-                    pair(tag("("), common::ignored),
-                    map(LogicFormula::parse, Box::new),
-                    pair(common::ignored, tag(")")),
-                ),
-                Self::Parenthesised,
+            preceded(
+                tag("("),
+                cut(map(
+                    delimited(
+                        common::ignored,
+                        map(LogicFormula::parse, Box::new),
+                        pair(common::ignored, tag(")")),
+                    ),
+                    Self::Parenthesised,
+                )),
             ),
             map(map(AtomicFormula::parse, Box::new), Self::Atomic),
         ))(x)
@@ -690,7 +701,10 @@ impl<'a, E: Error<'a>> Parse<'a, E> for BinaryNonassocTail<'a> {
         map(
             pair(
                 common::NonassocConnective::parse,
-                preceded(common::ignored, map(UnitFormula::parse, Box::new)),
+                cut(preceded(
+                    common::ignored,
+                    map(UnitFormula::parse, Box::new),
+                )),
             ),
             |(connective, right)| Self(connective, right),
         )(x)

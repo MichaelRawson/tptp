@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use derive_more::Display;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
-use nom::combinator::{map, opt};
+use nom::combinator::{cut, map, opt};
 use nom::multi::separated_list1;
 use nom::sequence::{delimited, pair, preceded, tuple};
 #[cfg(feature = "serde")]
@@ -45,14 +45,20 @@ impl<'a, E: Error<'a>> Parse<'a, E> for LiteralTail<'a> {
                 map(
                     pair(
                         DefinedInfixPred::parse,
-                        preceded(ignored, map(fof::Term::parse, Box::new)),
+                        cut(preceded(
+                            ignored,
+                            map(fof::Term::parse, Box::new),
+                        )),
                     ),
                     |(op, right)| LiteralTail::Equal(op, right),
                 ),
                 map(
                     pair(
                         InfixInequality::parse,
-                        preceded(ignored, map(fof::Term::parse, Box::new)),
+                        cut(preceded(
+                            ignored,
+                            map(fof::Term::parse, Box::new),
+                        )),
                     ),
                     |(op, right)| LiteralTail::NotEqual(op, right),
                 ),
@@ -75,7 +81,10 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Literal<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
             map(
-                preceded(pair(tag("~"), ignored), fof::AtomicFormula::parse),
+                preceded(
+                    tag("~"),
+                    cut(preceded(ignored, fof::AtomicFormula::parse)),
+                ),
                 Self::NegatedAtomic,
             ),
             map(
@@ -134,13 +143,16 @@ pub enum Formula<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for Formula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
-            map(
-                delimited(
-                    pair(tag("("), ignored),
-                    Disjunction::parse,
-                    pair(ignored, tag(")")),
-                ),
-                Self::Parenthesised,
+            preceded(
+                tag("("),
+                cut(map(
+                    delimited(
+                        ignored,
+                        Disjunction::parse,
+                        pair(ignored, tag(")")),
+                    ),
+                    Self::Parenthesised,
+                )),
             ),
             map(Disjunction::parse, Self::Disjunction),
         ))(x)
