@@ -44,58 +44,50 @@ fn is_do_char(c: u8) -> bool {
     is_visible(c) && c != b'"' && c != b'\\'
 }
 
-unit_parser! {
-    /// one or more spaces, tabs, carriage returns or line feeds
-    whitespace,
-    value((), multispace1)
+/// one or more spaces, tabs, carriage returns or line feeds
+pub fn whitespace<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+    value((), multispace1)(x)
 }
 
-unit_parser! {
-    /// `% a single-line comment`
-    comment_line,
+/// `% a single-line comment`
+pub fn comment_line<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
     preceded(
         tag("%"),
         cut(terminated(value((), not_line_ending), line_ending)),
-    )
+    )(x)
 }
 
-unit_parser! {
-    /// `/* a comment block */`
-    comment_block,
+/// `/* a comment block */`
+pub fn comment_block<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
     preceded(
         tag("/*"),
         cut(terminated(value((), take_until("*/")), tag("*/"))),
-    )
+    )(x)
 }
 
-unit_parser! {
-    /// `whitespace`, `comment_line`, or `comment_block`
-    single_ignored,
-    alt((whitespace, comment_line, comment_block))
+/// `whitespace`, `comment_line`, or `comment_block`
+pub fn single_ignored<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+    alt((whitespace, comment_line, comment_block))(x)
 }
 
-unit_parser! {
-    /// zero or more `whitespace`, `comment_line`, or `comment_block`
-    ignored,
-    fold_many0(single_ignored, || (), |_, _| ())
+/// zero or more `whitespace`, `comment_line`, or `comment_block`
+pub fn ignored<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+    fold_many0(single_ignored, || (), |_, _| ())(x)
 }
 
-slice_parser! {
-    /// one or more lowercase letters
-    lower_alpha1,
-    take_while1(is_lower_alpha)
+/// one or more lowercase letters
+pub fn lower_alpha1<'a, E: Error<'a>>(x: &'a [u8]) -> Result<&'a [u8], E> {
+    take_while1(is_lower_alpha)(x)
 }
 
-slice_parser! {
-    /// one or more uppercase letters
-    upper_alpha1,
-    take_while1(is_upper_alpha)
+/// one or more uppercase letters
+pub fn upper_alpha1<'a, E: Error<'a>>(x: &'a [u8]) -> Result<&'a [u8], E> {
+    take_while1(is_upper_alpha)(x)
 }
 
-slice_parser! {
-    /// one or more letters or digits
-    alphanumeric,
-    take_while(is_alphanumeric)
+/// one or more letters or digits
+pub fn alphanumeric<'a, E: Error<'a>>(x: &'a [u8]) -> Result<&'a [u8], E> {
+    take_while(is_alphanumeric)(x)
 }
 
 /// [`integer`](http://tptp.org/TPTP/SyntaxBNF.html#integer)
@@ -103,15 +95,16 @@ slice_parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Integer<'a>(pub &'a str);
 
-parser! {
-    Integer,
-    map(
-        recognize(preceded(
-            opt(one_of("+-")),
-            alt((tag("0"), preceded(one_of("123456789"), digit0))),
-        )),
-        |w| Self(to_str(w)),
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for Integer<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            recognize(preceded(
+                opt(one_of("+-")),
+                alt((tag("0"), preceded(one_of("123456789"), digit0))),
+            )),
+            |w| Self(to_str(w)),
+        )(x)
+    }
 }
 
 /// [`rational`](http://tptp.org/TPTP/SyntaxBNF.html#rational)
@@ -119,17 +112,18 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Rational<'a>(pub &'a str);
 
-parser! {
-    Rational,
-    map(
-        recognize(tuple((
-            Integer::parse,
-            tag(b"/"),
-            one_of("123456789"),
-            digit0
-        ))),
-        |w| Self(to_str(w)),
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for Rational<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            recognize(tuple((
+                Integer::parse,
+                tag(b"/"),
+                one_of("123456789"),
+                digit0,
+            ))),
+            |w| Self(to_str(w)),
+        )(x)
+    }
 }
 
 /// [`real`](http://tptp.org/TPTP/SyntaxBNF.html#real)
@@ -137,29 +131,30 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Real<'a>(pub &'a str);
 
-fn exp_integer<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
-    value((), preceded(opt(one_of("+-")), digit1))(x)
-}
+impl<'a, E: Error<'a>> Parse<'a, E> for Real<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        fn exp_integer<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+            value((), preceded(opt(one_of("+-")), digit1))(x)
+        }
 
-parser! {
-    Real,
-    map(
-        recognize(tuple((
-            Integer::parse,
-            alt((
-                value((), pair(one_of("eE"), exp_integer)),
-                value(
-                    (),
-                    tuple((
-                        tag("."),
-                        digit1,
-                        opt(pair(one_of("eE"), exp_integer)),
-                    )),
-                ),
-            )),
-        ))),
-        |w| Self(to_str(w)),
-    )
+        map(
+            recognize(tuple((
+                Integer::parse,
+                alt((
+                    value((), pair(one_of("eE"), exp_integer)),
+                    value(
+                        (),
+                        tuple((
+                            tag("."),
+                            digit1,
+                            opt(pair(one_of("eE"), exp_integer)),
+                        )),
+                    ),
+                )),
+            ))),
+            |w| Self(to_str(w)),
+        )(x)
+    }
 }
 
 /// [`lower_word`](http://tptp.org/TPTP/SyntaxBNF.html#lower_word)
@@ -167,11 +162,12 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct LowerWord<'a>(pub &'a str);
 
-parser! {
-    LowerWord,
-    map(recognize(preceded(lower_alpha1, cut(alphanumeric))), |w| {
-        Self(to_str(w))
-    })
+impl<'a, E: Error<'a>> Parse<'a, E> for LowerWord<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(recognize(preceded(lower_alpha1, cut(alphanumeric))), |w| {
+            Self(to_str(w))
+        })(x)
+    }
 }
 
 /// [`upper_word`](http://tptp.org/TPTP/SyntaxBNF.html#upper_word)
@@ -179,11 +175,12 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct UpperWord<'a>(pub &'a str);
 
-parser! {
-    UpperWord,
-    map(recognize(preceded(upper_alpha1, cut(alphanumeric))), |w| {
-        Self(to_str(w))
-    })
+impl<'a, E: Error<'a>> Parse<'a, E> for UpperWord<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(recognize(preceded(upper_alpha1, cut(alphanumeric))), |w| {
+            Self(to_str(w))
+        })(x)
+    }
 }
 
 /// [`dollar_word`](http://tptp.org/TPTP/SyntaxBNF.html#dollar_word)
@@ -192,9 +189,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DollarWord<'a>(pub LowerWord<'a>);
 
-parser! {
-    DollarWord,
-    map(preceded(tag("$"), cut(LowerWord::parse)), Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for DollarWord<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(preceded(tag("$"), cut(LowerWord::parse)), Self)(x)
+    }
 }
 
 /// [`dollar_dollar_word`](http://tptp.org/TPTP/SyntaxBNF.html#dollar_dollar_word)
@@ -203,9 +201,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DollarDollarWord<'a>(pub LowerWord<'a>);
 
-parser! {
-    DollarDollarWord,
-    map(preceded(tag("$$"), cut(LowerWord::parse)), Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for DollarDollarWord<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(preceded(tag("$$"), cut(LowerWord::parse)), Self)(x)
+    }
 }
 
 /// [`single_quoted`](http://tptp.org/TPTP/SyntaxBNF.html#single_quoted)
@@ -217,18 +216,19 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SingleQuoted<'a>(pub &'a str);
 
-parser! {
-    SingleQuoted,
-    map(
-        preceded(
-            tag("'"),
-            cut(terminated(
-                escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
+impl<'a, E: Error<'a>> Parse<'a, E> for SingleQuoted<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            preceded(
                 tag("'"),
-            )),
-        ),
-        |w| Self(to_str(w)),
-    )
+                cut(terminated(
+                    escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
+                    tag("'"),
+                )),
+            ),
+            |w| Self(to_str(w)),
+        )(x)
+    }
 }
 
 /// [`distinct_object`](http://tptp.org/TPTP/SyntaxBNF.html#distinct_object)
@@ -237,18 +237,19 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DistinctObject<'a>(pub &'a str);
 
-parser! {
-    DistinctObject,
-    map(
-        preceded(
-            tag("\""),
-            cut(terminated(
-                escaped(take_while1(is_do_char), '\\', one_of("\\\"")),
+impl<'a, E: Error<'a>> Parse<'a, E> for DistinctObject<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            preceded(
                 tag("\""),
-            )),
-        ),
-        |w| Self(to_str(w)),
-    )
+                cut(terminated(
+                    escaped(take_while1(is_do_char), '\\', one_of("\\\"")),
+                    tag("\""),
+                )),
+            ),
+            |w| Self(to_str(w)),
+        )(x)
+    }
 }
 
 /// [`atomic_system_word`](http://tptp.org/TPTP/SyntaxBNF.html#atomic_system_word)
@@ -256,9 +257,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct AtomicSystemWord<'a>(pub DollarDollarWord<'a>);
 
-parser! {
-    AtomicSystemWord,
-    map(DollarDollarWord::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for AtomicSystemWord<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(DollarDollarWord::parse, Self)(x)
+    }
 }
 
 /// [`system_functor`](http://tptp.org/TPTP/SyntaxBNF.html#system_functor)
@@ -266,9 +268,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SystemFunctor<'a>(pub AtomicSystemWord<'a>);
 
-parser! {
-    SystemFunctor,
-    map(AtomicSystemWord::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for SystemFunctor<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(AtomicSystemWord::parse, Self)(x)
+    }
 }
 
 /// [`system_constant`](http://tptp.org/TPTP/SyntaxBNF.html#system_constant)
@@ -276,9 +279,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SystemConstant<'a>(pub SystemFunctor<'a>);
 
-parser! {
-    SystemConstant,
-    map(SystemFunctor::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for SystemConstant<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(SystemFunctor::parse, Self)(x)
+    }
 }
 
 /// [`number`](http://tptp.org/TPTP/SyntaxBNF.html#number)
@@ -290,13 +294,14 @@ pub enum Number<'a> {
     Real(Real<'a>),
 }
 
-parser! {
-    Number,
-    alt((
-        map(Real::parse, Self::Real),
-        map(Rational::parse, Self::Rational),
-        map(Integer::parse, Self::Integer),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for Number<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(Real::parse, Self::Real),
+            map(Rational::parse, Self::Rational),
+            map(Integer::parse, Self::Integer),
+        ))(x)
+    }
 }
 
 /// [`atomic_word`](http://tptp.org/TPTP/SyntaxBNF.html#atomic_word)
@@ -307,12 +312,13 @@ pub enum AtomicWord<'a> {
     SingleQuoted(SingleQuoted<'a>),
 }
 
-parser! {
-    AtomicWord,
-    alt((
-        map(LowerWord::parse, Self::Lower),
-        map(SingleQuoted::parse, Self::SingleQuoted),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for AtomicWord<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(LowerWord::parse, Self::Lower),
+            map(SingleQuoted::parse, Self::SingleQuoted),
+        ))(x)
+    }
 }
 
 /// [`name`](http://tptp.org/TPTP/SyntaxBNF.html#name)
@@ -323,12 +329,13 @@ pub enum Name<'a> {
     Integer(Integer<'a>),
 }
 
-parser! {
-    Name,
-    alt((
-        map(AtomicWord::parse, Self::AtomicWord),
-        map(Integer::parse, Self::Integer),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for Name<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(AtomicWord::parse, Self::AtomicWord),
+            map(Integer::parse, Self::Integer),
+        ))(x)
+    }
 }
 
 /// [`variable`](http://tptp.org/TPTP/SyntaxBNF.html#variable)
@@ -336,9 +343,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Variable<'a>(pub UpperWord<'a>);
 
-parser! {
-    Variable,
-    map(UpperWord::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for Variable<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(UpperWord::parse, Self)(x)
+    }
 }
 
 /// [`functor`](http://tptp.org/TPTP/SyntaxBNF.html#functor)
@@ -346,9 +354,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Functor<'a>(pub AtomicWord<'a>);
 
-parser! {
-    Functor,
-    map(AtomicWord::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for Functor<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(AtomicWord::parse, Self)(x)
+    }
 }
 
 /// [`constant`](http://tptp.org/TPTP/SyntaxBNF.html#constant)
@@ -356,9 +365,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Constant<'a>(pub Functor<'a>);
 
-parser! {
-    Constant,
-    map(Functor::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for Constant<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(Functor::parse, Self)(x)
+    }
 }
 
 /// [`atomic_defined_word`](http://tptp.org/TPTP/SyntaxBNF.html#atomic_defined_word)
@@ -366,9 +376,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct AtomicDefinedWord<'a>(pub DollarWord<'a>);
 
-parser! {
-    AtomicDefinedWord,
-    map(DollarWord::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for AtomicDefinedWord<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(DollarWord::parse, Self)(x)
+    }
 }
 
 /// [`defined_functor`](http://tptp.org/TPTP/SyntaxBNF.html#defined_functor)
@@ -376,9 +387,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedFunctor<'a>(pub AtomicDefinedWord<'a>);
 
-parser! {
-    DefinedFunctor,
-    map(AtomicDefinedWord::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedFunctor<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(AtomicDefinedWord::parse, Self)(x)
+    }
 }
 
 /// [`defined_constant`](http://tptp.org/TPTP/SyntaxBNF.html#defined_constant)
@@ -386,9 +398,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedConstant<'a>(pub DefinedFunctor<'a>);
 
-parser! {
-    DefinedConstant,
-    map(DefinedFunctor::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedConstant<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(DefinedFunctor::parse, Self)(x)
+    }
 }
 
 /// [`defined_term`](http://tptp.org/TPTP/SyntaxBNF.html#defined_term)
@@ -399,12 +412,13 @@ pub enum DefinedTerm<'a> {
     Distinct(DistinctObject<'a>),
 }
 
-parser! {
-    DefinedTerm,
-    alt((
-        map(Number::parse, Self::Number),
-        map(DistinctObject::parse, Self::Distinct),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedTerm<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(Number::parse, Self::Number),
+            map(DistinctObject::parse, Self::Distinct),
+        ))(x)
+    }
 }
 
 /// [`unary_connective`](http://tptp.org/TPTP/SyntaxBNF.html#unary_connective)
@@ -415,9 +429,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct UnaryConnective;
 
-parser_no_lifetime! {
-    UnaryConnective,
-    value(Self, tag("~"))
+impl<'a, E: Error<'a>> Parse<'a, E> for UnaryConnective {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        value(Self, tag("~"))(x)
+    }
 }
 
 /// [`infix_equality`](http://tptp.org/TPTP/SyntaxBNF.html#infix_equality)
@@ -428,9 +443,10 @@ parser_no_lifetime! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct InfixEquality;
 
-parser_no_lifetime! {
-    InfixEquality,
-    value(Self, tag("="))
+impl<'a, E: Error<'a>> Parse<'a, E> for InfixEquality {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        value(Self, tag("="))(x)
+    }
 }
 
 /// [`infix_inequality`](http://tptp.org/TPTP/SyntaxBNF.html#infix_inequality)
@@ -441,9 +457,10 @@ parser_no_lifetime! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct InfixInequality;
 
-parser_no_lifetime! {
-    InfixInequality,
-    value(Self, tag("!="))
+impl<'a, E: Error<'a>> Parse<'a, E> for InfixInequality {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        value(Self, tag("!="))(x)
+    }
 }
 
 /// [`nonassoc_connective`](http://tptp.org/TPTP/SyntaxBNF.html#nonassoc_connective)
@@ -472,16 +489,17 @@ pub enum NonassocConnective {
     NotAnd,
 }
 
-parser_no_lifetime! {
-    NonassocConnective,
-    alt((
-        value(Self::LRImplies, tag("=>")),
-        value(Self::Equivalent, tag("<=>")),
-        value(Self::RLImplies, tag("<=")),
-        value(Self::NotEquivalent, tag("<~>")),
-        value(Self::NotAnd, tag("~&")),
-        value(Self::NotOr, tag("~|")),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for NonassocConnective {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            value(Self::LRImplies, tag("=>")),
+            value(Self::Equivalent, tag("<=>")),
+            value(Self::RLImplies, tag("<=")),
+            value(Self::NotEquivalent, tag("<~>")),
+            value(Self::NotAnd, tag("~&")),
+            value(Self::NotOr, tag("~|")),
+        ))(x)
+    }
 }
 
 /// [`assoc_connective`](http://tptp.org/TPTP/SyntaxBNF.html#assoc_connective)
@@ -498,12 +516,10 @@ pub enum AssocConnective {
     Or,
 }
 
-parser_no_lifetime! {
-    AssocConnective,
-    alt((
-        value(Self::And, tag("&")),
-        value(Self::Or, tag("|")),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for AssocConnective {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((value(Self::And, tag("&")), value(Self::Or, tag("|"))))(x)
+    }
 }
 
 /// [`defined_infix_pred`](http://tptp.org/TPTP/SyntaxBNF.html#defined_infix_pred)
@@ -513,9 +529,10 @@ parser_no_lifetime! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedInfixPred(pub InfixEquality);
 
-parser_no_lifetime! {
-    DefinedInfixPred,
-    map(InfixEquality::parse, DefinedInfixPred)
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedInfixPred {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(InfixEquality::parse, DefinedInfixPred)(x)
+    }
 }
 
 #[cfg(test)]

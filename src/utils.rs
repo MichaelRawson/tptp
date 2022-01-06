@@ -6,46 +6,6 @@ use nom::Parser;
 
 use crate::{Error, Result};
 
-macro_rules! parser {
-    ($(#[$outer:meta])* $Type:ident, $parser:expr) => {
-        impl<'a, E: Error<'a>> Parse<'a, E> for $Type<'a> {
-            $(#[$outer])*
-            fn parse(x: &'a [u8]) -> Result<Self, E> {
-                $parser(x)
-            }
-        }
-    };
-}
-
-macro_rules! parser_no_lifetime {
-    ($(#[$outer:meta])* $Type:ident, $parser:expr) => {
-        impl<'a, E: Error<'a>> Parse<'a, E> for $Type {
-            $(#[$outer])*
-            fn parse(x: &'a [u8]) -> Result<Self, E> {
-                $parser(x)
-            }
-        }
-    };
-}
-
-macro_rules! unit_parser {
-    ($(#[$outer:meta])* $name:ident, $parser:expr) => {
-        $(#[$outer])*
-        pub fn $name<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
-            $parser(x)
-        }
-    }
-}
-
-macro_rules! slice_parser {
-    ($(#[$outer:meta])* $name:ident, $parser:expr) => {
-        $(#[$outer])*
-        pub fn $name<'a, E: Error<'a>>(x: &'a [u8]) -> Result<&'a[u8], E> {
-            $parser(x)
-        }
-    }
-}
-
 pub(crate) struct Separated<'a, T>(pub(crate) char, pub(crate) &'a [T]);
 
 impl<'a, T: fmt::Display> fmt::Display for Separated<'a, T> {

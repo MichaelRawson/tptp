@@ -21,9 +21,10 @@ use crate::{Error, Parse, Result};
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FileName<'a>(pub SingleQuoted<'a>);
 
-parser! {
-    FileName,
-    map(SingleQuoted::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for FileName<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(SingleQuoted::parse, Self)(x)
+    }
 }
 
 /// [`name_list`](http://tptp.org/TPTP/SyntaxBNF.html#name_list)
@@ -32,15 +33,13 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct NameList<'a>(pub Vec<Name<'a>>);
 
-parser! {
-    NameList,
-    map(
-        separated_list1(
-            tuple((ignored, tag(","), ignored)),
-            Name::parse,
-        ),
-        Self,
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for NameList<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            separated_list1(tuple((ignored, tag(","), ignored)), Name::parse),
+            Self,
+        )(x)
+    }
 }
 
 /// [`formula_role`](http://tptp.org/TPTP/SyntaxBNF.html#formula_role)
@@ -48,9 +47,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FormulaRole<'a>(pub LowerWord<'a>);
 
-parser! {
-    FormulaRole,
-    map(LowerWord::parse, FormulaRole)
+impl<'a, E: Error<'a>> Parse<'a, E> for FormulaRole<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(LowerWord::parse, FormulaRole)(x)
+    }
 }
 
 /// [`formula_data`](http://tptp.org/TPTP/SyntaxBNF.html#formula_data)
@@ -65,37 +65,38 @@ pub enum FormulaData<'a> {
     Fot(fof::Term<'a>),
 }
 
-parser! {
-    FormulaData,
-    preceded(
-        tag("$"),
-        alt((
-            map(
-                delimited(
-                    tuple((tag("fof"), ignored, tag("("), ignored)),
-                    fof::Formula::parse,
-                    tuple((ignored, tag(")"))),
+impl<'a, E: Error<'a>> Parse<'a, E> for FormulaData<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        preceded(
+            tag("$"),
+            alt((
+                map(
+                    delimited(
+                        tuple((tag("fof"), ignored, tag("("), ignored)),
+                        fof::Formula::parse,
+                        tuple((ignored, tag(")"))),
+                    ),
+                    Self::Fof,
                 ),
-                Self::Fof,
-            ),
-            map(
-                delimited(
-                    tuple((tag("cnf"), ignored, tag("("), ignored)),
-                    cnf::Formula::parse,
-                    tuple((ignored, tag(")"))),
+                map(
+                    delimited(
+                        tuple((tag("cnf"), ignored, tag("("), ignored)),
+                        cnf::Formula::parse,
+                        tuple((ignored, tag(")"))),
+                    ),
+                    Self::Cnf,
                 ),
-                Self::Cnf,
-            ),
-            map(
-                delimited(
-                    tuple((tag("fot"), ignored, tag("("), ignored)),
-                    fof::Term::parse,
-                    tuple((ignored, tag(")"))),
+                map(
+                    delimited(
+                        tuple((tag("fot"), ignored, tag("("), ignored)),
+                        fof::Term::parse,
+                        tuple((ignored, tag(")"))),
+                    ),
+                    Self::Fot,
                 ),
-                Self::Fot,
-            ),
-        )),
-    )
+            )),
+        )(x)
+    }
 }
 
 struct GeneralFunctionTail<'a>(GeneralTerms<'a>);
@@ -107,13 +108,14 @@ impl<'a> GeneralFunctionTail<'a> {
     }
 }
 
-parser! {
-    GeneralFunctionTail,
-    delimited(
-        delimited(ignored, tag("("), ignored),
-        map(GeneralTerms::parse, Self),
-        preceded(ignored, tag(")")),
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for GeneralFunctionTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        delimited(
+            delimited(ignored, tag("("), ignored),
+            map(GeneralTerms::parse, Self),
+            preceded(ignored, tag(")")),
+        )(x)
+    }
 }
 
 /// [`general_function`](http://tptp.org/TPTP/SyntaxBNF.html#general_function)
@@ -125,12 +127,13 @@ pub struct GeneralFunction<'a> {
     pub terms: GeneralTerms<'a>,
 }
 
-parser! {
-    GeneralFunction,
-    map(
-        pair(AtomicWord::parse, GeneralFunctionTail::parse),
-        |(word, tail)| tail.finish(word)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for GeneralFunction<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(AtomicWord::parse, GeneralFunctionTail::parse),
+            |(word, tail)| tail.finish(word),
+        )(x)
+    }
 }
 
 /// [`general_data`](http://tptp.org/TPTP/SyntaxBNF.html#general_data)
@@ -145,22 +148,25 @@ pub enum GeneralData<'a> {
     Formula(Box<FormulaData<'a>>),
 }
 
-parser! {
-    GeneralData,
-    alt((
-        map(
-            pair(AtomicWord::parse, opt(GeneralFunctionTail::parse)),
-            |(word, tail)| if let Some(tail) = tail {
-                Self::Function(Box::new(tail.finish(word)))
-            } else {
-                Self::Atomic(word)
-            }
-        ),
-        map(Variable::parse, Self::Variable),
-        map(Number::parse, Self::Number),
-        map(DistinctObject::parse, Self::DistinctObject),
-        map(map(FormulaData::parse, Box::new), Self::Formula),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for GeneralData<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(
+                pair(AtomicWord::parse, opt(GeneralFunctionTail::parse)),
+                |(word, tail)| {
+                    if let Some(tail) = tail {
+                        Self::Function(Box::new(tail.finish(word)))
+                    } else {
+                        Self::Atomic(word)
+                    }
+                },
+            ),
+            map(Variable::parse, Self::Variable),
+            map(Number::parse, Self::Number),
+            map(DistinctObject::parse, Self::DistinctObject),
+            map(map(FormulaData::parse, Box::new), Self::Formula),
+        ))(x)
+    }
 }
 
 /// [`general_terms`](http://tptp.org/TPTP/SyntaxBNF.html#general_terms)
@@ -169,15 +175,16 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct GeneralTerms<'a>(pub Vec<GeneralTerm<'a>>);
 
-parser! {
-    GeneralTerms,
-    map(
-        separated_list1(
-            delimited(ignored, tag(","), ignored),
-            GeneralTerm::parse,
-        ),
-        Self,
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for GeneralTerms<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            separated_list1(
+                delimited(ignored, tag(","), ignored),
+                GeneralTerm::parse,
+            ),
+            Self,
+        )(x)
+    }
 }
 
 /// [`general_list`](http://tptp.org/TPTP/SyntaxBNF.html#general_list)
@@ -194,16 +201,17 @@ impl<'a> fmt::Display for GeneralList<'a> {
     }
 }
 
-parser! {
-    GeneralList,
-    map(
-        delimited(
-            pair(tag("["), ignored),
-            opt(GeneralTerms::parse),
-            pair(ignored, tag("]")),
-        ),
-        Self,
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for GeneralList<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            delimited(
+                pair(tag("["), ignored),
+                opt(GeneralTerms::parse),
+                pair(ignored, tag("]")),
+            ),
+            Self,
+        )(x)
+    }
 }
 
 /// [`general_term`](http://tptp.org/TPTP/SyntaxBNF.html#general_term)
@@ -216,27 +224,28 @@ pub enum GeneralTerm<'a> {
     List(GeneralList<'a>),
 }
 
-parser! {
-    GeneralTerm,
-    alt((
-        map(GeneralList::parse, Self::List),
-        map(
-            pair(
-                GeneralData::parse,
-                opt(preceded(
-                    delimited(ignored, tag(":"), ignored),
-                    Self::parse,
-                )),
+impl<'a, E: Error<'a>> Parse<'a, E> for GeneralTerm<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(GeneralList::parse, Self::List),
+            map(
+                pair(
+                    GeneralData::parse,
+                    opt(preceded(
+                        delimited(ignored, tag(":"), ignored),
+                        Self::parse,
+                    )),
+                ),
+                |(left, right)| {
+                    if let Some(right) = right {
+                        Self::Colon(left, Box::new(right))
+                    } else {
+                        Self::Data(left)
+                    }
+                },
             ),
-            |(left, right)| {
-                if let Some(right) = right {
-                    Self::Colon(left, Box::new(right))
-                } else {
-                    Self::Data(left)
-                }
-            },
-        ),
-    ))
+        ))(x)
+    }
 }
 
 /// [`source`](http://tptp.org/TPTP/SyntaxBNF.html#source)
@@ -244,9 +253,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Source<'a>(pub GeneralTerm<'a>);
 
-parser! {
-    Source,
-    map(GeneralTerm::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for Source<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(GeneralTerm::parse, Self)(x)
+    }
 }
 
 /// [`useful_info`](http://tptp.org/TPTP/SyntaxBNF.html#useful_info)
@@ -254,9 +264,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct UsefulInfo<'a>(pub GeneralList<'a>);
 
-parser! {
-    UsefulInfo,
-    map(GeneralList::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for UsefulInfo<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(GeneralList::parse, Self)(x)
+    }
 }
 
 /// [`optional_info`](http://tptp.org/TPTP/SyntaxBNF.html#optional_info)
@@ -273,12 +284,13 @@ impl<'a> fmt::Display for OptionalInfo<'a> {
     }
 }
 
-parser! {
-    OptionalInfo,
-    map(
-        opt(preceded(pair(tag(","), ignored), UsefulInfo::parse)),
-        Self,
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for OptionalInfo<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            opt(preceded(pair(tag(","), ignored), UsefulInfo::parse)),
+            Self,
+        )(x)
+    }
 }
 
 /// [`annotations`](http://tptp.org/TPTP/SyntaxBNF.html#annotations)
@@ -295,18 +307,22 @@ impl<'a> fmt::Display for Annotations<'a> {
     }
 }
 
-parser! {
-    Annotations,
-    map(
-        opt(preceded(
-            pair(tag(","), ignored),
-            map(
-                pair(Source::parse, preceded(ignored, OptionalInfo::parse)),
-                Box::new
-            )
-        )),
-        Self
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for Annotations<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            opt(preceded(
+                pair(tag(","), ignored),
+                map(
+                    pair(
+                        Source::parse,
+                        preceded(ignored, OptionalInfo::parse),
+                    ),
+                    Box::new,
+                ),
+            )),
+            Self,
+        )(x)
+    }
 }
 
 /// [`formula_selection`](http://tptp.org/TPTP/SyntaxBNF.html#formula_selection)
@@ -323,16 +339,17 @@ impl<'a> fmt::Display for FormulaSelection<'a> {
     }
 }
 
-parser! {
-    FormulaSelection,
-    map(
-        opt(delimited(
-            tuple((tag(","), ignored, tag("["), ignored)),
-            NameList::parse,
-            tuple((ignored, tag("]"))),
-        )),
-        Self,
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for FormulaSelection<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            opt(delimited(
+                tuple((tag(","), ignored, tag("["), ignored)),
+                NameList::parse,
+                tuple((ignored, tag("]"))),
+            )),
+            Self,
+        )(x)
+    }
 }
 
 /// [`include`](http://tptp.org/TPTP/SyntaxBNF.html#include)
@@ -344,19 +361,23 @@ pub struct Include<'a> {
     pub selection: FormulaSelection<'a>,
 }
 
-parser! {
-    Include,
-    map(
-        delimited(
-            tuple((tag("include"), ignored, tag("("), ignored)),
-            pair(FileName::parse, preceded(ignored, FormulaSelection::parse)),
-            tuple((ignored, tag(")"), ignored, tag("."))),
-        ),
-        |(file_name, selection)| Self {
-            file_name,
-            selection,
-        },
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for Include<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            delimited(
+                tuple((tag("include"), ignored, tag("("), ignored)),
+                pair(
+                    FileName::parse,
+                    preceded(ignored, FormulaSelection::parse),
+                ),
+                tuple((ignored, tag(")"), ignored, tag("."))),
+            ),
+            |(file_name, selection)| Self {
+                file_name,
+                selection,
+            },
+        )(x)
+    }
 }
 
 /// helper struct to share common fields - thanks to Michael Färber
@@ -405,13 +426,14 @@ impl<'a, E: Error<'a>, T: Parse<'a, E>> Parse<'a, E> for Annotated<'a, T> {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct FofAnnotated<'a>(pub Annotated<'a, fof::Formula<'a>>);
 
-parser! {
-    FofAnnotated,
-    delimited(
-        pair(tag("fof"), ignored),
-        map(Annotated::parse, Self),
-        pair(ignored, tag(".")),
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for FofAnnotated<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        delimited(
+            pair(tag("fof"), ignored),
+            map(Annotated::parse, Self),
+            pair(ignored, tag(".")),
+        )(x)
+    }
 }
 
 /// [`cnf_annotated`](http://tptp.org/TPTP/SyntaxBNF.html#cnf_annotated)
@@ -420,13 +442,14 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct CnfAnnotated<'a>(pub Annotated<'a, cnf::Formula<'a>>);
 
-parser! {
-    CnfAnnotated,
-    delimited(
-        pair(tag("cnf"), ignored),
-        map(Annotated::parse, Self),
-        pair(ignored, tag(".")),
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for CnfAnnotated<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        delimited(
+            pair(tag("cnf"), ignored),
+            map(Annotated::parse, Self),
+            pair(ignored, tag(".")),
+        )(x)
+    }
 }
 
 /// [`annotated_formula`](http://tptp.org/TPTP/SyntaxBNF.html#annotated_formula)
@@ -437,12 +460,13 @@ pub enum AnnotatedFormula<'a> {
     Cnf(Box<CnfAnnotated<'a>>),
 }
 
-parser! {
-    AnnotatedFormula,
-    alt((
-        map(map(FofAnnotated::parse, Box::new), Self::Fof),
-        map(map(CnfAnnotated::parse, Box::new), Self::Cnf),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for AnnotatedFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(map(FofAnnotated::parse, Box::new), Self::Fof),
+            map(map(CnfAnnotated::parse, Box::new), Self::Cnf),
+        ))(x)
+    }
 }
 
 /// [`TPTP_input`](http://tptp.org/TPTP/SyntaxBNF.html#TPTP_input)
@@ -453,12 +477,13 @@ pub enum TPTPInput<'a> {
     Include(Box<Include<'a>>),
 }
 
-parser! {
-    TPTPInput,
-    alt((
-        map(map(AnnotatedFormula::parse, Box::new), Self::Annotated),
-        map(map(Include::parse, Box::new), Self::Include),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for TPTPInput<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(map(AnnotatedFormula::parse, Box::new), Self::Annotated),
+            map(map(Include::parse, Box::new), Self::Include),
+        ))(x)
+    }
 }
 
 #[cfg(test)]

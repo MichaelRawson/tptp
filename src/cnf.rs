@@ -37,27 +37,28 @@ impl<'a> LiteralTail<'a> {
     }
 }
 
-parser! {
-    LiteralTail,
-    preceded(
-        ignored,
-        alt((
-            map(
-                pair(
-                    DefinedInfixPred::parse,
-                    preceded(ignored, map(fof::Term::parse, Box::new)),
+impl<'a, E: Error<'a>> Parse<'a, E> for LiteralTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        preceded(
+            ignored,
+            alt((
+                map(
+                    pair(
+                        DefinedInfixPred::parse,
+                        preceded(ignored, map(fof::Term::parse, Box::new)),
+                    ),
+                    |(op, right)| LiteralTail::Equal(op, right),
                 ),
-                |(op, right)| LiteralTail::Equal(op, right),
-            ),
-            map(
-                pair(
-                    InfixInequality::parse,
-                    preceded(ignored, map(fof::Term::parse, Box::new)),
+                map(
+                    pair(
+                        InfixInequality::parse,
+                        preceded(ignored, map(fof::Term::parse, Box::new)),
+                    ),
+                    |(op, right)| LiteralTail::NotEqual(op, right),
                 ),
-                |(op, right)| LiteralTail::NotEqual(op, right),
-            ),
-        )),
-    )
+            )),
+        )(x)
+    }
 }
 
 /// [`literal`](http://tptp.org/TPTP/SyntaxBNF.html#literal)
@@ -70,36 +71,37 @@ pub enum Literal<'a> {
     Infix(fof::InfixUnary<'a>),
 }
 
-parser! {
-    Literal,
-    alt((
-        map(
-            preceded(pair(tag("~"), ignored), fof::AtomicFormula::parse),
-            Self::NegatedAtomic,
-        ),
-        map(
-            pair(fof::PlainTerm::parse, opt(LiteralTail::parse)),
-            |(left, tail)| match tail {
-                Some(tail) => {
-                    let left = Box::new(fof::FunctionTerm::Plain(left));
-                    let left = fof::Term::Function(left);
-                    tail.finish(left)
-                }
-                None => {
-                    let plain = fof::PlainAtomicFormula(left);
-                    let atomic = fof::AtomicFormula::Plain(plain);
-                    Self::Atomic(atomic)
-                }
-            },
-        ),
-        map(
-            pair(fof::Term::parse, LiteralTail::parse),
-            |(left, tail)| tail.finish(left)
-        ),
-        map(fof::DefinedAtomicFormula::parse, |f| {
-            Self::Atomic(fof::AtomicFormula::Defined(f))
-        }),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for Literal<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(
+                preceded(pair(tag("~"), ignored), fof::AtomicFormula::parse),
+                Self::NegatedAtomic,
+            ),
+            map(
+                pair(fof::PlainTerm::parse, opt(LiteralTail::parse)),
+                |(left, tail)| match tail {
+                    Some(tail) => {
+                        let left = Box::new(fof::FunctionTerm::Plain(left));
+                        let left = fof::Term::Function(left);
+                        tail.finish(left)
+                    }
+                    None => {
+                        let plain = fof::PlainAtomicFormula(left);
+                        let atomic = fof::AtomicFormula::Plain(plain);
+                        Self::Atomic(atomic)
+                    }
+                },
+            ),
+            map(
+                pair(fof::Term::parse, LiteralTail::parse),
+                |(left, tail)| tail.finish(left),
+            ),
+            map(fof::DefinedAtomicFormula::parse, |f| {
+                Self::Atomic(fof::AtomicFormula::Defined(f))
+            }),
+        ))(x)
+    }
 }
 
 /// [`disjunction`](http://tptp.org/TPTP/SyntaxBNF.html#disjunction)
@@ -108,15 +110,16 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Disjunction<'a>(pub Vec<Literal<'a>>);
 
-parser! {
-    Disjunction,
-    map(
-        separated_list1(
-            tuple((ignored, tag("|"), ignored)),
-            Literal::parse,
-        ),
-        Self,
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for Disjunction<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            separated_list1(
+                tuple((ignored, tag("|"), ignored)),
+                Literal::parse,
+            ),
+            Self,
+        )(x)
+    }
 }
 
 /// [`cnf_formula`](http://tptp.org/TPTP/SyntaxBNF.html#cnf_formula)
@@ -128,19 +131,20 @@ pub enum Formula<'a> {
     Parenthesised(Disjunction<'a>),
 }
 
-parser! {
-    Formula,
-    alt((
-        map(
-            delimited(
-                pair(tag("("), ignored),
-                Disjunction::parse,
-                pair(ignored, tag(")")),
+impl<'a, E: Error<'a>> Parse<'a, E> for Formula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(
+                delimited(
+                    pair(tag("("), ignored),
+                    Disjunction::parse,
+                    pair(ignored, tag(")")),
+                ),
+                Self::Parenthesised,
             ),
-            Self::Parenthesised,
-        ),
-        map(Disjunction::parse, Self::Disjunction),
-    ))
+            map(Disjunction::parse, Self::Disjunction),
+        ))(x)
+    }
 }
 
 #[cfg(test)]

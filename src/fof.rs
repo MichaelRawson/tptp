@@ -19,19 +19,20 @@ use crate::{Error, Parse, Result};
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Arguments<'a>(pub Vec<Term<'a>>);
 
-parser! {
-    Arguments,
-    map(
-        delimited(
-            tag("("),
-            separated_list1(
-                tag(","),
-                delimited(common::ignored, Term::parse, common::ignored),
+impl<'a, E: Error<'a>> Parse<'a, E> for Arguments<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            delimited(
+                tag("("),
+                separated_list1(
+                    tag(","),
+                    delimited(common::ignored, Term::parse, common::ignored),
+                ),
+                tag(")"),
             ),
-            tag(")"),
-        ),
-        Self,
-    )
+            Self,
+        )(x)
+    }
 }
 
 /// [`fof_system_term`](http://tptp.org/TPTP/SyntaxBNF.html#fof_system_term)
@@ -43,18 +44,19 @@ pub enum SystemTerm<'a> {
     Function(common::SystemFunctor<'a>, Box<Arguments<'a>>),
 }
 
-parser! {
-    SystemTerm,
-    map(
-        pair(
-            common::SystemFunctor::parse,
-            opt(preceded(common::ignored, Arguments::parse)),
-        ),
-        |(f, args)| match args {
-            None => SystemTerm::Constant(common::SystemConstant(f)),
-            Some(args) => SystemTerm::Function(f, Box::new(args)),
-        },
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for SystemTerm<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                common::SystemFunctor::parse,
+                opt(preceded(common::ignored, Arguments::parse)),
+            ),
+            |(f, args)| match args {
+                None => SystemTerm::Constant(common::SystemConstant(f)),
+                Some(args) => SystemTerm::Function(f, Box::new(args)),
+            },
+        )(x)
+    }
 }
 
 /// [`fof_plain_term`](http://tptp.org/TPTP/SyntaxBNF.html#fof_plain_term)
@@ -66,18 +68,19 @@ pub enum PlainTerm<'a> {
     Function(common::Functor<'a>, Box<Arguments<'a>>),
 }
 
-parser! {
-    PlainTerm,
-    map(
-        pair(
-            common::Functor::parse,
-            opt(preceded(common::ignored, Arguments::parse)),
-        ),
-        |(f, args)| match args {
-            None => Self::Constant(common::Constant(f)),
-            Some(args) => Self::Function(f, Box::new(args)),
-        },
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for PlainTerm<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                common::Functor::parse,
+                opt(preceded(common::ignored, Arguments::parse)),
+            ),
+            |(f, args)| match args {
+                None => Self::Constant(common::Constant(f)),
+                Some(args) => Self::Function(f, Box::new(args)),
+            },
+        )(x)
+    }
 }
 
 /// [`fof_defined_plain_term`](http://tptp.org/TPTP/SyntaxBNF.html#fof_defined_plain_term)
@@ -89,18 +92,19 @@ pub enum DefinedPlainTerm<'a> {
     Function(common::DefinedFunctor<'a>, Box<Arguments<'a>>),
 }
 
-parser! {
-    DefinedPlainTerm,
-    map(
-        pair(
-            common::DefinedFunctor::parse,
-            opt(preceded(common::ignored, Arguments::parse)),
-        ),
-        |(f, args)| match args {
-            None => Self::Constant(common::DefinedConstant(f)),
-            Some(args) => Self::Function(f, Box::new(args)),
-        },
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedPlainTerm<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                common::DefinedFunctor::parse,
+                opt(preceded(common::ignored, Arguments::parse)),
+            ),
+            |(f, args)| match args {
+                None => Self::Constant(common::DefinedConstant(f)),
+                Some(args) => Self::Function(f, Box::new(args)),
+            },
+        )(x)
+    }
 }
 
 /// [`fof_defined_atomic_term`](http://tptp.org/TPTP/SyntaxBNF.html#fof_defined_atomic_term)
@@ -108,9 +112,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedAtomicTerm<'a>(pub DefinedPlainTerm<'a>);
 
-parser! {
-    DefinedAtomicTerm,
-    map(DefinedPlainTerm::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedAtomicTerm<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(DefinedPlainTerm::parse, Self)(x)
+    }
 }
 
 /// [`fof_defined_term`](http://tptp.org/TPTP/SyntaxBNF.html#fof_defined_term)
@@ -121,12 +126,13 @@ pub enum DefinedTerm<'a> {
     Atomic(DefinedAtomicTerm<'a>),
 }
 
-parser! {
-    DefinedTerm,
-    alt((
-        map(common::DefinedTerm::parse, Self::Defined),
-        map(DefinedAtomicTerm::parse, Self::Atomic),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedTerm<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(common::DefinedTerm::parse, Self::Defined),
+            map(DefinedAtomicTerm::parse, Self::Atomic),
+        ))(x)
+    }
 }
 
 /// [`fof_function_term`](http://tptp.org/TPTP/SyntaxBNF.html#fof_function_term)
@@ -138,13 +144,14 @@ pub enum FunctionTerm<'a> {
     Defined(DefinedTerm<'a>),
 }
 
-parser! {
-    FunctionTerm,
-    alt((
-        map(PlainTerm::parse, Self::Plain),
-        map(SystemTerm::parse, Self::System),
-        map(DefinedTerm::parse, Self::Defined),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for FunctionTerm<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(PlainTerm::parse, Self::Plain),
+            map(SystemTerm::parse, Self::System),
+            map(DefinedTerm::parse, Self::Defined),
+        ))(x)
+    }
 }
 
 /// [`fof_term`](http://tptp.org/TPTP/SyntaxBNF.html#fof_term)
@@ -155,12 +162,13 @@ pub enum Term<'a> {
     Variable(common::Variable<'a>),
 }
 
-parser! {
-    Term,
-    alt((
-        map(common::Variable::parse, Self::Variable),
-        map(map(FunctionTerm::parse, Box::new), Self::Function),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for Term<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(common::Variable::parse, Self::Variable),
+            map(map(FunctionTerm::parse, Box::new), Self::Function),
+        ))(x)
+    }
 }
 
 /// [`fof_quantifier`](http://tptp.org/TPTP/SyntaxBNF.html#fof_quantifier)
@@ -177,12 +185,10 @@ pub enum Quantifier {
     Exists,
 }
 
-parser_no_lifetime! {
-    Quantifier,
-    alt((
-        value(Self::Forall, tag("!")),
-        value(Self::Exists, tag("?")),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for Quantifier {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((value(Self::Forall, tag("!")), value(Self::Exists, tag("?"))))(x)
+    }
 }
 
 /// [`fof_system_atomic_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_system_atomic_formula)
@@ -190,9 +196,10 @@ parser_no_lifetime! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct SystemAtomicFormula<'a>(pub SystemTerm<'a>);
 
-parser! {
-    SystemAtomicFormula,
-    map(SystemTerm::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for SystemAtomicFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(SystemTerm::parse, Self)(x)
+    }
 }
 
 /// [`fof_plain_atomic_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_plain_atomic_formula)
@@ -200,9 +207,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct PlainAtomicFormula<'a>(pub PlainTerm<'a>);
 
-parser! {
-    PlainAtomicFormula,
-    map(PlainTerm::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for PlainAtomicFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(PlainTerm::parse, Self)(x)
+    }
 }
 
 struct DefinedInfixFormulaTail<'a>(common::DefinedInfixPred, Box<Term<'a>>);
@@ -215,15 +223,16 @@ impl<'a> DefinedInfixFormulaTail<'a> {
     }
 }
 
-parser! {
-    DefinedInfixFormulaTail,
-    map(
-        pair(
-            preceded(common::ignored, common::DefinedInfixPred::parse),
-            preceded(common::ignored, map(Term::parse, Box::new)),
-        ),
-        |(op, right)| Self(op, right)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedInfixFormulaTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                preceded(common::ignored, common::DefinedInfixPred::parse),
+                preceded(common::ignored, map(Term::parse, Box::new)),
+            ),
+            |(op, right)| Self(op, right),
+        )(x)
+    }
 }
 
 /// [`fof_defined_infix_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_defined_infix_formula)
@@ -236,12 +245,13 @@ pub struct DefinedInfixFormula<'a> {
     pub right: Box<Term<'a>>,
 }
 
-parser! {
-    DefinedInfixFormula,
-    map(
-        pair(map(Term::parse, Box::new), DefinedInfixFormulaTail::parse),
-        |(left, tail)| tail.finish(left)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedInfixFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(map(Term::parse, Box::new), DefinedInfixFormulaTail::parse),
+            |(left, tail)| tail.finish(left),
+        )(x)
+    }
 }
 
 /// [`fof_defined_plain_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_defined_plain_formula)
@@ -249,9 +259,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedPlainFormula<'a>(pub DefinedPlainTerm<'a>);
 
-parser! {
-    DefinedPlainFormula,
-    map(DefinedPlainTerm::parse, Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedPlainFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(DefinedPlainTerm::parse, Self)(x)
+    }
 }
 
 /// [`fof_defined_atomic_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_defined_atomic_formula)
@@ -262,12 +273,13 @@ pub enum DefinedAtomicFormula<'a> {
     Infix(DefinedInfixFormula<'a>),
 }
 
-parser! {
-    DefinedAtomicFormula,
-    alt((
-        map(DefinedInfixFormula::parse, Self::Infix),
-        map(DefinedPlainFormula::parse, Self::Plain),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedAtomicFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(DefinedInfixFormula::parse, Self::Infix),
+            map(DefinedPlainFormula::parse, Self::Plain),
+        ))(x)
+    }
 }
 
 /// [`fof_atomic_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_atomic_formula)
@@ -279,25 +291,26 @@ pub enum AtomicFormula<'a> {
     System(SystemAtomicFormula<'a>),
 }
 
-parser! {
-    AtomicFormula,
-    alt((
-        map(
-            pair(PlainTerm::parse, opt(DefinedInfixFormulaTail::parse)),
-            |(left, tail)| match tail {
-                Some(tail) => {
-                    let left = Box::new(FunctionTerm::Plain(left));
-                    let left = Box::new(Term::Function(left));
-                    let infix = tail.finish(left);
-                    let defined = DefinedAtomicFormula::Infix(infix);
-                    Self::Defined(defined)
-                }
-                None => Self::Plain(PlainAtomicFormula(left)),
-            },
-        ),
-        map(SystemAtomicFormula::parse, Self::System),
-        map(DefinedAtomicFormula::parse, Self::Defined),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for AtomicFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(
+                pair(PlainTerm::parse, opt(DefinedInfixFormulaTail::parse)),
+                |(left, tail)| match tail {
+                    Some(tail) => {
+                        let left = Box::new(FunctionTerm::Plain(left));
+                        let left = Box::new(Term::Function(left));
+                        let infix = tail.finish(left);
+                        let defined = DefinedAtomicFormula::Infix(infix);
+                        Self::Defined(defined)
+                    }
+                    None => Self::Plain(PlainAtomicFormula(left)),
+                },
+            ),
+            map(SystemAtomicFormula::parse, Self::System),
+            map(DefinedAtomicFormula::parse, Self::Defined),
+        ))(x)
+    }
 }
 
 /// [`fof_variable_list`](http://tptp.org/TPTP/SyntaxBNF.html#fof_variable_list)
@@ -306,15 +319,16 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct VariableList<'a>(pub Vec<common::Variable<'a>>);
 
-parser! {
-    VariableList,
-    map(
-        separated_list1(
-            tuple((common::ignored, tag(","), common::ignored)),
-            common::Variable::parse,
-        ),
-        Self,
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for VariableList<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            separated_list1(
+                tuple((common::ignored, tag(","), common::ignored)),
+                common::Variable::parse,
+            ),
+            Self,
+        )(x)
+    }
 }
 
 /// [`fof_quantified_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_quantified_formula)
@@ -327,30 +341,31 @@ pub struct QuantifiedFormula<'a> {
     pub formula: Box<UnitFormula<'a>>,
 }
 
-parser! {
-    QuantifiedFormula,
-    map(
-        tuple((
-            Quantifier::parse,
-            delimited(
-                tuple((common::ignored, tag("["), common::ignored)),
-                VariableList::parse,
-                tuple((
-                    common::ignored,
-                    tag("]"),
-                    common::ignored,
-                    tag(":"),
-                    common::ignored,
-                )),
-            ),
-            map(UnitFormula::parse, Box::new),
-        )),
-        |(quantifier, bound, formula)| Self {
-            quantifier,
-            bound,
-            formula,
-        },
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for QuantifiedFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            tuple((
+                Quantifier::parse,
+                delimited(
+                    tuple((common::ignored, tag("["), common::ignored)),
+                    VariableList::parse,
+                    tuple((
+                        common::ignored,
+                        tag("]"),
+                        common::ignored,
+                        tag(":"),
+                        common::ignored,
+                    )),
+                ),
+                map(UnitFormula::parse, Box::new),
+            )),
+            |(quantifier, bound, formula)| Self {
+                quantifier,
+                bound,
+                formula,
+            },
+        )(x)
+    }
 }
 
 struct InfixUnaryTail<'a>(common::InfixInequality, Box<Term<'a>>);
@@ -364,15 +379,16 @@ impl<'a> InfixUnaryTail<'a> {
     }
 }
 
-parser! {
-    InfixUnaryTail,
-    map(
-        pair(
-            preceded(common::ignored, common::InfixInequality::parse),
-            preceded(common::ignored, map(Term::parse, Box::new)),
-        ),
-        |(op, right)| Self(op, right)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for InfixUnaryTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                preceded(common::ignored, common::InfixInequality::parse),
+                preceded(common::ignored, map(Term::parse, Box::new)),
+            ),
+            |(op, right)| Self(op, right),
+        )(x)
+    }
 }
 
 /// [`fof_infix_unary`](http://tptp.org/TPTP/SyntaxBNF.html#fof_infix_unary)
@@ -385,12 +401,12 @@ pub struct InfixUnary<'a> {
     pub right: Box<Term<'a>>,
 }
 
-parser! {
-    InfixUnary,
-    map(
-        pair(Term::parse, InfixUnaryTail::parse),
-        |(left, tail)| tail.finish(left)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for InfixUnary<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(pair(Term::parse, InfixUnaryTail::parse), |(left, tail)| {
+            tail.finish(left)
+        })(x)
+    }
 }
 
 /// [`fof_unary_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_unary_formula)
@@ -402,18 +418,19 @@ pub enum UnaryFormula<'a> {
     InfixUnary(InfixUnary<'a>),
 }
 
-parser! {
-    UnaryFormula,
-    alt((
-        map(
-            pair(
-                common::UnaryConnective::parse,
-                preceded(common::ignored, UnitFormula::parse),
+impl<'a, E: Error<'a>> Parse<'a, E> for UnaryFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(
+                pair(
+                    common::UnaryConnective::parse,
+                    preceded(common::ignored, UnitFormula::parse),
+                ),
+                |(c, f)| Self::Unary(c, Box::new(f)),
             ),
-            |(c, f)| Self::Unary(c, Box::new(f)),
-        ),
-        map(InfixUnary::parse, Self::InfixUnary),
-    ))
+            map(InfixUnary::parse, Self::InfixUnary),
+        ))(x)
+    }
 }
 
 /// [`fof_unitary_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_unitary_formula)
@@ -426,20 +443,21 @@ pub enum UnitaryFormula<'a> {
     Parenthesised(Box<LogicFormula<'a>>),
 }
 
-parser! {
-    UnitaryFormula,
-    alt((
-        map(QuantifiedFormula::parse, Self::Quantified),
-        map(
-            delimited(
-                pair(tag("("), common::ignored),
-                map(LogicFormula::parse, Box::new),
-                pair(common::ignored, tag(")")),
+impl<'a, E: Error<'a>> Parse<'a, E> for UnitaryFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(QuantifiedFormula::parse, Self::Quantified),
+            map(
+                delimited(
+                    pair(tag("("), common::ignored),
+                    map(LogicFormula::parse, Box::new),
+                    pair(common::ignored, tag(")")),
+                ),
+                Self::Parenthesised,
             ),
-            Self::Parenthesised,
-        ),
-        map(map(AtomicFormula::parse, Box::new), Self::Atomic),
-    ))
+            map(map(AtomicFormula::parse, Box::new), Self::Atomic),
+        ))(x)
+    }
 }
 
 enum UnitFormulaTail<'a> {
@@ -470,27 +488,28 @@ impl<'a> UnitFormulaTail<'a> {
     }
 }
 
-parser! {
-    UnitFormulaTail,
-    preceded(
-        common::ignored,
-        alt((
-            map(
-                pair(
-                    common::DefinedInfixPred::parse,
-                    preceded(common::ignored, map(Term::parse, Box::new)),
+impl<'a, E: Error<'a>> Parse<'a, E> for UnitFormulaTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        preceded(
+            common::ignored,
+            alt((
+                map(
+                    pair(
+                        common::DefinedInfixPred::parse,
+                        preceded(common::ignored, map(Term::parse, Box::new)),
+                    ),
+                    |(op, right)| Self::Equal(op, right),
                 ),
-                |(op, right)| Self::Equal(op, right),
-            ),
-            map(
-                pair(
-                    common::InfixInequality::parse,
-                    preceded(common::ignored, map(Term::parse, Box::new)),
+                map(
+                    pair(
+                        common::InfixInequality::parse,
+                        preceded(common::ignored, map(Term::parse, Box::new)),
+                    ),
+                    |(op, right)| Self::NotEqual(op, right),
                 ),
-                |(op, right)| Self::NotEqual(op, right),
-            ),
-        )),
-    )
+            )),
+        )(x)
+    }
 }
 
 /// [`fof_unit_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_unit_formula)
@@ -501,25 +520,26 @@ pub enum UnitFormula<'a> {
     Unary(UnaryFormula<'a>),
 }
 
-parser! {
-    UnitFormula,
-    alt((
-        map(
-            pair(PlainTerm::parse, opt(UnitFormulaTail::parse)),
-            |(left, tail)| match tail {
-                Some(tail) => tail.finish(left),
-                None => {
-                    let plain = PlainAtomicFormula(left);
-                    let atomic = AtomicFormula::Plain(plain);
-                    let atomic = Box::new(atomic);
-                    let unitary = UnitaryFormula::Atomic(atomic);
-                    Self::Unitary(unitary)
-                }
-            },
-        ),
-        map(UnaryFormula::parse, Self::Unary),
-        map(UnitaryFormula::parse, Self::Unitary),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for UnitFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(
+                pair(PlainTerm::parse, opt(UnitFormulaTail::parse)),
+                |(left, tail)| match tail {
+                    Some(tail) => tail.finish(left),
+                    None => {
+                        let plain = PlainAtomicFormula(left);
+                        let atomic = AtomicFormula::Plain(plain);
+                        let atomic = Box::new(atomic);
+                        let unitary = UnitaryFormula::Atomic(atomic);
+                        Self::Unitary(unitary)
+                    }
+                },
+            ),
+            map(UnaryFormula::parse, Self::Unary),
+            map(UnitaryFormula::parse, Self::Unitary),
+        ))(x)
+    }
 }
 
 fn assoc_tail<'a, E: Error<'a>>(
@@ -555,9 +575,10 @@ impl<'a> OrTail<'a> {
     }
 }
 
-parser! {
-    OrTail,
-    map(assoc_tail(b'|'), Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for OrTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(assoc_tail(b'|'), Self)(x)
+    }
 }
 
 /// [`fof_or_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_or_formula)
@@ -566,12 +587,13 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct OrFormula<'a>(pub Vec<UnitFormula<'a>>);
 
-parser! {
-    OrFormula,
-    map(
-        pair(UnitFormula::parse, preceded(common::ignored, OrTail::parse)),
-        |(first, tail)| tail.finish(first)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for OrFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(UnitFormula::parse, preceded(common::ignored, OrTail::parse)),
+            |(first, tail)| tail.finish(first),
+        )(x)
+    }
 }
 
 struct AndTail<'a>(GarbageFirstVec<UnitFormula<'a>>);
@@ -582,9 +604,10 @@ impl<'a> AndTail<'a> {
     }
 }
 
-parser! {
-    AndTail,
-    map(assoc_tail(b'&'), Self)
+impl<'a, E: Error<'a>> Parse<'a, E> for AndTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(assoc_tail(b'&'), Self)(x)
+    }
 }
 
 /// [`fof_and_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_and_formula)
@@ -593,12 +616,16 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct AndFormula<'a>(pub Vec<UnitFormula<'a>>);
 
-parser! {
-    AndFormula,
-    map(
-        pair(UnitFormula::parse, preceded(common::ignored, AndTail::parse)),
-        |(first, tail)| tail.finish(first)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for AndFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                UnitFormula::parse,
+                preceded(common::ignored, AndTail::parse),
+            ),
+            |(first, tail)| tail.finish(first),
+        )(x)
+    }
 }
 
 enum BinaryAssocTail<'a> {
@@ -615,12 +642,13 @@ impl<'a> BinaryAssocTail<'a> {
     }
 }
 
-parser! {
-    BinaryAssocTail,
-    alt((
-        map(OrTail::parse, BinaryAssocTail::Or),
-        map(AndTail::parse, BinaryAssocTail::And)
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for BinaryAssocTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(OrTail::parse, BinaryAssocTail::Or),
+            map(AndTail::parse, BinaryAssocTail::And),
+        ))(x)
+    }
 }
 
 /// [`fof_binary_assoc`](http://tptp.org/TPTP/SyntaxBNF.html#fof_binary_assoc)
@@ -631,15 +659,16 @@ pub enum BinaryAssoc<'a> {
     And(AndFormula<'a>),
 }
 
-parser! {
-    BinaryAssoc,
-    map(
-        pair(
-            UnitFormula::parse,
-            preceded(common::ignored, BinaryAssocTail::parse)
-        ),
-        |(first, tail)| tail.finish(first)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for BinaryAssoc<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                UnitFormula::parse,
+                preceded(common::ignored, BinaryAssocTail::parse),
+            ),
+            |(first, tail)| tail.finish(first),
+        )(x)
+    }
 }
 
 struct BinaryNonassocTail<'a>(
@@ -656,15 +685,16 @@ impl<'a> BinaryNonassocTail<'a> {
     }
 }
 
-parser! {
-    BinaryNonassocTail,
-    map(
-        pair(
-            common::NonassocConnective::parse,
-            preceded(common::ignored, map(UnitFormula::parse, Box::new)),
-        ),
-        |(connective, right)| Self(connective, right)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for BinaryNonassocTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                common::NonassocConnective::parse,
+                preceded(common::ignored, map(UnitFormula::parse, Box::new)),
+            ),
+            |(connective, right)| Self(connective, right),
+        )(x)
+    }
 }
 
 /// [`fof_binary_nonassoc`](http://tptp.org/TPTP/SyntaxBNF.html#fof_binary_nonassoc)
@@ -677,15 +707,16 @@ pub struct BinaryNonassoc<'a> {
     pub right: Box<UnitFormula<'a>>,
 }
 
-parser! {
-    BinaryNonassoc,
-    map(
-        pair(
-            UnitFormula::parse,
-            preceded(common::ignored, BinaryNonassocTail::parse)
-        ),
-        |(left, tail)| tail.finish(left)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for BinaryNonassoc<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                UnitFormula::parse,
+                preceded(common::ignored, BinaryNonassocTail::parse),
+            ),
+            |(left, tail)| tail.finish(left),
+        )(x)
+    }
 }
 
 enum BinaryFormulaTail<'a> {
@@ -702,12 +733,13 @@ impl<'a> BinaryFormulaTail<'a> {
     }
 }
 
-parser! {
-    BinaryFormulaTail,
-    alt((
-        map(BinaryAssocTail::parse, Self::Assoc),
-        map(BinaryNonassocTail::parse, Self::Nonassoc),
-    ))
+impl<'a, E: Error<'a>> Parse<'a, E> for BinaryFormulaTail<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(BinaryAssocTail::parse, Self::Assoc),
+            map(BinaryNonassocTail::parse, Self::Nonassoc),
+        ))(x)
+    }
 }
 
 /// [`fof_binary_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_binary_formula)
@@ -718,15 +750,16 @@ pub enum BinaryFormula<'a> {
     Nonassoc(BinaryNonassoc<'a>),
 }
 
-parser! {
-    BinaryFormula,
-    map(
-        pair(
-            UnitFormula::parse,
-            preceded(common::ignored, BinaryFormulaTail::parse)
-        ),
-        |(left, tail)| tail.finish(left)
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for BinaryFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                UnitFormula::parse,
+                preceded(common::ignored, BinaryFormulaTail::parse),
+            ),
+            |(left, tail)| tail.finish(left),
+        )(x)
+    }
 }
 
 /// [`fof_logic_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_logic_formula)
@@ -738,21 +771,22 @@ pub enum LogicFormula<'a> {
     Unitary(UnitaryFormula<'a>),
 }
 
-parser! {
-    LogicFormula,
-    map(
-        pair(
-            UnitFormula::parse,
-            opt(preceded(common::ignored, BinaryFormulaTail::parse))
-        ),
-        |(left, tail)| match tail {
-            Some(tail) => Self::Binary(tail.finish(left)),
-            None => match left {
-                UnitFormula::Unary(u) => Self::Unary(u),
-                UnitFormula::Unitary(u) => Self::Unitary(u),
-            }
-        }
-    )
+impl<'a, E: Error<'a>> Parse<'a, E> for LogicFormula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(
+            pair(
+                UnitFormula::parse,
+                opt(preceded(common::ignored, BinaryFormulaTail::parse)),
+            ),
+            |(left, tail)| match tail {
+                Some(tail) => Self::Binary(tail.finish(left)),
+                None => match left {
+                    UnitFormula::Unary(u) => Self::Unary(u),
+                    UnitFormula::Unitary(u) => Self::Unitary(u),
+                },
+            },
+        )(x)
+    }
 }
 
 /// [`fof_formula`](http://tptp.org/TPTP/SyntaxBNF.html#fof_formula)
@@ -760,9 +794,10 @@ parser! {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Formula<'a>(pub LogicFormula<'a>);
 
-parser! {
-    Formula,
-    map(LogicFormula::parse, Formula)
+impl<'a, E: Error<'a>> Parse<'a, E> for Formula<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(LogicFormula::parse, Formula)(x)
+    }
 }
 
 #[cfg(test)]
