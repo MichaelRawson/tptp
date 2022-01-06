@@ -7,15 +7,16 @@ A [crate](https://crates.io/crates/tptp) for reading files in the [TPTP](http://
 * high-performance, streaming, zero-copy parsing
 * convenient abstractions: visitor pattern, input iterator
 * complete CNF/FOF dialect support
-* adherence to TPTP BNF: transform as you wish
-* comprehensive test suite
+* adherence to TPTP BNF
 
-## Documentation
-See [docs.rs](https://docs.rs/tptp).
+## Documentation and Examples
+Documentation on [docs.rs](https://docs.rs/tptp).
 The `examples/` directory contains some trivial programs.
 `tptp2json/` contains a slightly-less trivial program to transform TPTP input to [JSON Lines](http://jsonlines.org) via the magic of [serde](https://serde.rs).
 
 ## Performance
+"Fast enough".
+
 Unscientific benchmark:
 ```
 $ cargo bench
