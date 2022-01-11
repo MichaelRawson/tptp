@@ -1,10 +1,11 @@
 ---
 source: src/tests.rs
+assertion_line: 30
 expression: parsed
 
 ---
-Cnf(
-    CnfAnnotated(
+Fof(
+    FofAnnotated(
         Annotated {
             name: AtomicWord(
                 Lower(
@@ -18,21 +19,19 @@ Cnf(
                     "axiom",
                 ),
             ),
-            formula: Disjunction(
-                Disjunction(
-                    [
-                        Atomic(
-                            Defined(
-                                Plain(
-                                    DefinedPlainFormula(
-                                        Constant(
-                                            DefinedConstant(
-                                                DefinedFunctor(
-                                                    AtomicDefinedWord(
-                                                        DollarWord(
-                                                            LowerWord(
-                                                                "true",
-                                                            ),
+            formula: Formula(
+                Unitary(
+                    Atomic(
+                        Defined(
+                            Plain(
+                                DefinedPlainFormula(
+                                    Constant(
+                                        DefinedConstant(
+                                            DefinedFunctor(
+                                                AtomicDefinedWord(
+                                                    DollarWord(
+                                                        LowerWord(
+                                                            "true",
                                                         ),
                                                     ),
                                                 ),
@@ -42,7 +41,7 @@ Cnf(
                                 ),
                             ),
                         ),
-                    ],
+                    ),
                 ),
             ),
             annotations: Annotations(

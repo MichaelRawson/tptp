@@ -1,22 +1,21 @@
 ---
 source: src/tests.rs
+assertion_line: 30
 expression: parsed
 
 ---
-Cnf(
-    Disjunction(
-        Disjunction(
-            [
-                Atomic(
-                    Plain(
-                        PlainAtomicFormula(
+Fof(
+    Formula(
+        Unitary(
+            Atomic(
+                Plain(
+                    PlainAtomicFormula(
+                        Constant(
                             Constant(
-                                Constant(
-                                    Functor(
-                                        Lower(
-                                            LowerWord(
-                                                "p",
-                                            ),
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "p",
                                         ),
                                     ),
                                 ),
@@ -24,7 +23,7 @@ Cnf(
                         ),
                     ),
                 ),
-            ],
+            ),
         ),
     ),
 )

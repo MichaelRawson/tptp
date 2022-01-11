@@ -3,9 +3,9 @@ use alloc::vec::Vec;
 use derive_more::Display;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
-use nom::combinator::{cut, map, opt};
+use nom::combinator::{map, opt};
 use nom::multi::separated_list1;
-use nom::sequence::{delimited, pair, preceded, tuple};
+use nom::sequence::{delimited, pair, preceded};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
@@ -45,20 +45,14 @@ impl<'a, E: Error<'a>> Parse<'a, E> for LiteralTail<'a> {
                 map(
                     pair(
                         DefinedInfixPred::parse,
-                        cut(preceded(
-                            ignored,
-                            map(fof::Term::parse, Box::new),
-                        )),
+                        preceded(ignored, map(fof::Term::parse, Box::new)),
                     ),
                     |(op, right)| LiteralTail::Equal(op, right),
                 ),
                 map(
                     pair(
                         InfixInequality::parse,
-                        cut(preceded(
-                            ignored,
-                            map(fof::Term::parse, Box::new),
-                        )),
+                        preceded(ignored, map(fof::Term::parse, Box::new)),
                     ),
                     |(op, right)| LiteralTail::NotEqual(op, right),
                 ),
@@ -83,7 +77,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Literal<'a> {
             map(
                 preceded(
                     tag("~"),
-                    cut(preceded(ignored, fof::AtomicFormula::parse)),
+                    preceded(ignored, fof::AtomicFormula::parse),
                 ),
                 Self::NegatedAtomic,
             ),
@@ -123,7 +117,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Disjunction<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
             separated_list1(
-                tuple((ignored, tag("|"), ignored)),
+                delimited(ignored, tag("|"), ignored),
                 Literal::parse,
             ),
             Self,
@@ -143,17 +137,7 @@ pub enum Formula<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for Formula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
-            preceded(
-                tag("("),
-                cut(map(
-                    delimited(
-                        ignored,
-                        Disjunction::parse,
-                        pair(ignored, tag(")")),
-                    ),
-                    Self::Parenthesised,
-                )),
-            ),
+            map(parens, Self::Parenthesised),
             map(Disjunction::parse, Self::Disjunction),
         ))(x)
     }

@@ -8,9 +8,9 @@ use nom::character::complete::multispace1;
 use nom::character::streaming::{
     digit0, digit1, line_ending, not_line_ending, one_of,
 };
-use nom::combinator::{cut, map, opt, recognize, value};
+use nom::combinator::{map, opt, recognize, value};
 use nom::multi::fold_many0;
-use nom::sequence::{pair, preceded, terminated, tuple};
+use nom::sequence::{delimited, pair, preceded, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
@@ -51,18 +51,12 @@ pub fn whitespace<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
 
 /// `% a single-line comment`
 pub fn comment_line<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
-    preceded(
-        tag("%"),
-        cut(terminated(value((), not_line_ending), line_ending)),
-    )(x)
+    delimited(tag("%"), value((), not_line_ending), line_ending)(x)
 }
 
 /// `/* a comment block */`
 pub fn comment_block<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
-    preceded(
-        tag("/*"),
-        cut(terminated(value((), take_until("*/")), tag("*/"))),
-    )(x)
+    delimited(tag("/*"), value((), take_until("*/")), tag("*/"))(x)
 }
 
 /// `whitespace`, `comment_line`, or `comment_block`
@@ -118,7 +112,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Rational<'a> {
             recognize(tuple((
                 Integer::parse,
                 tag(b"/"),
-                cut(pair(one_of("123456789"), digit0)),
+                pair(one_of("123456789"), digit0),
             ))),
             |w| Self(to_str(w)),
         )(x)
@@ -135,7 +129,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Real<'a> {
         fn exponent_part<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
             preceded(
                 one_of("eE"),
-                cut(preceded(opt(one_of("+-")), value((), digit1))),
+                preceded(opt(one_of("+-")), value((), digit1)),
             )(x)
         }
 
@@ -146,7 +140,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Real<'a> {
                     exponent_part,
                     preceded(
                         tag("."),
-                        cut(preceded(digit1, value((), opt(exponent_part)))),
+                        preceded(digit1, value((), opt(exponent_part))),
                     ),
                 )),
             ))),
@@ -162,7 +156,7 @@ pub struct LowerWord<'a>(pub &'a str);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for LowerWord<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        map(recognize(preceded(lower_alpha1, cut(alphanumeric))), |w| {
+        map(recognize(preceded(lower_alpha1, alphanumeric)), |w| {
             Self(to_str(w))
         })(x)
     }
@@ -175,7 +169,7 @@ pub struct UpperWord<'a>(pub &'a str);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for UpperWord<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        map(recognize(preceded(upper_alpha1, cut(alphanumeric))), |w| {
+        map(recognize(preceded(upper_alpha1, alphanumeric)), |w| {
             Self(to_str(w))
         })(x)
     }
@@ -189,7 +183,7 @@ pub struct DollarWord<'a>(pub LowerWord<'a>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for DollarWord<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        map(preceded(tag("$"), cut(LowerWord::parse)), Self)(x)
+        map(preceded(tag("$"), LowerWord::parse), Self)(x)
     }
 }
 
@@ -201,7 +195,7 @@ pub struct DollarDollarWord<'a>(pub LowerWord<'a>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for DollarDollarWord<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        map(preceded(tag("$$"), cut(LowerWord::parse)), Self)(x)
+        map(preceded(tag("$$"), LowerWord::parse), Self)(x)
     }
 }
 
@@ -217,12 +211,10 @@ pub struct SingleQuoted<'a>(pub &'a str);
 impl<'a, E: Error<'a>> Parse<'a, E> for SingleQuoted<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            preceded(
+            delimited(
                 tag("'"),
-                cut(terminated(
-                    escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
-                    tag("'"),
-                )),
+                escaped(take_while1(is_sq_char), '\\', one_of("\\'")),
+                tag("'"),
             ),
             |w| Self(to_str(w)),
         )(x)
@@ -238,12 +230,10 @@ pub struct DistinctObject<'a>(pub &'a str);
 impl<'a, E: Error<'a>> Parse<'a, E> for DistinctObject<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            preceded(
+            delimited(
                 tag("\""),
-                cut(terminated(
-                    escaped(take_while1(is_do_char), '\\', one_of("\\\"")),
-                    tag("\""),
-                )),
+                escaped(take_while1(is_do_char), '\\', one_of("\\\"")),
+                tag("\""),
             ),
             |w| Self(to_str(w)),
         )(x)
@@ -358,6 +348,17 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Functor<'a> {
     }
 }
 
+/// [`type_functor`](http://tptp.org/TPTP/SyntaxBNF.html#type_functor)
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct TypeFunctor<'a>(pub AtomicWord<'a>);
+
+impl<'a, E: Error<'a>> Parse<'a, E> for TypeFunctor<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(AtomicWord::parse, Self)(x)
+    }
+}
+
 /// [`constant`](http://tptp.org/TPTP/SyntaxBNF.html#constant)
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
@@ -366,6 +367,17 @@ pub struct Constant<'a>(pub Functor<'a>);
 impl<'a, E: Error<'a>> Parse<'a, E> for Constant<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(Functor::parse, Self)(x)
+    }
+}
+
+/// [`type_constant`](http://tptp.org/TPTP/SyntaxBNF.html#type_constant)
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct TypeConstant<'a>(pub TypeFunctor<'a>);
+
+impl<'a, E: Error<'a>> Parse<'a, E> for TypeConstant<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(TypeFunctor::parse, Self)(x)
     }
 }
 
@@ -386,6 +398,17 @@ impl<'a, E: Error<'a>> Parse<'a, E> for AtomicDefinedWord<'a> {
 pub struct DefinedFunctor<'a>(pub AtomicDefinedWord<'a>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for DefinedFunctor<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        map(AtomicDefinedWord::parse, Self)(x)
+    }
+}
+
+/// [`defined_type`](http://tptp.org/TPTP/SyntaxBNF.html#defined_type)
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct DefinedType<'a>(pub AtomicDefinedWord<'a>);
+
+impl<'a, E: Error<'a>> Parse<'a, E> for DefinedType<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(AtomicDefinedWord::parse, Self)(x)
     }
@@ -415,6 +438,23 @@ impl<'a, E: Error<'a>> Parse<'a, E> for DefinedTerm<'a> {
         alt((
             map(Number::parse, Self::Number),
             map(DistinctObject::parse, Self::Distinct),
+        ))(x)
+    }
+}
+
+/// [`untyped_atom`](http://tptp.org/TPTP/SyntaxBNF.html#untyped_atom)
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub enum UntypedAtom<'a> {
+    Constant(Constant<'a>),
+    System(SystemConstant<'a>),
+}
+
+impl<'a, E: Error<'a>> Parse<'a, E> for UntypedAtom<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        alt((
+            map(Constant::parse, Self::Constant),
+            map(SystemConstant::parse, Self::System),
         ))(x)
     }
 }
@@ -531,6 +571,18 @@ impl<'a, E: Error<'a>> Parse<'a, E> for DefinedInfixPred {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(InfixEquality::parse, DefinedInfixPred)(x)
     }
+}
+
+pub(crate) fn parens<'a, E: Error<'a>, T: Parse<'a, E>>(
+    x: &'a [u8],
+) -> Result<T, E> {
+    delimited(tag("("), delimited(ignored, T::parse, ignored), tag(")"))(x)
+}
+
+pub(crate) fn brackets<'a, E: Error<'a>, T: Parse<'a, E>>(
+    x: &'a [u8],
+) -> Result<T, E> {
+    delimited(tag("["), delimited(ignored, T::parse, ignored), tag("]"))(x)
 }
 
 #[cfg(test)]
@@ -683,9 +735,39 @@ mod tests {
     }
 
     #[test]
+    fn test_defined_type() {
+        check_size::<DefinedType>();
+        parse::<DefinedType>(b"$defined_type\0");
+    }
+
+    #[test]
     fn test_defined_constant() {
         check_size::<DefinedConstant>();
         parse::<DefinedConstant>(b"$defined_constant\0");
+    }
+
+    #[test]
+    fn test_functor() {
+        check_size::<Functor>();
+        parse::<Functor>(b"functor\0");
+    }
+
+    #[test]
+    fn test_type_functor() {
+        check_size::<TypeFunctor>();
+        parse::<TypeFunctor>(b"type_functor\0");
+    }
+
+    #[test]
+    fn test_constant() {
+        check_size::<Constant>();
+        parse::<Constant>(b"constant\0");
+    }
+
+    #[test]
+    fn test_type_constant() {
+        check_size::<TypeConstant>();
+        parse::<TypeConstant>(b"type_constant\0");
     }
 
     #[test]
@@ -696,15 +778,10 @@ mod tests {
     }
 
     #[test]
-    fn test_functor() {
-        check_size::<Functor>();
-        parse::<Functor>(b"functor\0");
-    }
-
-    #[test]
-    fn test_constant() {
-        check_size::<Constant>();
-        parse::<Constant>(b"constant\0");
+    fn test_untyped_atom() {
+        check_size::<UntypedAtom>();
+        parse::<UntypedAtom>(b"constant\0");
+        parse::<UntypedAtom>(b"$$system_constant\0");
     }
 
     #[test]

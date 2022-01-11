@@ -1,11 +1,12 @@
 ---
 source: src/tests.rs
+assertion_line: 30
 expression: parsed
 
 ---
 Annotated(
-    Cnf(
-        CnfAnnotated(
+    Fof(
+        FofAnnotated(
             Annotated {
                 name: AtomicWord(
                     Lower(
@@ -19,21 +20,19 @@ Annotated(
                         "axiom",
                     ),
                 ),
-                formula: Disjunction(
-                    Disjunction(
-                        [
-                            Atomic(
-                                Defined(
-                                    Plain(
-                                        DefinedPlainFormula(
-                                            Constant(
-                                                DefinedConstant(
-                                                    DefinedFunctor(
-                                                        AtomicDefinedWord(
-                                                            DollarWord(
-                                                                LowerWord(
-                                                                    "true",
-                                                                ),
+                formula: Formula(
+                    Unitary(
+                        Atomic(
+                            Defined(
+                                Plain(
+                                    DefinedPlainFormula(
+                                        Constant(
+                                            DefinedConstant(
+                                                DefinedFunctor(
+                                                    AtomicDefinedWord(
+                                                        DollarWord(
+                                                            LowerWord(
+                                                                "true",
                                                             ),
                                                         ),
                                                     ),
@@ -43,7 +42,7 @@ Annotated(
                                     ),
                                 ),
                             ),
-                        ],
+                        ),
                     ),
                 ),
                 annotations: Annotations(

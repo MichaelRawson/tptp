@@ -1,6 +1,7 @@
 use crate::cnf;
 use crate::common::*;
 use crate::fof;
+use crate::tfx;
 use crate::top::*;
 
 /// [visitor pattern](https://en.wikipedia.org/wiki/Visitor_pattern) trait
@@ -231,6 +232,10 @@ pub trait Visitor<'a> {
         &mut self,
         _nonassoc_connective: NonassocConnective,
     ) {
+    }
+
+    fn visit_tfx_formula(&mut self, _tfx_formula: &tfx::Formula<'a>) {
+        todo!()
     }
 
     fn visit_fof_system_atomic_formula(
@@ -496,6 +501,9 @@ pub trait Visitor<'a> {
 
     fn visit_formula_data(&mut self, formula_data: &FormulaData<'a>) {
         match formula_data {
+            FormulaData::Tfx(tfx_formula) => {
+                self.visit_tfx_formula(tfx_formula)
+            }
             FormulaData::Fof(fof_formula) => {
                 self.visit_fof_formula(fof_formula)
             }
@@ -561,6 +569,13 @@ pub trait Visitor<'a> {
         }
     }
 
+    fn visit_tfx_annotated(&mut self, tfx_annotated: &TfxAnnotated<'a>) {
+        self.visit_name(&tfx_annotated.0.name);
+        self.visit_formula_role(&tfx_annotated.0.role);
+        self.visit_tfx_formula(&tfx_annotated.0.formula);
+        self.visit_annotations(&tfx_annotated.0.annotations);
+    }
+
     fn visit_fof_annotated(&mut self, fof_annotated: &FofAnnotated<'a>) {
         self.visit_name(&fof_annotated.0.name);
         self.visit_formula_role(&fof_annotated.0.role);
@@ -577,6 +592,9 @@ pub trait Visitor<'a> {
 
     fn visit_annotated_formula(&mut self, annotated: &AnnotatedFormula<'a>) {
         match annotated {
+            AnnotatedFormula::Tfx(tfx_annotated) => {
+                self.visit_tfx_annotated(tfx_annotated)
+            }
             AnnotatedFormula::Fof(fof_annotated) => {
                 self.visit_fof_annotated(fof_annotated)
             }

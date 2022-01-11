@@ -1,0 +1,20 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+TypedVariable {
+    variable: Variable(
+        UpperWord(
+            "X",
+        ),
+    ),
+    typ: Variable(
+        Variable(
+            UpperWord(
+                "A",
+            ),
+        ),
+    ),
+}

@@ -1,0 +1,50 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+QuantifiedFormula {
+    quantifier: Forall,
+    bound: VariableList(
+        [
+            Typed(
+                TypedVariable {
+                    variable: Variable(
+                        UpperWord(
+                            "X",
+                        ),
+                    ),
+                    typ: Variable(
+                        Variable(
+                            UpperWord(
+                                "A",
+                            ),
+                        ),
+                    ),
+                },
+            ),
+        ],
+    ),
+    formula: Unitary(
+        Atomic(
+            Defined(
+                DefinedAtomic(
+                    Constant(
+                        DefinedConstant(
+                            DefinedFunctor(
+                                AtomicDefinedWord(
+                                    DollarWord(
+                                        LowerWord(
+                                            "true",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+}

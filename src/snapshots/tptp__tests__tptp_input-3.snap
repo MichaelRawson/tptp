@@ -1,11 +1,12 @@
 ---
 source: src/tests.rs
+assertion_line: 30
 expression: parsed
 
 ---
 Annotated(
-    Fof(
-        FofAnnotated(
+    Tfx(
+        TfxAnnotated(
             Annotated {
                 name: AtomicWord(
                     Lower(
@@ -19,20 +20,18 @@ Annotated(
                         "axiom",
                     ),
                 ),
-                formula: Formula(
+                formula: Logic(
                     Unitary(
                         Atomic(
                             Defined(
-                                Plain(
-                                    DefinedPlainFormula(
-                                        Constant(
-                                            DefinedConstant(
-                                                DefinedFunctor(
-                                                    AtomicDefinedWord(
-                                                        DollarWord(
-                                                            LowerWord(
-                                                                "true",
-                                                            ),
+                                DefinedAtomic(
+                                    Constant(
+                                        DefinedConstant(
+                                            DefinedFunctor(
+                                                AtomicDefinedWord(
+                                                    DollarWord(
+                                                        LowerWord(
+                                                            "true",
                                                         ),
                                                     ),
                                                 ),

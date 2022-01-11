@@ -1,6 +1,7 @@
 ---
 source: src/tests.rs
+assertion_line: 31
 expression: parsed
 
 ---
-cnf(test,axiom,$true).
+fof(test,axiom,$true).

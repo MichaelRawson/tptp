@@ -4,6 +4,8 @@ use tptp::TPTPIterator;
 const ITERATIONS: usize = 100_000;
 const FOF: &[u8] = include_bytes!("SYN000+1.p");
 const CNF: &[u8] = include_bytes!("SYN000-1.p");
+const TFF: &[u8] = include_bytes!("SYN000_1.p");
+const TFA: &[u8] = include_bytes!("SYN000=2.p");
 
 fn benchmark(bytes: &[u8], name: &'static str) {
     println!(
@@ -38,4 +40,6 @@ fn benchmark(bytes: &[u8], name: &'static str) {
 fn main() {
     benchmark(CNF, "SYN000-1.p");
     benchmark(FOF, "SYN000+1.p");
+    benchmark(TFF, "SYN000_1.p");
+    benchmark(TFA, "SYN000=2.p");
 }

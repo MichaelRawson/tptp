@@ -1,0 +1,17 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Constant(
+    Constant(
+        Functor(
+            Lower(
+                LowerWord(
+                    "c",
+                ),
+            ),
+        ),
+    ),
+)

@@ -1,0 +1,47 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Binary(
+    Nonassoc(
+        BinaryNonassoc {
+            left: Unitary(
+                Atomic(
+                    Plain(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "p",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            op: LRImplies,
+            right: Unitary(
+                Atomic(
+                    Plain(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "q",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        },
+    ),
+)

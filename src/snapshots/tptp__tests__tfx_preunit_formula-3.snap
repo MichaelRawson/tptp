@@ -1,0 +1,32 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Prefix(
+    PrefixUnary {
+        op: UnaryConnective,
+        formula: Unitary(
+            Atomic(
+                Defined(
+                    DefinedAtomic(
+                        Constant(
+                            DefinedConstant(
+                                DefinedFunctor(
+                                    AtomicDefinedWord(
+                                        DollarWord(
+                                            LowerWord(
+                                                "true",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    },
+)

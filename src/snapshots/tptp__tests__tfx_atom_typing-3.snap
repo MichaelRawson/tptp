@@ -1,0 +1,30 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Parenthesised(
+    Typing(
+        Constant(
+            Constant(
+                Functor(
+                    Lower(
+                        LowerWord(
+                            "c",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        Atomic(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "A",
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

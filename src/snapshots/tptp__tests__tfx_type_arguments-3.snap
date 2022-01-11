@@ -1,0 +1,28 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+TypeArguments(
+    [
+        Variable(
+            Variable(
+                UpperWord(
+                    "A",
+                ),
+            ),
+        ),
+        Constant(
+            TypeConstant(
+                TypeFunctor(
+                    Lower(
+                        LowerWord(
+                            "c",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

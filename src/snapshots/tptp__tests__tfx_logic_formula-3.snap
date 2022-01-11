@@ -1,0 +1,30 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Unary(
+    Prefix(
+        PrefixUnary {
+            op: UnaryConnective,
+            formula: Unitary(
+                Atomic(
+                    Plain(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "p",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        },
+    ),
+)

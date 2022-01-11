@@ -4,15 +4,16 @@ use alloc::vec::Vec;
 use derive_more::Display;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
-use nom::combinator::{cut, map, opt};
+use nom::combinator::{map, opt};
 use nom::multi::separated_list1;
-use nom::sequence::{delimited, pair, preceded, tuple};
+use nom::sequence::{delimited, pair, preceded, terminated, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
 use crate::cnf;
 use crate::common::*;
 use crate::fof;
+use crate::tfx;
 use crate::utils::Separated;
 use crate::{Error, Parse, Result};
 
@@ -36,7 +37,10 @@ pub struct NameList<'a>(pub Vec<Name<'a>>);
 impl<'a, E: Error<'a>> Parse<'a, E> for NameList<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            separated_list1(tuple((ignored, tag(","), ignored)), Name::parse),
+            separated_list1(
+                delimited(ignored, tag(","), ignored),
+                Name::parse,
+            ),
             Self,
         )(x)
     }
@@ -57,6 +61,8 @@ impl<'a, E: Error<'a>> Parse<'a, E> for FormulaRole<'a> {
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum FormulaData<'a> {
+    #[display(fmt = "$tff({})", _0)]
+    Tfx(tfx::Formula<'a>),
     #[display(fmt = "$fof({})", _0)]
     Fof(fof::Formula<'a>),
     #[display(fmt = "$cnf({})", _0)]
@@ -69,41 +75,24 @@ impl<'a, E: Error<'a>> Parse<'a, E> for FormulaData<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         preceded(
             tag("$"),
-            cut(alt((
+            alt((
+                preceded(
+                    tag("tff"),
+                    map(preceded(ignored, parens), Self::Tfx),
+                ),
                 preceded(
                     tag("fof"),
-                    cut(map(
-                        delimited(
-                            tuple((ignored, tag("("), ignored)),
-                            fof::Formula::parse,
-                            tuple((ignored, tag(")"))),
-                        ),
-                        Self::Fof,
-                    )),
+                    map(preceded(ignored, parens), Self::Fof),
                 ),
                 preceded(
                     tag("cnf"),
-                    cut(map(
-                        delimited(
-                            tuple((ignored, tag("("), ignored)),
-                            cnf::Formula::parse,
-                            tuple((ignored, tag(")"))),
-                        ),
-                        Self::Cnf,
-                    )),
+                    map(preceded(ignored, parens), Self::Cnf),
                 ),
                 preceded(
                     tag("fot"),
-                    cut(map(
-                        delimited(
-                            tuple((ignored, tag("("), ignored)),
-                            fof::Term::parse,
-                            tuple((ignored, tag(")"))),
-                        ),
-                        Self::Fot,
-                    )),
+                    map(preceded(ignored, parens), Self::Fot),
                 ),
-            ))),
+            )),
         )(x)
     }
 }
@@ -121,11 +110,11 @@ impl<'a, E: Error<'a>> Parse<'a, E> for GeneralFunctionTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         preceded(
             pair(ignored, tag("(")),
-            cut(delimited(
+            delimited(
                 ignored,
                 map(GeneralTerms::parse, Self),
                 preceded(ignored, tag(")")),
-            )),
+            ),
         )(x)
     }
 }
@@ -217,9 +206,9 @@ impl<'a, E: Error<'a>> Parse<'a, E> for GeneralList<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
             delimited(
-                pair(tag("["), ignored),
-                opt(GeneralTerms::parse),
-                pair(ignored, tag("]")),
+                tag("["),
+                delimited(ignored, opt(GeneralTerms::parse), ignored),
+                tag("]"),
             ),
             Self,
         )(x)
@@ -245,7 +234,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for GeneralTerm<'a> {
                     GeneralData::parse,
                     opt(preceded(
                         pair(ignored, tag(":")),
-                        cut(preceded(ignored, Self::parse)),
+                        preceded(ignored, Self::parse),
                     )),
                 ),
                 |(left, right)| {
@@ -299,10 +288,7 @@ impl<'a> fmt::Display for OptionalInfo<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for OptionalInfo<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            opt(preceded(
-                tag(","),
-                cut(preceded(ignored, UsefulInfo::parse)),
-            )),
+            opt(preceded(tag(","), preceded(ignored, UsefulInfo::parse))),
             Self,
         )(x)
     }
@@ -360,14 +346,7 @@ impl<'a> fmt::Display for FormulaSelection<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for FormulaSelection<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            opt(preceded(
-                tag(","),
-                cut(delimited(
-                    tuple((ignored, tag("["), ignored)),
-                    NameList::parse,
-                    tuple((ignored, tag("]"))),
-                )),
-            )),
+            opt(preceded(tag(","), delimited(ignored, brackets, ignored))),
             Self,
         )(x)
     }
@@ -387,14 +366,25 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Include<'a> {
         map(
             preceded(
                 tag("include"),
-                cut(delimited(
-                    tuple((ignored, tag("("), ignored)),
-                    pair(
-                        FileName::parse,
-                        preceded(ignored, FormulaSelection::parse),
+                terminated(
+                    delimited(
+                        ignored,
+                        delimited(
+                            tag("("),
+                            delimited(
+                                ignored,
+                                pair(
+                                    FileName::parse,
+                                    preceded(ignored, FormulaSelection::parse),
+                                ),
+                                ignored,
+                            ),
+                            tag(")"),
+                        ),
+                        ignored,
                     ),
-                    tuple((ignored, tag(")"), ignored, tag("."))),
-                )),
+                    tag("."),
+                ),
             ),
             |(file_name, selection)| Self {
                 file_name,
@@ -420,22 +410,25 @@ impl<'a, E: Error<'a>, T: Parse<'a, E>> Parse<'a, E> for Annotated<'a, T> {
         map(
             preceded(
                 tag("("),
-                cut(delimited(
-                    ignored,
-                    tuple((
-                        Name::parse,
-                        preceded(
-                            delimited(ignored, tag(","), ignored),
-                            FormulaRole::parse,
-                        ),
-                        preceded(
-                            delimited(ignored, tag(","), ignored),
-                            map(T::parse, Box::new),
-                        ),
-                        preceded(ignored, Annotations::parse),
-                    )),
-                    tuple((ignored, tag(")"), ignored, tag("."))),
-                )),
+                terminated(
+                    delimited(
+                        ignored,
+                        tuple((
+                            Name::parse,
+                            preceded(
+                                delimited(ignored, tag(","), ignored),
+                                FormulaRole::parse,
+                            ),
+                            preceded(
+                                delimited(ignored, tag(","), ignored),
+                                map(T::parse, Box::new),
+                            ),
+                            preceded(ignored, Annotations::parse),
+                        )),
+                        ignored,
+                    ),
+                    tuple((tag(")"), ignored, tag("."))),
+                ),
             ),
             |(name, role, formula, annotations)| Self {
                 name,
@@ -447,6 +440,18 @@ impl<'a, E: Error<'a>, T: Parse<'a, E>> Parse<'a, E> for Annotated<'a, T> {
     }
 }
 
+/// [`tff_annotated`](http://tptp.org/TPTP/SyntaxBNF.html#tff_annotated)
+#[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
+#[display(fmt = "tff{}", _0)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
+pub struct TfxAnnotated<'a>(pub Annotated<'a, tfx::Formula<'a>>);
+
+impl<'a, E: Error<'a>> Parse<'a, E> for TfxAnnotated<'a> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
+        preceded(tag("tff"), preceded(ignored, map(Annotated::parse, Self)))(x)
+    }
+}
+
 /// [`fof_annotated`](http://tptp.org/TPTP/SyntaxBNF.html#fof_annotated)
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[display(fmt = "fof{}", _0)]
@@ -455,10 +460,7 @@ pub struct FofAnnotated<'a>(pub Annotated<'a, fof::Formula<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for FofAnnotated<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        preceded(
-            tag("fof"),
-            cut(preceded(ignored, map(Annotated::parse, Self))),
-        )(x)
+        preceded(tag("fof"), preceded(ignored, map(Annotated::parse, Self)))(x)
     }
 }
 
@@ -470,10 +472,7 @@ pub struct CnfAnnotated<'a>(pub Annotated<'a, cnf::Formula<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for CnfAnnotated<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        preceded(
-            tag("cnf"),
-            cut(preceded(ignored, map(Annotated::parse, Self))),
-        )(x)
+        preceded(tag("cnf"), preceded(ignored, map(Annotated::parse, Self)))(x)
     }
 }
 
@@ -481,6 +480,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for CnfAnnotated<'a> {
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum AnnotatedFormula<'a> {
+    Tfx(Box<TfxAnnotated<'a>>),
     Fof(Box<FofAnnotated<'a>>),
     Cnf(Box<CnfAnnotated<'a>>),
 }
@@ -488,6 +488,7 @@ pub enum AnnotatedFormula<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for AnnotatedFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
+            map(map(TfxAnnotated::parse, Box::new), Self::Tfx),
             map(map(FofAnnotated::parse, Box::new), Self::Fof),
             map(map(CnfAnnotated::parse, Box::new), Self::Cnf),
         ))(x)
@@ -546,6 +547,7 @@ mod tests {
     #[test]
     fn test_formula_data() {
         check_size::<FormulaData>();
+        parse::<FormulaData>(b"$tff ( p )\0");
         parse::<FormulaData>(b"$fof ( p )\0");
         parse::<FormulaData>(b"$cnf ( p )\0");
         parse::<FormulaData>(b"$fot ( t )\0");
@@ -592,6 +594,16 @@ mod tests {
     }
 
     #[test]
+    fn test_tfx_annotated() {
+        check_size::<TfxAnnotated>();
+        parse::<TfxAnnotated>(b"tff ( test , axiom , $true ) .\0");
+        parse::<TfxAnnotated>(b"tff ( test , axiom , $true , unknown ) .\0");
+        parse::<TfxAnnotated>(
+            b"tff ( test , axiom , $true , unknown , [] ) .\0",
+        );
+    }
+
+    #[test]
     fn test_fof_annotated() {
         check_size::<FofAnnotated>();
         parse::<FofAnnotated>(b"fof ( test , axiom , $true ) .\0");
@@ -614,6 +626,7 @@ mod tests {
     #[test]
     fn test_annotated_formula() {
         check_size::<AnnotatedFormula>();
+        parse::<AnnotatedFormula>(b"tff ( test , axiom , $true ) .\0");
         parse::<AnnotatedFormula>(b"fof ( test , axiom , $true ) .\0");
         parse::<AnnotatedFormula>(b"cnf ( test , axiom , $true ) .\0");
     }
@@ -649,6 +662,7 @@ mod tests {
     fn test_tptp_input() {
         check_size::<TPTPInput>();
         parse::<TPTPInput>(b"include ( 'test' ) .\0");
+        parse::<TPTPInput>(b"tff ( test , axiom , $true ) .\0");
         parse::<TPTPInput>(b"fof ( test , axiom , $true ) .\0");
         parse::<TPTPInput>(b"cnf ( test , axiom , $true ) .\0");
     }

@@ -1,0 +1,26 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Mapping(
+    MappingType {
+        domain: Atomic(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "A",
+                    ),
+                ),
+            ),
+        ),
+        range: Variable(
+            Variable(
+                UpperWord(
+                    "A",
+                ),
+            ),
+        ),
+    },
+)

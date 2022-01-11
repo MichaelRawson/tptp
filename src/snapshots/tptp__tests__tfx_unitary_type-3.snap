@@ -1,0 +1,30 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Product(
+    XprodType(
+        [
+            Atomic(
+                Variable(
+                    Variable(
+                        UpperWord(
+                            "A",
+                        ),
+                    ),
+                ),
+            ),
+            Atomic(
+                Variable(
+                    Variable(
+                        UpperWord(
+                            "B",
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

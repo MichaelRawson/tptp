@@ -1,0 +1,27 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+DefinedInfix(
+    DefinedInfix {
+        left: Variable(
+            Variable(
+                UpperWord(
+                    "X",
+                ),
+            ),
+        ),
+        op: DefinedInfixPred(
+            InfixEquality,
+        ),
+        right: Variable(
+            Variable(
+                UpperWord(
+                    "Y",
+                ),
+            ),
+        ),
+    },
+)

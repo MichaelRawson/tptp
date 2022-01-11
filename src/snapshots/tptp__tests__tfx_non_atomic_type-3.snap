@@ -1,0 +1,30 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Quantified(
+    QuantifiedType {
+        bound: VariableList(
+            [
+                Untyped(
+                    Variable(
+                        UpperWord(
+                            "A",
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        typ: Atomic(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "A",
+                    ),
+                ),
+            ),
+        ),
+    },
+)

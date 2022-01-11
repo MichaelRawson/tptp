@@ -1,0 +1,33 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Function(
+    TypeFunctor(
+        Lower(
+            LowerWord(
+                "type_function",
+            ),
+        ),
+    ),
+    TypeArguments(
+        [
+            Variable(
+                Variable(
+                    UpperWord(
+                        "A",
+                    ),
+                ),
+            ),
+            Variable(
+                Variable(
+                    UpperWord(
+                        "B",
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

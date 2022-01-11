@@ -1,0 +1,41 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+XprodType(
+    [
+        Atomic(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "A",
+                    ),
+                ),
+            ),
+        ),
+        Atomic(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "B",
+                    ),
+                ),
+            ),
+        ),
+        Atomic(
+            Constant(
+                TypeConstant(
+                    TypeFunctor(
+                        Lower(
+                            LowerWord(
+                                "c",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

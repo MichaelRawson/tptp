@@ -1,0 +1,7 @@
+---
+source: src/tests.rs
+assertion_line: 31
+expression: parsed
+
+---
+$true

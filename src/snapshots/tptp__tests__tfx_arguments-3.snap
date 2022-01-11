@@ -1,0 +1,56 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Arguments(
+    [
+        Logic(
+            Unitary(
+                Atomic(
+                    Defined(
+                        DefinedAtomic(
+                            Constant(
+                                DefinedConstant(
+                                    DefinedFunctor(
+                                        AtomicDefinedWord(
+                                            DollarWord(
+                                                LowerWord(
+                                                    "true",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        Logic(
+            Unitary(
+                Atomic(
+                    Defined(
+                        DefinedAtomic(
+                            Constant(
+                                DefinedConstant(
+                                    DefinedFunctor(
+                                        AtomicDefinedWord(
+                                            DollarWord(
+                                                LowerWord(
+                                                    "true",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

@@ -1,21 +1,20 @@
 ---
 source: src/tests.rs
+assertion_line: 30
 expression: parsed
 
 ---
-Fof(
-    Formula(
+Tfx(
+    Logic(
         Unitary(
             Atomic(
                 Plain(
-                    PlainAtomicFormula(
+                    Constant(
                         Constant(
-                            Constant(
-                                Functor(
-                                    Lower(
-                                        LowerWord(
-                                            "p",
-                                        ),
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "p",
                                     ),
                                 ),
                             ),

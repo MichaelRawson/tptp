@@ -1,0 +1,53 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+VariableList(
+    [
+        Untyped(
+            Variable(
+                UpperWord(
+                    "X",
+                ),
+            ),
+        ),
+        Typed(
+            TypedVariable {
+                variable: Variable(
+                    UpperWord(
+                        "Y",
+                    ),
+                ),
+                typ: Variable(
+                    Variable(
+                        UpperWord(
+                            "A",
+                        ),
+                    ),
+                ),
+            },
+        ),
+        Typed(
+            TypedVariable {
+                variable: Variable(
+                    UpperWord(
+                        "Z",
+                    ),
+                ),
+                typ: Constant(
+                    TypeConstant(
+                        TypeFunctor(
+                            Lower(
+                                LowerWord(
+                                    "c",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    ],
+)

@@ -1,0 +1,23 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+Fot(
+    Function(
+        Plain(
+            Constant(
+                Constant(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "t",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

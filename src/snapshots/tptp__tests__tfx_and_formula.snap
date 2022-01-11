@@ -1,0 +1,44 @@
+---
+source: src/tests.rs
+assertion_line: 30
+expression: parsed
+
+---
+AndFormula(
+    [
+        Unitary(
+            Atomic(
+                Plain(
+                    Constant(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "p",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        Unitary(
+            Atomic(
+                Plain(
+                    Constant(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "q",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

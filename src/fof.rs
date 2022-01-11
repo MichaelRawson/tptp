@@ -3,40 +3,30 @@ use alloc::vec::Vec;
 use derive_more::Display;
 use nom::branch::alt;
 use nom::bytes::streaming::tag;
-use nom::combinator::{cut, map, opt, value};
+use nom::combinator::{map, opt, value};
 use nom::multi::separated_list1;
-use nom::sequence::{delimited, pair, preceded, terminated, tuple};
+use nom::sequence::{delimited, pair, preceded, tuple};
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
-use crate::common;
+use crate::common::*;
 use crate::utils::{fold_many0_once, GarbageFirstVec, Separated};
 use crate::{Error, Parse, Result};
 
 /// [`fof_arguments`](http://tptp.org/TPTP/SyntaxBNF.html#fof_arguments)
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
-#[display(fmt = "({})", "Separated(',', _0)")]
+#[display(fmt = "{}", "Separated(',', _0)")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct Arguments<'a>(pub Vec<Term<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for Arguments<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        preceded(
-            tag("("),
-            cut(map(
-                terminated(
-                    separated_list1(
-                        tag(","),
-                        delimited(
-                            common::ignored,
-                            Term::parse,
-                            common::ignored,
-                        ),
-                    ),
-                    tag(")"),
-                ),
-                Self,
-            )),
+        map(
+            separated_list1(
+                delimited(ignored, tag(","), ignored),
+                Term::parse,
+            ),
+            Self,
         )(x)
     }
 }
@@ -45,21 +35,18 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Arguments<'a> {
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum SystemTerm<'a> {
-    Constant(common::SystemConstant<'a>),
-    #[display(fmt = "{}{}", _0, _1)]
-    Function(common::SystemFunctor<'a>, Box<Arguments<'a>>),
+    Constant(SystemConstant<'a>),
+    #[display(fmt = "{}({})", _0, _1)]
+    Function(SystemFunctor<'a>, Box<Arguments<'a>>),
 }
 
 impl<'a, E: Error<'a>> Parse<'a, E> for SystemTerm<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            pair(
-                common::SystemFunctor::parse,
-                opt(preceded(common::ignored, Arguments::parse)),
-            ),
+            pair(SystemFunctor::parse, opt(preceded(ignored, parens))),
             |(f, args)| match args {
-                None => SystemTerm::Constant(common::SystemConstant(f)),
-                Some(args) => SystemTerm::Function(f, Box::new(args)),
+                None => Self::Constant(SystemConstant(f)),
+                Some(args) => Self::Function(f, Box::new(args)),
             },
         )(x)
     }
@@ -69,20 +56,17 @@ impl<'a, E: Error<'a>> Parse<'a, E> for SystemTerm<'a> {
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum PlainTerm<'a> {
-    Constant(common::Constant<'a>),
-    #[display(fmt = "{}{}", _0, _1)]
-    Function(common::Functor<'a>, Box<Arguments<'a>>),
+    Constant(Constant<'a>),
+    #[display(fmt = "{}({})", _0, _1)]
+    Function(Functor<'a>, Box<Arguments<'a>>),
 }
 
 impl<'a, E: Error<'a>> Parse<'a, E> for PlainTerm<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            pair(
-                common::Functor::parse,
-                opt(preceded(common::ignored, Arguments::parse)),
-            ),
+            pair(Functor::parse, opt(preceded(ignored, parens))),
             |(f, args)| match args {
-                None => Self::Constant(common::Constant(f)),
+                None => Self::Constant(Constant(f)),
                 Some(args) => Self::Function(f, Box::new(args)),
             },
         )(x)
@@ -93,20 +77,17 @@ impl<'a, E: Error<'a>> Parse<'a, E> for PlainTerm<'a> {
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum DefinedPlainTerm<'a> {
-    Constant(common::DefinedConstant<'a>),
-    #[display(fmt = "{}{}", _0, _1)]
-    Function(common::DefinedFunctor<'a>, Box<Arguments<'a>>),
+    Constant(DefinedConstant<'a>),
+    #[display(fmt = "{}({})", _0, _1)]
+    Function(DefinedFunctor<'a>, Box<Arguments<'a>>),
 }
 
 impl<'a, E: Error<'a>> Parse<'a, E> for DefinedPlainTerm<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            pair(
-                common::DefinedFunctor::parse,
-                opt(preceded(common::ignored, Arguments::parse)),
-            ),
+            pair(DefinedFunctor::parse, opt(preceded(ignored, parens))),
             |(f, args)| match args {
-                None => Self::Constant(common::DefinedConstant(f)),
+                None => Self::Constant(DefinedConstant(f)),
                 Some(args) => Self::Function(f, Box::new(args)),
             },
         )(x)
@@ -128,14 +109,14 @@ impl<'a, E: Error<'a>> Parse<'a, E> for DefinedAtomicTerm<'a> {
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum DefinedTerm<'a> {
-    Defined(common::DefinedTerm<'a>),
+    Defined(crate::common::DefinedTerm<'a>),
     Atomic(DefinedAtomicTerm<'a>),
 }
 
 impl<'a, E: Error<'a>> Parse<'a, E> for DefinedTerm<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
-            map(common::DefinedTerm::parse, Self::Defined),
+            map(crate::common::DefinedTerm::parse, Self::Defined),
             map(DefinedAtomicTerm::parse, Self::Atomic),
         ))(x)
     }
@@ -165,13 +146,13 @@ impl<'a, E: Error<'a>> Parse<'a, E> for FunctionTerm<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum Term<'a> {
     Function(Box<FunctionTerm<'a>>),
-    Variable(common::Variable<'a>),
+    Variable(Variable<'a>),
 }
 
 impl<'a, E: Error<'a>> Parse<'a, E> for Term<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
-            map(common::Variable::parse, Self::Variable),
+            map(Variable::parse, Self::Variable),
             map(map(FunctionTerm::parse, Box::new), Self::Function),
         ))(x)
     }
@@ -219,7 +200,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for PlainAtomicFormula<'a> {
     }
 }
 
-struct DefinedInfixFormulaTail<'a>(common::DefinedInfixPred, Box<Term<'a>>);
+struct DefinedInfixFormulaTail<'a>(DefinedInfixPred, Box<Term<'a>>);
 
 impl<'a> DefinedInfixFormulaTail<'a> {
     fn finish(self, left: Box<Term<'a>>) -> DefinedInfixFormula {
@@ -233,8 +214,8 @@ impl<'a, E: Error<'a>> Parse<'a, E> for DefinedInfixFormulaTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
             pair(
-                preceded(common::ignored, common::DefinedInfixPred::parse),
-                preceded(common::ignored, map(Term::parse, Box::new)),
+                preceded(ignored, DefinedInfixPred::parse),
+                preceded(ignored, map(Term::parse, Box::new)),
             ),
             |(op, right)| Self(op, right),
         )(x)
@@ -247,7 +228,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for DefinedInfixFormulaTail<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct DefinedInfixFormula<'a> {
     pub left: Box<Term<'a>>,
-    pub op: common::DefinedInfixPred,
+    pub op: DefinedInfixPred,
     pub right: Box<Term<'a>>,
 }
 
@@ -323,14 +304,14 @@ impl<'a, E: Error<'a>> Parse<'a, E> for AtomicFormula<'a> {
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[display(fmt = "{}", "Separated(',', _0)")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
-pub struct VariableList<'a>(pub Vec<common::Variable<'a>>);
+pub struct VariableList<'a>(pub Vec<Variable<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for VariableList<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
             separated_list1(
-                tuple((common::ignored, tag(","), common::ignored)),
-                common::Variable::parse,
+                delimited(ignored, tag(","), ignored),
+                Variable::parse,
             ),
             Self,
         )(x)
@@ -350,33 +331,21 @@ pub struct QuantifiedFormula<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for QuantifiedFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            pair(
+            tuple((
                 Quantifier::parse,
-                cut(pair(
-                    delimited(
-                        tuple((common::ignored, tag("["), common::ignored)),
-                        VariableList::parse,
-                        tuple((
-                            common::ignored,
-                            tag("]"),
-                            common::ignored,
-                            tag(":"),
-                            common::ignored,
-                        )),
-                    ),
-                    map(UnitFormula::parse, Box::new),
-                )),
-            ),
-            |(quantifier, (bound, formula))| Self {
+                delimited(ignored, brackets, ignored),
+                preceded(tag(":"), preceded(ignored, UnitFormula::parse)),
+            )),
+            |(quantifier, bound, formula)| Self {
                 quantifier,
                 bound,
-                formula,
+                formula: Box::new(formula),
             },
         )(x)
     }
 }
 
-struct InfixUnaryTail<'a>(common::InfixInequality, Box<Term<'a>>);
+struct InfixUnaryTail<'a>(InfixInequality, Box<Term<'a>>);
 
 impl<'a> InfixUnaryTail<'a> {
     fn finish(self, left: Term<'a>) -> InfixUnary<'a> {
@@ -391,8 +360,8 @@ impl<'a, E: Error<'a>> Parse<'a, E> for InfixUnaryTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
             pair(
-                preceded(common::ignored, common::InfixInequality::parse),
-                preceded(common::ignored, map(Term::parse, Box::new)),
+                preceded(ignored, InfixInequality::parse),
+                preceded(ignored, map(Term::parse, Box::new)),
             ),
             |(op, right)| Self(op, right),
         )(x)
@@ -405,7 +374,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for InfixUnaryTail<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct InfixUnary<'a> {
     pub left: Box<Term<'a>>,
-    pub op: common::InfixInequality,
+    pub op: InfixInequality,
     pub right: Box<Term<'a>>,
 }
 
@@ -422,7 +391,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for InfixUnary<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub enum UnaryFormula<'a> {
     #[display(fmt = "{}{}", _0, _1)]
-    Unary(common::UnaryConnective, Box<UnitFormula<'a>>),
+    Unary(UnaryConnective, Box<UnitFormula<'a>>),
     InfixUnary(InfixUnary<'a>),
 }
 
@@ -431,8 +400,8 @@ impl<'a, E: Error<'a>> Parse<'a, E> for UnaryFormula<'a> {
         alt((
             map(
                 pair(
-                    common::UnaryConnective::parse,
-                    preceded(common::ignored, UnitFormula::parse),
+                    UnaryConnective::parse,
+                    preceded(ignored, UnitFormula::parse),
                 ),
                 |(c, f)| Self::Unary(c, Box::new(f)),
             ),
@@ -455,25 +424,15 @@ impl<'a, E: Error<'a>> Parse<'a, E> for UnitaryFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
             map(QuantifiedFormula::parse, Self::Quantified),
-            preceded(
-                tag("("),
-                cut(map(
-                    delimited(
-                        common::ignored,
-                        map(LogicFormula::parse, Box::new),
-                        pair(common::ignored, tag(")")),
-                    ),
-                    Self::Parenthesised,
-                )),
-            ),
+            map(parens, |f| Self::Parenthesised(Box::new(f))),
             map(map(AtomicFormula::parse, Box::new), Self::Atomic),
         ))(x)
     }
 }
 
 enum UnitFormulaTail<'a> {
-    Equal(common::DefinedInfixPred, Box<Term<'a>>),
-    NotEqual(common::InfixInequality, Box<Term<'a>>),
+    Equal(DefinedInfixPred, Box<Term<'a>>),
+    NotEqual(InfixInequality, Box<Term<'a>>),
 }
 
 impl<'a> UnitFormulaTail<'a> {
@@ -502,19 +461,19 @@ impl<'a> UnitFormulaTail<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for UnitFormulaTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         preceded(
-            common::ignored,
+            ignored,
             alt((
                 map(
                     pair(
-                        common::DefinedInfixPred::parse,
-                        preceded(common::ignored, map(Term::parse, Box::new)),
+                        DefinedInfixPred::parse,
+                        preceded(ignored, map(Term::parse, Box::new)),
                     ),
                     |(op, right)| Self::Equal(op, right),
                 ),
                 map(
                     pair(
-                        common::InfixInequality::parse,
-                        preceded(common::ignored, map(Term::parse, Box::new)),
+                        InfixInequality::parse,
+                        preceded(ignored, map(Term::parse, Box::new)),
                     ),
                     |(op, right)| Self::NotEqual(op, right),
                 ),
@@ -558,15 +517,13 @@ fn assoc_tail<'a, E: Error<'a>>(
 ) -> impl Fn(&'a [u8]) -> Result<'a, GarbageFirstVec<UnitFormula<'a>>, E> {
     move |x| {
         let sep = &[sep];
-        let (x, second) = preceded(
-            terminated(tag(sep), common::ignored),
-            UnitFormula::parse,
-        )(x)?;
+        let (x, second) =
+            preceded(tag(sep), preceded(ignored, UnitFormula::parse))(x)?;
         let mut result = GarbageFirstVec::default();
         result.push(second);
         fold_many0_once(
             preceded(
-                delimited(common::ignored, tag(sep), common::ignored),
+                delimited(ignored, tag(sep), ignored),
                 UnitFormula::parse,
             ),
             result,
@@ -601,7 +558,7 @@ pub struct OrFormula<'a>(pub Vec<UnitFormula<'a>>);
 impl<'a, E: Error<'a>> Parse<'a, E> for OrFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            pair(UnitFormula::parse, preceded(common::ignored, OrTail::parse)),
+            pair(UnitFormula::parse, preceded(ignored, OrTail::parse)),
             |(first, tail)| tail.finish(first),
         )(x)
     }
@@ -630,10 +587,7 @@ pub struct AndFormula<'a>(pub Vec<UnitFormula<'a>>);
 impl<'a, E: Error<'a>> Parse<'a, E> for AndFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            pair(
-                UnitFormula::parse,
-                preceded(common::ignored, AndTail::parse),
-            ),
+            pair(UnitFormula::parse, preceded(ignored, AndTail::parse)),
             |(first, tail)| tail.finish(first),
         )(x)
     }
@@ -675,17 +629,14 @@ impl<'a, E: Error<'a>> Parse<'a, E> for BinaryAssoc<'a> {
         map(
             pair(
                 UnitFormula::parse,
-                preceded(common::ignored, BinaryAssocTail::parse),
+                preceded(ignored, BinaryAssocTail::parse),
             ),
             |(first, tail)| tail.finish(first),
         )(x)
     }
 }
 
-struct BinaryNonassocTail<'a>(
-    common::NonassocConnective,
-    Box<UnitFormula<'a>>,
-);
+struct BinaryNonassocTail<'a>(NonassocConnective, Box<UnitFormula<'a>>);
 
 impl<'a> BinaryNonassocTail<'a> {
     fn finish(self, left: UnitFormula<'a>) -> BinaryNonassoc<'a> {
@@ -700,11 +651,8 @@ impl<'a, E: Error<'a>> Parse<'a, E> for BinaryNonassocTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
             pair(
-                common::NonassocConnective::parse,
-                cut(preceded(
-                    common::ignored,
-                    map(UnitFormula::parse, Box::new),
-                )),
+                NonassocConnective::parse,
+                preceded(ignored, map(UnitFormula::parse, Box::new)),
             ),
             |(connective, right)| Self(connective, right),
         )(x)
@@ -717,7 +665,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for BinaryNonassocTail<'a> {
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct BinaryNonassoc<'a> {
     pub left: Box<UnitFormula<'a>>,
-    pub op: common::NonassocConnective,
+    pub op: NonassocConnective,
     pub right: Box<UnitFormula<'a>>,
 }
 
@@ -726,7 +674,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for BinaryNonassoc<'a> {
         map(
             pair(
                 UnitFormula::parse,
-                preceded(common::ignored, BinaryNonassocTail::parse),
+                preceded(ignored, BinaryNonassocTail::parse),
             ),
             |(left, tail)| tail.finish(left),
         )(x)
@@ -769,7 +717,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for BinaryFormula<'a> {
         map(
             pair(
                 UnitFormula::parse,
-                preceded(common::ignored, BinaryFormulaTail::parse),
+                preceded(ignored, BinaryFormulaTail::parse),
             ),
             |(left, tail)| tail.finish(left),
         )(x)
@@ -790,7 +738,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for LogicFormula<'a> {
         map(
             pair(
                 UnitFormula::parse,
-                opt(preceded(common::ignored, BinaryFormulaTail::parse)),
+                opt(preceded(ignored, BinaryFormulaTail::parse)),
             ),
             |(left, tail)| match tail {
                 Some(tail) => Self::Binary(tail.finish(left)),
@@ -822,9 +770,9 @@ mod tests {
     #[test]
     fn test_fof_arguments() {
         check_size::<Arguments>();
-        parse::<Arguments>(b"( c )\0");
-        parse::<Arguments>(b"( X )\0");
-        parse::<Arguments>(b"( X, f ( X ) )\0");
+        parse::<Arguments>(b"c\0");
+        parse::<Arguments>(b"X\0");
+        parse::<Arguments>(b"X, f ( X )\0");
     }
 
     #[test]
@@ -858,9 +806,9 @@ mod tests {
 
     #[test]
     fn test_fof_defined_term() {
-        check_size::<DefinedTerm>();
-        parse::<DefinedTerm>(b"$defined_term\0");
-        parse::<DefinedTerm>(b"-123\0");
+        check_size::<super::DefinedTerm>();
+        parse::<super::DefinedTerm>(b"$defined_term\0");
+        parse::<super::DefinedTerm>(b"-123\0");
     }
 
     #[test]
@@ -993,6 +941,13 @@ mod tests {
         check_size::<BinaryAssoc>();
         parse::<BinaryAssoc>(b"p | q | r\0");
         parse::<BinaryAssoc>(b"p & q\0");
+    }
+
+    #[test]
+    fn test_fof_binary_formula() {
+        check_size::<BinaryFormula>();
+        parse::<BinaryFormula>(b"p => q\0");
+        parse::<BinaryFormula>(b"p | q | r\0");
     }
 
     #[test]

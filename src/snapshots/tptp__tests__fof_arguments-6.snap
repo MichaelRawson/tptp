@@ -1,6 +1,7 @@
 ---
 source: src/tests.rs
+assertion_line: 31
 expression: parsed
 
 ---
-(X,f(X))
+X,f(X)
