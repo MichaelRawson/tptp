@@ -53,8 +53,16 @@ pub trait Visitor<'a> {
         self.visit_atomic_word(&functor.0);
     }
 
+    fn visit_type_functor(&mut self, type_functor: &TypeFunctor<'a>) {
+        self.visit_atomic_word(&type_functor.0);
+    }
+
     fn visit_constant(&mut self, constant: &Constant<'a>) {
         self.visit_functor(&constant.0);
+    }
+
+    fn visit_type_constant(&mut self, type_constant: &TypeConstant<'a>) {
+        self.visit_type_functor(&type_constant.0);
     }
 
     fn visit_dollar_word(&mut self, dollar_word: &DollarWord<'a>) {
@@ -102,6 +110,10 @@ pub trait Visitor<'a> {
         self.visit_atomic_defined_word(&defined_functor.0);
     }
 
+    fn visit_defined_type(&mut self, defined_type: &DefinedType<'a>) {
+        self.visit_atomic_defined_word(&defined_type.0);
+    }
+
     fn visit_defined_constant(
         &mut self,
         defined_constant: &DefinedConstant<'a>,
@@ -115,6 +127,393 @@ pub trait Visitor<'a> {
             DefinedTerm::Distinct(distinct) => {
                 self.visit_distinct_object(distinct)
             }
+        }
+    }
+
+    fn visit_untyped_atom(&mut self, untyped_atom: &UntypedAtom<'a>) {
+        match untyped_atom {
+            UntypedAtom::Constant(c) => self.visit_constant(c),
+            UntypedAtom::System(c) => self.visit_system_constant(c),
+        }
+    }
+
+    fn visit_infix_equality(&mut self, _infix_equality: InfixEquality) {}
+
+    fn visit_defined_infix_pred(
+        &mut self,
+        defined_infix_pred: DefinedInfixPred,
+    ) {
+        self.visit_infix_equality(defined_infix_pred.0);
+    }
+
+    fn visit_infix_inequality(&mut self, _infix_inequality: InfixInequality) {}
+
+    fn visit_unary_connective(&mut self, _unary_connective: UnaryConnective) {}
+
+    fn visit_nonassoc_connective(
+        &mut self,
+        _nonassoc_connective: NonassocConnective,
+    ) {
+    }
+
+    fn visit_tfx_type_arguments(
+        &mut self,
+        tfx_type_arguments: &tfx::TypeArguments<'a>,
+    ) {
+        for t in &tfx_type_arguments.0 {
+            self.visit_tfx_atomic_type(t);
+        }
+    }
+
+    fn visit_tfx_atomic_type(
+        &mut self,
+        tfx_atomic_type: &tfx::AtomicType<'a>,
+    ) {
+        match tfx_atomic_type {
+            tfx::AtomicType::Constant(c) => self.visit_type_constant(c),
+            tfx::AtomicType::Defined(d) => self.visit_defined_type(d),
+            tfx::AtomicType::Variable(v) => self.visit_variable(v),
+            tfx::AtomicType::Function(f, args) => {
+                self.visit_type_functor(f);
+                self.visit_tfx_type_arguments(args);
+            }
+        }
+    }
+
+    fn visit_tfx_xprod_type(&mut self, tfx_xprod_type: &tfx::XprodType<'a>) {
+        for t in &tfx_xprod_type.0 {
+            self.visit_tfx_unitary_type(t);
+        }
+    }
+
+    fn visit_tfx_typed_variable(
+        &mut self,
+        tfx_typed_variable: &tfx::TypedVariable<'a>,
+    ) {
+        self.visit_variable(&tfx_typed_variable.variable);
+        self.visit_tfx_atomic_type(&tfx_typed_variable.typ);
+    }
+
+    fn visit_tfx_variable(&mut self, tfx_variable: &tfx::Variable<'a>) {
+        match tfx_variable {
+            tfx::Variable::Typed(t) => self.visit_tfx_typed_variable(t),
+            tfx::Variable::Untyped(u) => self.visit_variable(u),
+        }
+    }
+
+    fn visit_tfx_variable_list(
+        &mut self,
+        tfx_variable_list: &tfx::VariableList<'a>,
+    ) {
+        for v in &tfx_variable_list.0 {
+            self.visit_tfx_variable(v);
+        }
+    }
+
+    fn visit_tfx_unitary_type(
+        &mut self,
+        tfx_unitary_type: &tfx::UnitaryType<'a>,
+    ) {
+        match tfx_unitary_type {
+            tfx::UnitaryType::Atomic(a) => self.visit_tfx_atomic_type(a),
+            tfx::UnitaryType::Product(p) => self.visit_tfx_xprod_type(p),
+        }
+    }
+
+    fn visit_tfx_mapping_type(
+        &mut self,
+        tfx_mapping_type: &tfx::MappingType<'a>,
+    ) {
+        self.visit_tfx_unitary_type(&tfx_mapping_type.domain);
+        self.visit_tfx_atomic_type(&tfx_mapping_type.range);
+    }
+
+    fn visit_tfx_monotype(&mut self, tfx_monotype: &tfx::Monotype<'a>) {
+        match tfx_monotype {
+            tfx::Monotype::Atomic(a) => self.visit_tfx_atomic_type(a),
+            tfx::Monotype::Mapping(m) => self.visit_tfx_mapping_type(m),
+            tfx::Monotype::Quantified(q) => self.visit_tfx_quantified_type(q),
+        }
+    }
+
+    fn visit_tfx_quantified_type(
+        &mut self,
+        tfx_quantified_type: &tfx::QuantifiedType<'a>,
+    ) {
+        self.visit_tfx_variable_list(&tfx_quantified_type.bound);
+        self.visit_tfx_monotype(&tfx_quantified_type.typ);
+    }
+
+    fn visit_tfx_non_atomic_type(
+        &mut self,
+        tfx_non_atomic_type: &tfx::NonAtomicType<'a>,
+    ) {
+        match tfx_non_atomic_type {
+            tfx::NonAtomicType::Mapping(m) => self.visit_tfx_mapping_type(m),
+            tfx::NonAtomicType::Quantified(q) => {
+                self.visit_tfx_quantified_type(q)
+            }
+            tfx::NonAtomicType::Parenthesised(n) => {
+                self.visit_tfx_non_atomic_type(n)
+            }
+        }
+    }
+
+    fn visit_tfx_toplevel_type(
+        &mut self,
+        tfx_toplevel_type: &tfx::TopLevelType<'a>,
+    ) {
+        match tfx_toplevel_type {
+            tfx::TopLevelType::Atomic(a) => self.visit_tfx_atomic_type(a),
+            tfx::TopLevelType::NonAtomic(n) => {
+                self.visit_tfx_non_atomic_type(n)
+            }
+        }
+    }
+
+    fn visit_tfx_atom_typing(
+        &mut self,
+        tfx_atom_typing: &tfx::AtomTyping<'a>,
+    ) {
+        match tfx_atom_typing {
+            tfx::AtomTyping::Typing(a, t) => {
+                self.visit_untyped_atom(a);
+                self.visit_tfx_toplevel_type(t);
+            }
+            tfx::AtomTyping::Parenthesised(t) => self.visit_tfx_atom_typing(t),
+        }
+    }
+
+    fn visit_tfx_term(&mut self, tfx_term: &tfx::Term<'a>) {
+        match tfx_term {
+            tfx::Term::Logic(f) => self.visit_tfx_logic_formula(f),
+            tfx::Term::Defined(d) => self.visit_defined_term(d),
+        }
+    }
+
+    fn visit_tfx_unitary_term(
+        &mut self,
+        tfx_unitary_term: &tfx::UnitaryTerm<'a>,
+    ) {
+        match tfx_unitary_term {
+            tfx::UnitaryTerm::Atomic(a) => self.visit_tfx_atomic_formula(a),
+            tfx::UnitaryTerm::Defined(d) => self.visit_defined_term(d),
+            tfx::UnitaryTerm::Variable(v) => self.visit_variable(v),
+            tfx::UnitaryTerm::Logic(f) => self.visit_tfx_logic_formula(f),
+        }
+    }
+
+    fn visit_tfx_arguments(&mut self, tfx_arguments: &tfx::Arguments<'a>) {
+        for t in &tfx_arguments.0 {
+            self.visit_tfx_term(t);
+        }
+    }
+
+    fn visit_tfx_plain_atomic(
+        &mut self,
+        tfx_plain_atomic: &tfx::PlainAtomic<'a>,
+    ) {
+        match tfx_plain_atomic {
+            tfx::PlainAtomic::Constant(c) => self.visit_constant(c),
+            tfx::PlainAtomic::Function(f, args) => {
+                self.visit_functor(f);
+                self.visit_tfx_arguments(args);
+            }
+        }
+    }
+
+    fn visit_tfx_system_atomic(
+        &mut self,
+        tfx_system_atomic: &tfx::SystemAtomic<'a>,
+    ) {
+        match tfx_system_atomic {
+            tfx::SystemAtomic::Constant(c) => self.visit_system_constant(c),
+            tfx::SystemAtomic::Function(f, args) => {
+                self.visit_system_functor(f);
+                self.visit_tfx_arguments(args);
+            }
+        }
+    }
+
+    fn visit_tfx_defined_plain(
+        &mut self,
+        tfx_defined_plain: &tfx::DefinedPlain<'a>,
+    ) {
+        match tfx_defined_plain {
+            tfx::DefinedPlain::Constant(c) => self.visit_defined_constant(c),
+            tfx::DefinedPlain::Function(f, args) => {
+                self.visit_defined_functor(f);
+                self.visit_tfx_arguments(args);
+            }
+        }
+    }
+
+    fn visit_tfx_defined_atomic(
+        &mut self,
+        tfx_defined_atomic: &tfx::DefinedAtomic<'a>,
+    ) {
+        self.visit_tfx_defined_plain(&tfx_defined_atomic.0);
+    }
+
+    fn visit_tfx_atomic_formula(
+        &mut self,
+        tfx_atomic_formula: &tfx::AtomicFormula<'a>,
+    ) {
+        match tfx_atomic_formula {
+            tfx::AtomicFormula::Plain(p) => self.visit_tfx_plain_atomic(p),
+            tfx::AtomicFormula::Defined(d) => self.visit_tfx_defined_atomic(d),
+            tfx::AtomicFormula::System(s) => self.visit_tfx_system_atomic(s),
+        }
+    }
+
+    fn visit_tfx_preunit_formula(
+        &mut self,
+        tfx_preunit_formula: &tfx::PreunitFormula<'a>,
+    ) {
+        match tfx_preunit_formula {
+            tfx::PreunitFormula::Unitary(u) => {
+                self.visit_tfx_unitary_formula(u)
+            }
+            tfx::PreunitFormula::Prefix(p) => self.visit_tfx_prefix_unary(p),
+        }
+    }
+
+    fn visit_tfx_prefix_unary(
+        &mut self,
+        tfx_prefix_unary: &tfx::PrefixUnary<'a>,
+    ) {
+        self.visit_unary_connective(tfx_prefix_unary.op);
+        self.visit_tfx_preunit_formula(&tfx_prefix_unary.formula);
+    }
+
+    fn visit_tfx_infix_unary(
+        &mut self,
+        tfx_infix_unary: &tfx::InfixUnary<'a>,
+    ) {
+        self.visit_tfx_unitary_term(&tfx_infix_unary.left);
+        self.visit_infix_inequality(tfx_infix_unary.op);
+        self.visit_tfx_unitary_term(&tfx_infix_unary.right);
+    }
+
+    fn visit_tfx_defined_infix(
+        &mut self,
+        tfx_defined_infix: &tfx::DefinedInfix<'a>,
+    ) {
+        self.visit_tfx_unitary_term(&tfx_defined_infix.left);
+        self.visit_defined_infix_pred(tfx_defined_infix.op);
+        self.visit_tfx_unitary_term(&tfx_defined_infix.right);
+    }
+
+    fn visit_tfx_unary_formula(
+        &mut self,
+        tfx_unary_formula: &tfx::UnaryFormula<'a>,
+    ) {
+        match tfx_unary_formula {
+            tfx::UnaryFormula::Prefix(p) => self.visit_tfx_prefix_unary(p),
+            tfx::UnaryFormula::Infix(i) => self.visit_tfx_infix_unary(i),
+        }
+    }
+
+    fn visit_tfx_quantified_formula(
+        &mut self,
+        tfx_quantified_formula: &tfx::QuantifiedFormula<'a>,
+    ) {
+        self.visit_fof_quantifier(tfx_quantified_formula.quantifier);
+        self.visit_tfx_variable_list(&tfx_quantified_formula.bound);
+        self.visit_tfx_unit_formula(&tfx_quantified_formula.formula);
+    }
+
+    fn visit_tfx_unit_formula(
+        &mut self,
+        tfx_unit_formula: &tfx::UnitFormula<'a>,
+    ) {
+        match tfx_unit_formula {
+            tfx::UnitFormula::Unitary(u) => self.visit_tfx_unitary_formula(u),
+            tfx::UnitFormula::Unary(u) => self.visit_tfx_unary_formula(u),
+            tfx::UnitFormula::DefinedInfix(d) => {
+                self.visit_tfx_defined_infix(d)
+            }
+        }
+    }
+
+    fn visit_tfx_unitary_formula(
+        &mut self,
+        tfx_unitary_formula: &tfx::UnitaryFormula<'a>,
+    ) {
+        match tfx_unitary_formula {
+            tfx::UnitaryFormula::Quantified(q) => {
+                self.visit_tfx_quantified_formula(q)
+            }
+            tfx::UnitaryFormula::Atomic(a) => self.visit_tfx_atomic_formula(a),
+            tfx::UnitaryFormula::Variable(v) => self.visit_variable(v),
+            tfx::UnitaryFormula::Logic(f) => self.visit_tfx_logic_formula(f),
+        }
+    }
+
+    fn visit_tfx_or_formula(&mut self, tfx_or_formula: &tfx::OrFormula<'a>) {
+        for f in &tfx_or_formula.0 {
+            self.visit_tfx_unit_formula(f);
+        }
+    }
+
+    fn visit_tfx_and_formula(
+        &mut self,
+        tfx_and_formula: &tfx::AndFormula<'a>,
+    ) {
+        for f in &tfx_and_formula.0 {
+            self.visit_tfx_unit_formula(f);
+        }
+    }
+
+    fn visit_tfx_binary_assoc(
+        &mut self,
+        tfx_binary_assoc: &tfx::BinaryAssoc<'a>,
+    ) {
+        match tfx_binary_assoc {
+            tfx::BinaryAssoc::Or(or) => self.visit_tfx_or_formula(or),
+            tfx::BinaryAssoc::And(and) => self.visit_tfx_and_formula(and),
+        }
+    }
+
+    fn visit_tfx_binary_nonassoc(
+        &mut self,
+        tfx_binary_nonassoc: &tfx::BinaryNonassoc<'a>,
+    ) {
+        self.visit_tfx_unit_formula(&tfx_binary_nonassoc.left);
+        self.visit_nonassoc_connective(tfx_binary_nonassoc.op);
+        self.visit_tfx_unit_formula(&tfx_binary_nonassoc.right);
+    }
+
+    fn visit_tfx_binary_formula(
+        &mut self,
+        tfx_binary_formula: &tfx::BinaryFormula<'a>,
+    ) {
+        match tfx_binary_formula {
+            tfx::BinaryFormula::Assoc(a) => self.visit_tfx_binary_assoc(a),
+            tfx::BinaryFormula::Nonassoc(n) => {
+                self.visit_tfx_binary_nonassoc(n)
+            }
+        }
+    }
+
+    fn visit_tfx_logic_formula(
+        &mut self,
+        tfx_logic_formula: &tfx::LogicFormula<'a>,
+    ) {
+        match tfx_logic_formula {
+            tfx::LogicFormula::Unary(u) => self.visit_tfx_unary_formula(u),
+            tfx::LogicFormula::Unitary(u) => self.visit_tfx_unitary_formula(u),
+            tfx::LogicFormula::Binary(b) => self.visit_tfx_binary_formula(b),
+            tfx::LogicFormula::DefinedInfix(d) => {
+                self.visit_tfx_defined_infix(d)
+            }
+        }
+    }
+
+    fn visit_tfx_formula(&mut self, tfx_formula: &tfx::Formula<'a>) {
+        match tfx_formula {
+            tfx::Formula::Logic(f) => self.visit_tfx_logic_formula(f),
+            tfx::Formula::AtomTyping(t) => self.visit_tfx_atom_typing(t),
         }
     }
 
@@ -213,30 +612,7 @@ pub trait Visitor<'a> {
         }
     }
 
-    fn visit_infix_equality(&mut self, _infix_equality: InfixEquality) {}
-
-    fn visit_defined_infix_pred(
-        &mut self,
-        defined_infix_pred: DefinedInfixPred,
-    ) {
-        self.visit_infix_equality(defined_infix_pred.0);
-    }
-
-    fn visit_infix_inequality(&mut self, _infix_inequality: InfixInequality) {}
-
     fn visit_fof_quantifier(&mut self, _fof_quantifier: fof::Quantifier) {}
-
-    fn visit_unary_connective(&mut self, _unary_connective: UnaryConnective) {}
-
-    fn visit_nonassoc_connective(
-        &mut self,
-        _nonassoc_connective: NonassocConnective,
-    ) {
-    }
-
-    fn visit_tfx_formula(&mut self, _tfx_formula: &tfx::Formula<'a>) {
-        todo!()
-    }
 
     fn visit_fof_system_atomic_formula(
         &mut self,

@@ -17,7 +17,7 @@ use crate::{Error, Parse, Result};
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[display(fmt = "{}", "Separated(',', _0)")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
-pub struct TypeArguments<'a>(Vec<AtomicType<'a>>);
+pub struct TypeArguments<'a>(pub Vec<AtomicType<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for TypeArguments<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
@@ -81,8 +81,8 @@ impl<'a, E: Error<'a>> Parse<'a, E> for TypedVariableTail<'a> {
 #[display(fmt = "{}:{}", variable, typ)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct TypedVariable<'a> {
-    variable: common::Variable<'a>,
-    typ: AtomicType<'a>,
+    pub variable: common::Variable<'a>,
+    pub typ: AtomicType<'a>,
 }
 
 impl<'a, E: Error<'a>> Parse<'a, E> for TypedVariable<'a> {
@@ -118,7 +118,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Variable<'a> {
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[display(fmt = "{}", "Separated(',', _0)")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
-pub struct VariableList<'a>(Vec<Variable<'a>>);
+pub struct VariableList<'a>(pub Vec<Variable<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for VariableList<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
@@ -154,7 +154,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for UnitaryType<'a> {
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[display(fmt = "{}", "Separated('*', _0)")]
 #[cfg_attr(feature = "serde", derive(Serialize))]
-pub struct XprodType<'a>(Vec<UnitaryType<'a>>);
+pub struct XprodType<'a>(pub Vec<UnitaryType<'a>>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for XprodType<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
@@ -173,8 +173,8 @@ impl<'a, E: Error<'a>> Parse<'a, E> for XprodType<'a> {
 #[display(fmt = "{}>{}", domain, range)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct MappingType<'a> {
-    domain: Box<UnitaryType<'a>>,
-    range: AtomicType<'a>,
+    pub domain: Box<UnitaryType<'a>>,
+    pub range: AtomicType<'a>,
 }
 
 impl<'a, E: Error<'a>> Parse<'a, E> for MappingType<'a> {
@@ -200,8 +200,8 @@ impl<'a, E: Error<'a>> Parse<'a, E> for MappingType<'a> {
 #[display(fmt = "!>[{}]:{}", bound, typ)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
 pub struct QuantifiedType<'a> {
-    bound: VariableList<'a>,
-    typ: Box<Monotype<'a>>,
+    pub bound: VariableList<'a>,
+    pub typ: Box<Monotype<'a>>,
 }
 
 impl<'a, E: Error<'a>> Parse<'a, E> for QuantifiedType<'a> {
@@ -443,7 +443,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for DefinedPlain<'a> {
 /// [`tff_defined_atomic`](http://tptp.org/TPTP/SyntaxBNF.html#tff_defined_atomic)
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
-pub struct DefinedAtomic<'a>(DefinedPlain<'a>);
+pub struct DefinedAtomic<'a>(pub DefinedPlain<'a>);
 
 impl<'a, E: Error<'a>> Parse<'a, E> for DefinedAtomic<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
