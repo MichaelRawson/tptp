@@ -84,7 +84,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Literal<'a> {
                 },
             ),
             map(
-                pair(fof::Term::parse, LiteralTail::parse),
+                pair(fof::Term::parse, preceded(ignored, LiteralTail::parse)),
                 |(left, tail)| tail.finish(left),
             ),
             map(fof::SystemAtomicFormula::parse, |f| {
