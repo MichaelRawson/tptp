@@ -1,4 +1,4 @@
-//! A collection of parsers for the FOF and CNF dialects of the [TPTP](http://tptp.org) format, expressed as functions from byte slices to syntax trees.
+//! A collection of parsers for the TFX*/FOF/CNF dialects of the [TPTP](http://tptp.org) format, expressed as functions from byte slices to syntax trees.
 //!
 //! Most users will want to use the `TPTPIterator` interface to stream `<TPTP_input>`s from TPTP problems, but it is also possible to use parsers individually for more exotic formats.
 //!
@@ -28,9 +28,9 @@
 //! If you need them, you can use nom's facilities such as error handling or streaming.
 //!
 //! ## Parsers as Functions
-//! All parsers are functions from byte slices to `Result<T, E>` type, representing either parsed syntax `T` or a `nom` error `E`.
+//! All parsers are functions from byte slices to `Result<T, E>` type, representing either parsed syntax `T` or a nom error `E`.
 //! Parsers are zero-copy, which typically means `T` will borrow from the input slice.
-//! The `Parse` trait allows one to write `T::parse`.
+//! Parsers are invoked as `T::parse` via the `Parse` trait.
 //!
 //! ## Syntax Trees
 //! Explicit, strongly-typed syntax trees are constructed during parsing.
@@ -57,6 +57,9 @@
 //! ## Serialisation
 //! Support for [`serde`](https://serde.rs/) can be switched on with a feature flag as usual.
 //! Structures can then be serialised, but not deseralised due to ownership issues.
+//!
+//! ---
+//! *currently partial support, notably missing `$let`, `$ite` and tuples
 
 #![no_std]
 extern crate alloc;

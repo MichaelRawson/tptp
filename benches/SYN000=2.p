@@ -1,34 +1,3 @@
-%------------------------------------------------------------------------------
-% File     : SYN000=2 : TPTP v7.5.0. Bugfixed v5.5.1.
-% Domain   : Syntactic
-% Problem  : TF0 syntax with arithmetic
-% Version  : Biased.
-% English  : 
-
-% Refs     :
-% Source   : [TPTP]
-% Names    :
-
-% Status   : Theorem
-% Rating   : 0.62 v7.5.0, 0.60 v7.4.0, 0.62 v7.3.0, 0.67 v7.0.0, 0.57 v6.4.0, 0.33 v6.3.0, 0.71 v6.2.0, 1.00 v6.0.0
-% Syntax   : Number of formulae    :   83 (  70 unit;   6 type)
-%            Number of atoms       :   91 (   4 equality)
-%            Maximal formula depth :    7 (   1 average)
-%            Number of connectives :   14 (   0   ~;  10   |;   1   &)
-%                                         (   0 <=>;   3  =>;   0  <=;   0 <~>)
-%                                         (   0  ~|;   0  ~&)
-%            Number of type conns  :    3 (   3   >;   0   *;   0   +;   0  <<)
-%            Number of predicates  :   20 (  10 propositional; 0-2 arity)
-%            Number of functors    :   41 (  24 constant; 0-2 arity)
-%            Number of variables   :   14 (   1 sgn;   3   !;  11   ?)
-%                                         (  14   :;   0  !>;   0  ?*)
-%            Maximal term depth    :    3 (   1 average)
-%            Arithmetic symbols    :   50 (   6 prd;  17 fun;  13 num;  14 var)
-% SPC      : TF0_THM_EQU_ARI
-
-% Comments : 
-% Bugfixes : v5.5.1 - Removed $evaleq.
-%------------------------------------------------------------------------------
 %----Types for what follows
 tff(p_int_type,type,(
     p_int: $int > $o )).
@@ -306,5 +275,3 @@ tff(mixed,conjecture,(
       ( Y = $to_rat($sum(X,2))
       & ( $less($to_int(Y),3)
         | $greater($to_real(Y),3.3) ) ) )).
-
-%------------------------------------------------------------------------------

@@ -6,6 +6,8 @@ use nom::bytes::streaming::tag;
 use nom::combinator::{map, opt};
 use nom::multi::separated_list1;
 use nom::sequence::{delimited, pair, preceded, tuple};
+#[cfg(feature = "serde")]
+use serde::Serialize;
 
 use crate::common;
 use crate::common::*;
@@ -252,9 +254,6 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Monotype<'a> {
     }
 }
 
-// TODO control backtracking over parens/mapping?
-// (A) > B
-// (A)
 /// [`tff_non_atomic_type`](http://tptp.org/TPTP/SyntaxBNF.html#tff_non_atomic_type)
 #[derive(Clone, Debug, Display, PartialOrd, Ord, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
@@ -1006,7 +1005,6 @@ impl<'a, E: Error<'a>> Parse<'a, E> for LogicFormula<'a> {
 pub enum Formula<'a> {
     Logic(Box<LogicFormula<'a>>),
     AtomTyping(Box<AtomTyping<'a>>),
-    // TODO subtypes?
 }
 
 impl<'a, E: Error<'a>> Parse<'a, E> for Formula<'a> {

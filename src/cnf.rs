@@ -15,22 +15,21 @@ use crate::utils::Separated;
 use crate::{Error, Parse, Result};
 
 enum LiteralTail<'a> {
-    Equal(DefinedInfixPred, Box<fof::Term<'a>>),
-    NotEqual(InfixInequality, Box<fof::Term<'a>>),
+    Equal(fof::DefinedInfixFormulaTail<'a>),
+    NotEqual(fof::InfixUnaryTail<'a>),
 }
 
 impl<'a> LiteralTail<'a> {
     fn finish(self, left: fof::Term<'a>) -> Literal<'a> {
-        let left = Box::new(left);
         match self {
-            Self::Equal(op, right) => {
-                let infix = fof::DefinedInfixFormula { left, op, right };
+            Self::Equal(tail) => {
+                let infix = tail.finish(left);
                 let defined = fof::DefinedAtomicFormula::Infix(infix);
                 let atomic = fof::AtomicFormula::Defined(defined);
                 Literal::Atomic(atomic)
             }
-            Self::NotEqual(op, right) => {
-                let infix = fof::InfixUnary { left, op, right };
+            Self::NotEqual(tail) => {
+                let infix = tail.finish(left);
                 Literal::Infix(infix)
             }
         }
@@ -39,25 +38,10 @@ impl<'a> LiteralTail<'a> {
 
 impl<'a, E: Error<'a>> Parse<'a, E> for LiteralTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        preceded(
-            ignored,
-            alt((
-                map(
-                    pair(
-                        DefinedInfixPred::parse,
-                        preceded(ignored, map(fof::Term::parse, Box::new)),
-                    ),
-                    |(op, right)| LiteralTail::Equal(op, right),
-                ),
-                map(
-                    pair(
-                        InfixInequality::parse,
-                        preceded(ignored, map(fof::Term::parse, Box::new)),
-                    ),
-                    |(op, right)| LiteralTail::NotEqual(op, right),
-                ),
-            )),
-        )(x)
+        alt((
+            map(fof::DefinedInfixFormulaTail::parse, LiteralTail::Equal),
+            map(fof::InfixUnaryTail::parse, LiteralTail::NotEqual),
+        ))(x)
     }
 }
 
@@ -82,7 +66,10 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Literal<'a> {
                 Self::NegatedAtomic,
             ),
             map(
-                pair(fof::PlainTerm::parse, opt(LiteralTail::parse)),
+                pair(
+                    fof::PlainTerm::parse,
+                    opt(preceded(ignored, LiteralTail::parse)),
+                ),
                 |(left, tail)| match tail {
                     Some(tail) => {
                         let left = Box::new(fof::FunctionTerm::Plain(left));
@@ -100,6 +87,9 @@ impl<'a, E: Error<'a>> Parse<'a, E> for Literal<'a> {
                 pair(fof::Term::parse, LiteralTail::parse),
                 |(left, tail)| tail.finish(left),
             ),
+            map(fof::SystemAtomicFormula::parse, |f| {
+                Self::Atomic(fof::AtomicFormula::System(f))
+            }),
             map(fof::DefinedAtomicFormula::parse, |f| {
                 Self::Atomic(fof::AtomicFormula::Defined(f))
             }),

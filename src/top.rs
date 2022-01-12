@@ -108,14 +108,7 @@ impl<'a> GeneralFunctionTail<'a> {
 
 impl<'a, E: Error<'a>> Parse<'a, E> for GeneralFunctionTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        preceded(
-            pair(ignored, tag("(")),
-            delimited(
-                ignored,
-                map(GeneralTerms::parse, Self),
-                preceded(ignored, tag(")")),
-            ),
-        )(x)
+        map(parens, Self)(x)
     }
 }
 
@@ -131,7 +124,10 @@ pub struct GeneralFunction<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for GeneralFunction<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            pair(AtomicWord::parse, GeneralFunctionTail::parse),
+            pair(
+                AtomicWord::parse,
+                preceded(ignored, GeneralFunctionTail::parse),
+            ),
             |(word, tail)| tail.finish(word),
         )(x)
     }
@@ -153,7 +149,10 @@ impl<'a, E: Error<'a>> Parse<'a, E> for GeneralData<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
             map(
-                pair(AtomicWord::parse, opt(GeneralFunctionTail::parse)),
+                pair(
+                    AtomicWord::parse,
+                    opt(preceded(ignored, GeneralFunctionTail::parse)),
+                ),
                 |(word, tail)| {
                     if let Some(tail) = tail {
                         Self::Function(Box::new(tail.finish(word)))

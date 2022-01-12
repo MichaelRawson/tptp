@@ -45,42 +45,42 @@ fn is_do_char(c: u8) -> bool {
 }
 
 /// one or more spaces, tabs, carriage returns or line feeds
-pub fn whitespace<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+pub fn whitespace<'a, E: Error<'a>>(x: &'a [u8]) -> Result<'a, (), E> {
     value((), multispace1)(x)
 }
 
 /// `% a single-line comment`
-pub fn comment_line<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+pub fn comment_line<'a, E: Error<'a>>(x: &'a [u8]) -> Result<'a, (), E> {
     delimited(tag("%"), value((), not_line_ending), line_ending)(x)
 }
 
 /// `/* a comment block */`
-pub fn comment_block<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+pub fn comment_block<'a, E: Error<'a>>(x: &'a [u8]) -> Result<'a, (), E> {
     delimited(tag("/*"), value((), take_until("*/")), tag("*/"))(x)
 }
 
 /// `whitespace`, `comment_line`, or `comment_block`
-pub fn single_ignored<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+pub fn single_ignored<'a, E: Error<'a>>(x: &'a [u8]) -> Result<'a, (), E> {
     alt((whitespace, comment_line, comment_block))(x)
 }
 
 /// zero or more `whitespace`, `comment_line`, or `comment_block`
-pub fn ignored<'a, E: Error<'a>>(x: &'a [u8]) -> Result<(), E> {
+pub fn ignored<'a, E: Error<'a>>(x: &'a [u8]) -> Result<'a, (), E> {
     fold_many0(single_ignored, || (), |_, _| ())(x)
 }
 
 /// one or more lowercase letters
-pub fn lower_alpha1<'a, E: Error<'a>>(x: &'a [u8]) -> Result<&'a [u8], E> {
+pub fn lower_alpha1<'a, E: Error<'a>>(x: &'a [u8]) -> Result<'a, &'a [u8], E> {
     take_while1(is_lower_alpha)(x)
 }
 
 /// one or more uppercase letters
-pub fn upper_alpha1<'a, E: Error<'a>>(x: &'a [u8]) -> Result<&'a [u8], E> {
+pub fn upper_alpha1<'a, E: Error<'a>>(x: &'a [u8]) -> Result<'a, &'a [u8], E> {
     take_while1(is_upper_alpha)(x)
 }
 
 /// one or more letters or digits
-pub fn alphanumeric<'a, E: Error<'a>>(x: &'a [u8]) -> Result<&'a [u8], E> {
+pub fn alphanumeric<'a, E: Error<'a>>(x: &'a [u8]) -> Result<'a, &'a [u8], E> {
     take_while(is_alphanumeric)(x)
 }
 

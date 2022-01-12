@@ -200,10 +200,14 @@ impl<'a, E: Error<'a>> Parse<'a, E> for PlainAtomicFormula<'a> {
     }
 }
 
-struct DefinedInfixFormulaTail<'a>(DefinedInfixPred, Box<Term<'a>>);
+pub(crate) struct DefinedInfixFormulaTail<'a>(
+    pub(crate) DefinedInfixPred,
+    pub(crate) Box<Term<'a>>,
+);
 
 impl<'a> DefinedInfixFormulaTail<'a> {
-    fn finish(self, left: Box<Term<'a>>) -> DefinedInfixFormula {
+    pub(crate) fn finish(self, left: Term<'a>) -> DefinedInfixFormula {
+        let left = Box::new(left);
         let op = self.0;
         let right = self.1;
         DefinedInfixFormula { left, op, right }
@@ -214,7 +218,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for DefinedInfixFormulaTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
             pair(
-                preceded(ignored, DefinedInfixPred::parse),
+                DefinedInfixPred::parse,
                 preceded(ignored, map(Term::parse, Box::new)),
             ),
             |(op, right)| Self(op, right),
@@ -235,7 +239,10 @@ pub struct DefinedInfixFormula<'a> {
 impl<'a, E: Error<'a>> Parse<'a, E> for DefinedInfixFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
-            pair(map(Term::parse, Box::new), DefinedInfixFormulaTail::parse),
+            pair(
+                Term::parse,
+                preceded(ignored, DefinedInfixFormulaTail::parse),
+            ),
             |(left, tail)| tail.finish(left),
         )(x)
     }
@@ -282,11 +289,14 @@ impl<'a, E: Error<'a>> Parse<'a, E> for AtomicFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
             map(
-                pair(PlainTerm::parse, opt(DefinedInfixFormulaTail::parse)),
+                pair(
+                    PlainTerm::parse,
+                    opt(preceded(ignored, DefinedInfixFormulaTail::parse)),
+                ),
                 |(left, tail)| match tail {
                     Some(tail) => {
                         let left = Box::new(FunctionTerm::Plain(left));
-                        let left = Box::new(Term::Function(left));
+                        let left = Term::Function(left);
                         let infix = tail.finish(left);
                         let defined = DefinedAtomicFormula::Infix(infix);
                         Self::Defined(defined)
@@ -345,10 +355,13 @@ impl<'a, E: Error<'a>> Parse<'a, E> for QuantifiedFormula<'a> {
     }
 }
 
-struct InfixUnaryTail<'a>(InfixInequality, Box<Term<'a>>);
+pub(crate) struct InfixUnaryTail<'a>(
+    pub(crate) InfixInequality,
+    pub(crate) Box<Term<'a>>,
+);
 
 impl<'a> InfixUnaryTail<'a> {
-    fn finish(self, left: Term<'a>) -> InfixUnary<'a> {
+    pub(crate) fn finish(self, left: Term<'a>) -> InfixUnary<'a> {
         let left = Box::new(left);
         let op = self.0;
         let right = self.1;
@@ -360,7 +373,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for InfixUnaryTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         map(
             pair(
-                preceded(ignored, InfixInequality::parse),
+                InfixInequality::parse,
                 preceded(ignored, map(Term::parse, Box::new)),
             ),
             |(op, right)| Self(op, right),
@@ -380,9 +393,10 @@ pub struct InfixUnary<'a> {
 
 impl<'a, E: Error<'a>> Parse<'a, E> for InfixUnary<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        map(pair(Term::parse, InfixUnaryTail::parse), |(left, tail)| {
-            tail.finish(left)
-        })(x)
+        map(
+            pair(Term::parse, preceded(ignored, InfixUnaryTail::parse)),
+            |(left, tail)| tail.finish(left),
+        )(x)
     }
 }
 
@@ -460,25 +474,22 @@ impl<'a> UnitFormulaTail<'a> {
 
 impl<'a, E: Error<'a>> Parse<'a, E> for UnitFormulaTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        preceded(
-            ignored,
-            alt((
-                map(
-                    pair(
-                        DefinedInfixPred::parse,
-                        preceded(ignored, map(Term::parse, Box::new)),
-                    ),
-                    |(op, right)| Self::Equal(op, right),
+        alt((
+            map(
+                pair(
+                    DefinedInfixPred::parse,
+                    preceded(ignored, map(Term::parse, Box::new)),
                 ),
-                map(
-                    pair(
-                        InfixInequality::parse,
-                        preceded(ignored, map(Term::parse, Box::new)),
-                    ),
-                    |(op, right)| Self::NotEqual(op, right),
+                |(op, right)| Self::Equal(op, right),
+            ),
+            map(
+                pair(
+                    InfixInequality::parse,
+                    preceded(ignored, map(Term::parse, Box::new)),
                 ),
-            )),
-        )(x)
+                |(op, right)| Self::NotEqual(op, right),
+            ),
+        ))(x)
     }
 }
 
@@ -494,7 +505,10 @@ impl<'a, E: Error<'a>> Parse<'a, E> for UnitFormula<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
         alt((
             map(
-                pair(PlainTerm::parse, opt(UnitFormulaTail::parse)),
+                pair(
+                    PlainTerm::parse,
+                    opt(preceded(ignored, UnitFormulaTail::parse)),
+                ),
                 |(left, tail)| match tail {
                     Some(tail) => tail.finish(left),
                     None => {
@@ -512,18 +526,23 @@ impl<'a, E: Error<'a>> Parse<'a, E> for UnitFormula<'a> {
     }
 }
 
-fn assoc_tail<'a, E: Error<'a>>(
-    sep: u8,
-) -> impl Fn(&'a [u8]) -> Result<'a, GarbageFirstVec<UnitFormula<'a>>, E> {
-    move |x| {
-        let sep = &[sep];
+struct AssocTail<'a, const SEP: u8>(GarbageFirstVec<UnitFormula<'a>>);
+
+impl<'a, const SEP: u8> AssocTail<'a, SEP> {
+    fn finish(self, left: UnitFormula<'a>) -> Vec<UnitFormula<'a>> {
+        self.0.finish(left)
+    }
+}
+
+impl<'a, E: Error<'a>, const SEP: u8> Parse<'a, E> for AssocTail<'a, SEP> {
+    fn parse(x: &'a [u8]) -> Result<Self, E> {
         let (x, second) =
-            preceded(tag(sep), preceded(ignored, UnitFormula::parse))(x)?;
+            preceded(tag(&[SEP]), preceded(ignored, UnitFormula::parse))(x)?;
         let mut result = GarbageFirstVec::default();
         result.push(second);
         fold_many0_once(
             preceded(
-                delimited(ignored, tag(sep), ignored),
+                delimited(ignored, tag(&[SEP]), ignored),
                 UnitFormula::parse,
             ),
             result,
@@ -532,10 +551,11 @@ fn assoc_tail<'a, E: Error<'a>>(
                 result
             },
         )(x)
+        .map(|(x, units)| (x, Self(units)))
     }
 }
 
-struct OrTail<'a>(GarbageFirstVec<UnitFormula<'a>>);
+struct OrTail<'a>(AssocTail<'a, b'|'>);
 
 impl<'a> OrTail<'a> {
     fn finish(self, left: UnitFormula<'a>) -> OrFormula<'a> {
@@ -545,7 +565,7 @@ impl<'a> OrTail<'a> {
 
 impl<'a, E: Error<'a>> Parse<'a, E> for OrTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        map(assoc_tail(b'|'), Self)(x)
+        map(AssocTail::parse, Self)(x)
     }
 }
 
@@ -564,7 +584,7 @@ impl<'a, E: Error<'a>> Parse<'a, E> for OrFormula<'a> {
     }
 }
 
-struct AndTail<'a>(GarbageFirstVec<UnitFormula<'a>>);
+struct AndTail<'a>(AssocTail<'a, b'&'>);
 
 impl<'a> AndTail<'a> {
     fn finish(self, left: UnitFormula<'a>) -> AndFormula<'a> {
@@ -574,7 +594,7 @@ impl<'a> AndTail<'a> {
 
 impl<'a, E: Error<'a>> Parse<'a, E> for AndTail<'a> {
     fn parse(x: &'a [u8]) -> Result<Self, E> {
-        map(assoc_tail(b'&'), Self)(x)
+        map(AssocTail::parse, Self)(x)
     }
 }
 
