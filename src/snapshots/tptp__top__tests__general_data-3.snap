@@ -1,0 +1,11 @@
+---
+source: src/top.rs
+expression: parsed
+---
+Variable(
+    Variable(
+        UpperWord(
+            "X",
+        ),
+    ),
+)

@@ -1,0 +1,23 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+Arguments(
+    [
+        Function(
+            Plain(
+                Constant(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "c",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

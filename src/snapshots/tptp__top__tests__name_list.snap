@@ -1,0 +1,27 @@
+---
+source: src/top.rs
+expression: parsed
+---
+NameList(
+    [
+        AtomicWord(
+            Lower(
+                LowerWord(
+                    "name",
+                ),
+            ),
+        ),
+        AtomicWord(
+            SingleQuoted(
+                SingleQuoted(
+                    "name",
+                ),
+            ),
+        ),
+        Integer(
+            Integer(
+                "123",
+            ),
+        ),
+    ],
+)

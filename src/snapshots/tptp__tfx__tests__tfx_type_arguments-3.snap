@@ -1,0 +1,26 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+TypeArguments(
+    [
+        Variable(
+            Variable(
+                UpperWord(
+                    "A",
+                ),
+            ),
+        ),
+        Constant(
+            TypeConstant(
+                TypeFunctor(
+                    Lower(
+                        LowerWord(
+                            "c",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

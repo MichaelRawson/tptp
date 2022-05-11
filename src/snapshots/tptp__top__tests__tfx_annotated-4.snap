@@ -1,0 +1,5 @@
+---
+source: src/top.rs
+expression: parsed
+---
+tff(test,axiom,$true,unknown).

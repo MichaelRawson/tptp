@@ -1,0 +1,28 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Product(
+    XprodType(
+        [
+            Atomic(
+                Variable(
+                    Variable(
+                        UpperWord(
+                            "A",
+                        ),
+                    ),
+                ),
+            ),
+            Atomic(
+                Variable(
+                    Variable(
+                        UpperWord(
+                            "B",
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

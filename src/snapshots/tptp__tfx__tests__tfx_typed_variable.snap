@@ -1,0 +1,18 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+TypedVariable {
+    variable: Variable(
+        UpperWord(
+            "X",
+        ),
+    ),
+    typ: Variable(
+        Variable(
+            UpperWord(
+                "A",
+            ),
+        ),
+    ),
+}

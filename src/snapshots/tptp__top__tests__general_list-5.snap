@@ -1,0 +1,30 @@
+---
+source: src/top.rs
+expression: parsed
+---
+GeneralList(
+    Some(
+        GeneralTerms(
+            [
+                Data(
+                    Variable(
+                        Variable(
+                            UpperWord(
+                                "X",
+                            ),
+                        ),
+                    ),
+                ),
+                Data(
+                    Variable(
+                        Variable(
+                            UpperWord(
+                                "Y",
+                            ),
+                        ),
+                    ),
+                ),
+            ],
+        ),
+    ),
+)

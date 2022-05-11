@@ -1,0 +1,21 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+Plain(
+    DefinedPlainFormula(
+        Constant(
+            DefinedConstant(
+                DefinedFunctor(
+                    AtomicDefinedWord(
+                        DollarWord(
+                            LowerWord(
+                                "false",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

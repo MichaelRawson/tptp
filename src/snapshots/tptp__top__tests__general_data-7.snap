@@ -1,0 +1,29 @@
+---
+source: src/top.rs
+expression: parsed
+---
+Formula(
+    Fof(
+        Formula(
+            Unitary(
+                Atomic(
+                    Plain(
+                        PlainAtomicFormula(
+                            Constant(
+                                Constant(
+                                    Functor(
+                                        Lower(
+                                            LowerWord(
+                                                "p",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

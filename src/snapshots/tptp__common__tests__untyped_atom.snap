@@ -1,0 +1,15 @@
+---
+source: src/common.rs
+expression: parsed
+---
+Constant(
+    Constant(
+        Functor(
+            Lower(
+                LowerWord(
+                    "constant",
+                ),
+            ),
+        ),
+    ),
+)

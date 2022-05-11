@@ -1,0 +1,12 @@
+---
+source: src/tfx.rs
+assertion_line: 1050
+expression: parsed
+---
+Untyped(
+    Variable(
+        UpperWord(
+            "X",
+        ),
+    ),
+)

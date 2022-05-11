@@ -1,0 +1,30 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+XprodType(
+    [
+        Atomic(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "A",
+                    ),
+                ),
+            ),
+        ),
+        Atomic(
+            Constant(
+                TypeConstant(
+                    TypeFunctor(
+                        Lower(
+                            LowerWord(
+                                "c",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

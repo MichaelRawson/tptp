@@ -1,0 +1,40 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Function(
+    Functor(
+        Lower(
+            LowerWord(
+                "f",
+            ),
+        ),
+    ),
+    Arguments(
+        [
+            Logic(
+                Unitary(
+                    Atomic(
+                        Defined(
+                            DefinedAtomic(
+                                Constant(
+                                    DefinedConstant(
+                                        DefinedFunctor(
+                                            AtomicDefinedWord(
+                                                DollarWord(
+                                                    LowerWord(
+                                                        "true",
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

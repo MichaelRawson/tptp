@@ -1,0 +1,11 @@
+---
+source: src/common.rs
+expression: parsed
+---
+AtomicDefinedWord(
+    DollarWord(
+        LowerWord(
+            "atomic",
+        ),
+    ),
+)

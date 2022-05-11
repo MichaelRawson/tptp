@@ -1,0 +1,31 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Arguments(
+    [
+        Logic(
+            Unitary(
+                Atomic(
+                    Defined(
+                        DefinedAtomic(
+                            Constant(
+                                DefinedConstant(
+                                    DefinedFunctor(
+                                        AtomicDefinedWord(
+                                            DollarWord(
+                                                LowerWord(
+                                                    "true",
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

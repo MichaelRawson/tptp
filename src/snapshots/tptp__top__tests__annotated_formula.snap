@@ -1,0 +1,48 @@
+---
+source: src/top.rs
+expression: parsed
+---
+Tfx(
+    TfxAnnotated(
+        Annotated {
+            name: AtomicWord(
+                Lower(
+                    LowerWord(
+                        "test",
+                    ),
+                ),
+            ),
+            role: FormulaRole(
+                LowerWord(
+                    "axiom",
+                ),
+            ),
+            formula: Logic(
+                Unitary(
+                    Atomic(
+                        Defined(
+                            DefinedAtomic(
+                                Constant(
+                                    DefinedConstant(
+                                        DefinedFunctor(
+                                            AtomicDefinedWord(
+                                                DollarWord(
+                                                    LowerWord(
+                                                        "true",
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            annotations: Annotations(
+                None,
+            ),
+        },
+    ),
+)

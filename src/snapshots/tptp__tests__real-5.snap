@@ -1,8 +1,0 @@
----
-source: src/tests.rs
-expression: parsed
-
----
-Real(
-    "-1.23E-456",
-)

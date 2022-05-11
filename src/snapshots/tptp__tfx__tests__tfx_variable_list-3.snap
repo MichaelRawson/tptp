@@ -1,0 +1,51 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+VariableList(
+    [
+        Untyped(
+            Variable(
+                UpperWord(
+                    "X",
+                ),
+            ),
+        ),
+        Typed(
+            TypedVariable {
+                variable: Variable(
+                    UpperWord(
+                        "Y",
+                    ),
+                ),
+                typ: Variable(
+                    Variable(
+                        UpperWord(
+                            "A",
+                        ),
+                    ),
+                ),
+            },
+        ),
+        Typed(
+            TypedVariable {
+                variable: Variable(
+                    UpperWord(
+                        "Z",
+                    ),
+                ),
+                typ: Constant(
+                    TypeConstant(
+                        TypeFunctor(
+                            Lower(
+                                LowerWord(
+                                    "c",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    ],
+)

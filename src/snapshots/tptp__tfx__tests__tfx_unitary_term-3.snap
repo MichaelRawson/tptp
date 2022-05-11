@@ -1,0 +1,13 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Defined(
+    Number(
+        Integer(
+            Integer(
+                "123",
+            ),
+        ),
+    ),
+)

@@ -518,167 +518,177 @@ mod tests {
     #[test]
     fn test_formula_role() {
         check_size::<FormulaRole>();
-        parse::<FormulaRole>(b"axiom\0");
-        parse::<FormulaRole>(b"conjecture\0");
+        parse_snapshot!(FormulaRole, b"axiom\0");
+        parse_snapshot!(FormulaRole, b"conjecture\0");
     }
 
     #[test]
     fn test_general_terms() {
         check_size::<GeneralTerms>();
-        parse::<GeneralTerms>(b"X\0");
-        parse::<GeneralTerms>(b"X , Y\0");
+        parse_snapshot!(GeneralTerms, b"X\0");
+        parse_snapshot!(GeneralTerms, b"X , Y\0");
     }
 
     #[test]
     fn test_general_list() {
         check_size::<GeneralList>();
-        parse::<GeneralList>(b"[ ]\0");
-        parse::<GeneralList>(b"[ X ]\0");
-        parse::<GeneralList>(b"[ X , Y ]\0");
+        parse_snapshot!(GeneralList, b"[ ]\0");
+        parse_snapshot!(GeneralList, b"[ X ]\0");
+        parse_snapshot!(GeneralList, b"[ X , Y ]\0");
     }
 
     #[test]
     fn test_general_function() {
         check_size::<GeneralFunction>();
-        parse::<GeneralFunction>(b"atomic ( X )\0");
+        parse_snapshot!(GeneralFunction, b"atomic ( X )\0");
     }
 
     #[test]
     fn test_formula_data() {
         check_size::<FormulaData>();
-        parse::<FormulaData>(b"$tff ( p )\0");
-        parse::<FormulaData>(b"$fof ( p )\0");
-        parse::<FormulaData>(b"$cnf ( p )\0");
-        parse::<FormulaData>(b"$fot ( t )\0");
+        parse_snapshot!(FormulaData, b"$tff ( p )\0");
+        parse_snapshot!(FormulaData, b"$fof ( p )\0");
+        parse_snapshot!(FormulaData, b"$cnf ( p )\0");
+        parse_snapshot!(FormulaData, b"$fot ( t )\0");
     }
 
     #[test]
     fn test_general_data() {
         check_size::<GeneralData>();
-        parse::<GeneralData>(b"c\0");
-        parse::<GeneralData>(b"X\0");
-        parse::<GeneralData>(b"atomic ( X )\0");
-        parse::<GeneralData>(b"$fof ( p )\0");
-        parse::<GeneralData>(b"123\0");
-        parse::<GeneralData>(b"\"distinct object\"\0");
+        parse_snapshot!(GeneralData, b"c\0");
+        parse_snapshot!(GeneralData, b"X\0");
+        parse_snapshot!(GeneralData, b"atomic ( X )\0");
+        parse_snapshot!(GeneralData, b"$fof ( p )\0");
+        parse_snapshot!(GeneralData, b"123\0");
+        parse_snapshot!(GeneralData, b"\"distinct object\"\0");
     }
 
     #[test]
     fn test_general_term() {
         check_size::<GeneralTerm>();
-        parse::<GeneralTerm>(b"[ X , Y ]\0");
-        parse::<GeneralTerm>(b"$fof ( p )\0");
-        parse::<GeneralTerm>(b"X : Y\0");
+        parse_snapshot!(GeneralTerm, b"[ X , Y ]\0");
+        parse_snapshot!(GeneralTerm, b"$fof ( p )\0");
+        parse_snapshot!(GeneralTerm, b"X : Y\0");
     }
 
     #[test]
     fn test_useful_info() {
         check_size::<UsefulInfo>();
-        parse::<UsefulInfo>(b"[ X , Y ]\0");
+        parse_snapshot!(UsefulInfo, b"[ X , Y ]\0");
     }
 
     #[test]
     fn test_optional_info() {
         check_size::<OptionalInfo>();
-        parse::<OptionalInfo>(b"\0");
-        parse::<OptionalInfo>(b", [ X , Y ]\0");
+        parse_snapshot!(OptionalInfo, b"\0");
+        parse_snapshot!(OptionalInfo, b", [ X , Y ]\0");
     }
 
     #[test]
     fn test_annotations() {
         check_size::<Annotations>();
-        parse::<Annotations>(b"\0");
-        parse::<Annotations>(b", c\0");
-        parse::<Annotations>(b", c , [X]\0");
+        parse_snapshot!(Annotations, b"\0");
+        parse_snapshot!(Annotations, b", c\0");
+        parse_snapshot!(Annotations, b", c , [X]\0");
     }
 
     #[test]
     fn test_tfx_annotated() {
         check_size::<TfxAnnotated>();
-        parse::<TfxAnnotated>(b"tff ( test , axiom , $true ) .\0");
-        parse::<TfxAnnotated>(b"tff ( test , axiom , $true , unknown ) .\0");
-        parse::<TfxAnnotated>(
-            b"tff ( test , axiom , $true , unknown , [] ) .\0",
+        parse_snapshot!(TfxAnnotated, b"tff ( test , axiom , $true ) .\0");
+        parse_snapshot!(
+            TfxAnnotated,
+            b"tff ( test , axiom , $true , unknown ) .\0"
+        );
+        parse_snapshot!(
+            TfxAnnotated,
+            b"tff ( test , axiom , $true , unknown , [] ) .\0"
         );
     }
 
     #[test]
     fn test_fof_annotated() {
         check_size::<FofAnnotated>();
-        parse::<FofAnnotated>(b"fof ( test , axiom , $true ) .\0");
-        parse::<FofAnnotated>(b"fof ( test , axiom , $true , unknown ) .\0");
-        parse::<FofAnnotated>(
-            b"fof ( test , axiom , $true , unknown , [] ) .\0",
+        parse_snapshot!(FofAnnotated, b"fof ( test , axiom , $true ) .\0");
+        parse_snapshot!(
+            FofAnnotated,
+            b"fof ( test , axiom , $true , unknown ) .\0"
+        );
+        parse_snapshot!(
+            FofAnnotated,
+            b"fof ( test , axiom , $true , unknown , [] ) .\0"
         );
     }
 
     #[test]
     fn test_cnf_annotated() {
         check_size::<CnfAnnotated>();
-        parse::<CnfAnnotated>(b"cnf ( test , axiom , $true ) .\0");
-        parse::<CnfAnnotated>(b"cnf ( test , axiom , $true , unknown ) .\0");
-        parse::<CnfAnnotated>(
-            b"cnf ( test , axiom , $true , unknown , [] ) .\0",
-        )
+        parse_snapshot!(CnfAnnotated, b"cnf ( test , axiom , $true ) .\0");
+        parse_snapshot!(
+            CnfAnnotated,
+            b"cnf ( test , axiom , $true , unknown ) .\0"
+        );
+        parse_snapshot!(
+            CnfAnnotated,
+            b"cnf ( test , axiom , $true , unknown , [] ) .\0"
+        );
     }
 
     #[test]
     fn test_annotated_formula() {
         check_size::<AnnotatedFormula>();
-        parse::<AnnotatedFormula>(b"tff ( test , axiom , $true ) .\0");
-        parse::<AnnotatedFormula>(b"fof ( test , axiom , $true ) .\0");
-        parse::<AnnotatedFormula>(b"cnf ( test , axiom , $true ) .\0");
+        parse_snapshot!(AnnotatedFormula, b"tff ( test , axiom , $true ) .\0");
+        parse_snapshot!(AnnotatedFormula, b"fof ( test , axiom , $true ) .\0");
+        parse_snapshot!(AnnotatedFormula, b"cnf ( test , axiom , $true ) .\0");
     }
 
     #[test]
     fn test_file_name() {
         check_size::<FileName>();
-        parse::<FileName>(b"'test'\0");
+        parse_snapshot!(FileName, b"'test'\0");
     }
 
     #[test]
     fn test_name_list() {
         check_size::<NameList>();
-        parse::<NameList>(b"name , 'name' , 123\0");
-        parse::<NameList>(b"name\0");
+        parse_snapshot!(NameList, b"name , 'name' , 123\0");
+        parse_snapshot!(NameList, b"name\0");
     }
 
     #[test]
     fn test_formula_selection() {
         check_size::<FormulaSelection>();
-        parse::<FormulaSelection>(b", [ name , 'name' , 123 ]\0");
-        parse::<FormulaSelection>(b", [ name ]\0");
+        parse_snapshot!(FormulaSelection, b", [ name , 'name' , 123 ]\0");
+        parse_snapshot!(FormulaSelection, b", [ name ]\0");
     }
 
     #[test]
     fn test_include() {
         check_size::<Include>();
-        parse::<Include>(b"include ( 'test' ) .\0");
-        parse::<Include>(b"include ( 'test', [ test ] ) .\0");
+        parse_snapshot!(Include, b"include ( 'test' ) .\0");
+        parse_snapshot!(Include, b"include ( 'test', [ test ] ) .\0");
     }
 
     #[test]
     fn test_tptp_input() {
         check_size::<TPTPInput>();
-        parse::<TPTPInput>(b"include ( 'test' ) .\0");
-        parse::<TPTPInput>(b"tff ( test , axiom , $true ) .\0");
-        parse::<TPTPInput>(b"fof ( test , axiom , $true ) .\0");
-        parse::<TPTPInput>(b"cnf ( test , axiom , $true ) .\0");
+        parse_snapshot!(TPTPInput, b"include ( 'test' ) .\0");
+        parse_snapshot!(TPTPInput, b"tff ( test , axiom , $true ) .\0");
+        parse_snapshot!(TPTPInput, b"fof ( test , axiom , $true ) .\0");
+        parse_snapshot!(TPTPInput, b"cnf ( test , axiom , $true ) .\0");
     }
 
     // https://github.com/MichaelRawson/tptp/issues/2
     // with thanks to @skbaek
     #[test]
     fn test_large_annotations() {
-        parse::<TPTPInput>(
-        b"cnf(c_0_137, negated_conjecture, $false, inference(cn,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[c_0_134, c_0_95]), c_0_97]), c_0_99]), c_0_101]), c_0_103]), c_0_105]), c_0_107]), c_0_109]), c_0_111]), c_0_113]), c_0_115]), c_0_117]), c_0_119]), c_0_121]), c_0_123]), c_0_125]), c_0_127]), c_0_129]), c_0_131]), c_0_133]), c_0_135])])).\0"
-    );
+        parse_snapshot!(TPTPInput, b"cnf(c_0_137, negated_conjecture, $false, inference(cn,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[c_0_134, c_0_95]), c_0_97]), c_0_99]), c_0_101]), c_0_103]), c_0_105]), c_0_107]), c_0_109]), c_0_111]), c_0_113]), c_0_115]), c_0_117]), c_0_119]), c_0_121]), c_0_123]), c_0_125]), c_0_127]), c_0_129]), c_0_131]), c_0_133]), c_0_135])])).\0");
     }
 
     // reported by Michael Färber
     #[test]
     #[should_panic]
     fn test_cnf_trailing() {
-        parse::<TPTPInput>(b"cnf(classical, conjecture, p(X) | ~p(X)");
+        parse_snapshot!(TPTPInput, b"cnf(classical, conjecture, p(X) | ~p(X)");
     }
 }

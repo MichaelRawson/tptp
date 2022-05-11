@@ -1,0 +1,23 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+VariableList(
+    [
+        Variable(
+            UpperWord(
+                "X",
+            ),
+        ),
+        Variable(
+            UpperWord(
+                "Y",
+            ),
+        ),
+        Variable(
+            UpperWord(
+                "Z",
+            ),
+        ),
+    ],
+)

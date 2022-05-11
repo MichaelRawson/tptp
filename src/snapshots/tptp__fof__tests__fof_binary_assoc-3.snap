@@ -1,0 +1,48 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+And(
+    AndFormula(
+        [
+            Unitary(
+                Atomic(
+                    Plain(
+                        PlainAtomicFormula(
+                            Constant(
+                                Constant(
+                                    Functor(
+                                        Lower(
+                                            LowerWord(
+                                                "p",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            Unitary(
+                Atomic(
+                    Plain(
+                        PlainAtomicFormula(
+                            Constant(
+                                Constant(
+                                    Functor(
+                                        Lower(
+                                            LowerWord(
+                                                "q",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

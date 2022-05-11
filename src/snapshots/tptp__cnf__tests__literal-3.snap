@@ -1,0 +1,21 @@
+---
+source: src/cnf.rs
+expression: parsed
+---
+NegatedAtomic(
+    Plain(
+        PlainAtomicFormula(
+            Constant(
+                Constant(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "p",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

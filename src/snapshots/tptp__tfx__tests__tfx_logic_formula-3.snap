@@ -1,0 +1,28 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Unary(
+    Prefix(
+        PrefixUnary {
+            op: UnaryConnective,
+            formula: Unitary(
+                Atomic(
+                    Plain(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "p",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        },
+    ),
+)

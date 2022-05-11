@@ -1,0 +1,28 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Quantified(
+    QuantifiedType {
+        bound: VariableList(
+            [
+                Untyped(
+                    Variable(
+                        UpperWord(
+                            "A",
+                        ),
+                    ),
+                ),
+            ],
+        ),
+        typ: Atomic(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "A",
+                    ),
+                ),
+            ),
+        ),
+    },
+)

@@ -1,0 +1,19 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+DefinedAtomicTerm(
+    Constant(
+        DefinedConstant(
+            DefinedFunctor(
+                AtomicDefinedWord(
+                    DollarWord(
+                        LowerWord(
+                            "defined_atomic_term",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

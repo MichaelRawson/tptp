@@ -1,0 +1,27 @@
+---
+source: src/cnf.rs
+expression: parsed
+---
+Parenthesised(
+    Disjunction(
+        [
+            Atomic(
+                Plain(
+                    PlainAtomicFormula(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "p",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

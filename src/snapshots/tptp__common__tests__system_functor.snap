@@ -1,0 +1,13 @@
+---
+source: src/common.rs
+expression: parsed
+---
+SystemFunctor(
+    AtomicSystemWord(
+        DollarDollarWord(
+            LowerWord(
+                "system_functor",
+            ),
+        ),
+    ),
+)

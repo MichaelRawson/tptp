@@ -1,0 +1,14 @@
+---
+source: src/top.rs
+expression: parsed
+---
+Include {
+    file_name: FileName(
+        SingleQuoted(
+            "test",
+        ),
+    ),
+    selection: FormulaSelection(
+        None,
+    ),
+}

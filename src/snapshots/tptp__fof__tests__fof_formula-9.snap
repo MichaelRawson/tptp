@@ -1,0 +1,168 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+Formula(
+    Binary(
+        Assoc(
+            And(
+                AndFormula(
+                    [
+                        Unitary(
+                            Parenthesised(
+                                Unitary(
+                                    Quantified(
+                                        QuantifiedFormula {
+                                            quantifier: Forall,
+                                            bound: VariableList(
+                                                [
+                                                    Variable(
+                                                        UpperWord(
+                                                            "X",
+                                                        ),
+                                                    ),
+                                                    Variable(
+                                                        UpperWord(
+                                                            "Y",
+                                                        ),
+                                                    ),
+                                                    Variable(
+                                                        UpperWord(
+                                                            "Z",
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                            formula: Unitary(
+                                                Quantified(
+                                                    QuantifiedFormula {
+                                                        quantifier: Exists,
+                                                        bound: VariableList(
+                                                            [
+                                                                Variable(
+                                                                    UpperWord(
+                                                                        "Q",
+                                                                    ),
+                                                                ),
+                                                            ],
+                                                        ),
+                                                        formula: Unary(
+                                                            InfixUnary(
+                                                                InfixUnary {
+                                                                    left: Variable(
+                                                                        Variable(
+                                                                            UpperWord(
+                                                                                "Q",
+                                                                            ),
+                                                                        ),
+                                                                    ),
+                                                                    op: InfixInequality,
+                                                                    right: Function(
+                                                                        Plain(
+                                                                            Function(
+                                                                                Functor(
+                                                                                    Lower(
+                                                                                        LowerWord(
+                                                                                            "p",
+                                                                                        ),
+                                                                                    ),
+                                                                                ),
+                                                                                Arguments(
+                                                                                    [
+                                                                                        Variable(
+                                                                                            Variable(
+                                                                                                UpperWord(
+                                                                                                    "A",
+                                                                                                ),
+                                                                                            ),
+                                                                                        ),
+                                                                                    ],
+                                                                                ),
+                                                                            ),
+                                                                        ),
+                                                                    ),
+                                                                },
+                                                            ),
+                                                        ),
+                                                    },
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ),
+                        ),
+                        Unitary(
+                            Atomic(
+                                Plain(
+                                    PlainAtomicFormula(
+                                        Constant(
+                                            Constant(
+                                                Functor(
+                                                    Lower(
+                                                        LowerWord(
+                                                            "p",
+                                                        ),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                        Unitary(
+                            Parenthesised(
+                                Binary(
+                                    Nonassoc(
+                                        BinaryNonassoc {
+                                            left: Unitary(
+                                                Atomic(
+                                                    Plain(
+                                                        PlainAtomicFormula(
+                                                            Constant(
+                                                                Constant(
+                                                                    Functor(
+                                                                        Lower(
+                                                                            LowerWord(
+                                                                                "q",
+                                                                            ),
+                                                                        ),
+                                                                    ),
+                                                                ),
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ),
+                                            ),
+                                            op: LRImplies,
+                                            right: Unitary(
+                                                Atomic(
+                                                    Plain(
+                                                        PlainAtomicFormula(
+                                                            Constant(
+                                                                Constant(
+                                                                    Functor(
+                                                                        Lower(
+                                                                            LowerWord(
+                                                                                "r",
+                                                                            ),
+                                                                        ),
+                                                                    ),
+                                                                ),
+                                                            ),
+                                                        ),
+                                                    ),
+                                                ),
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    ),
+)

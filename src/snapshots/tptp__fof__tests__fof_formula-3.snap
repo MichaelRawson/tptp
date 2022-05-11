@@ -1,0 +1,35 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+Formula(
+    Unary(
+        Unary(
+            UnaryConnective,
+            Unary(
+                Unary(
+                    UnaryConnective,
+                    Unitary(
+                        Atomic(
+                            Plain(
+                                PlainAtomicFormula(
+                                    Constant(
+                                        Constant(
+                                            Functor(
+                                                Lower(
+                                                    LowerWord(
+                                                        "p",
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

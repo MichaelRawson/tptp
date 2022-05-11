@@ -1024,255 +1024,256 @@ mod tests {
     #[test]
     fn test_tfx_type_arguments() {
         check_size::<TypeArguments>();
-        parse::<TypeArguments>(b"A\0");
-        parse::<TypeArguments>(b"A , c\0");
+        parse_snapshot!(TypeArguments, b"A\0");
+        parse_snapshot!(TypeArguments, b"A , c\0");
     }
 
     #[test]
     fn test_tfx_atomic_type() {
         check_size::<AtomicType>();
-        parse::<AtomicType>(b"type_constant\0");
-        parse::<AtomicType>(b"$defined_type\0");
-        parse::<AtomicType>(b"TypeVariable\0");
-        parse::<AtomicType>(b"type_function (A, B)\0");
+        parse_snapshot!(AtomicType, b"type_constant\0");
+        parse_snapshot!(AtomicType, b"$defined_type\0");
+        parse_snapshot!(AtomicType, b"TypeVariable\0");
+        parse_snapshot!(AtomicType, b"type_function (A, B)\0");
     }
 
     #[test]
     fn test_tfx_typed_variable() {
         check_size::<TypedVariable>();
-        parse::<TypedVariable>(b"X : A\0");
+        parse_snapshot!(TypedVariable, b"X : A\0");
     }
 
     #[test]
     fn test_tfx_variable() {
-        check_size::<super::Variable>();
-        parse::<super::Variable>(b"X\0");
-        parse::<super::Variable>(b"X : A\0");
+        use super::Variable;
+        check_size::<Variable>();
+        parse_snapshot!(Variable, b"X\0");
+        parse_snapshot!(Variable, b"X : A\0");
     }
 
     #[test]
     fn test_tfx_variable_list() {
         check_size::<VariableList>();
-        parse::<VariableList>(b"X\0");
-        parse::<VariableList>(b"X , Y : A , Z : c\0");
+        parse_snapshot!(VariableList, b"X\0");
+        parse_snapshot!(VariableList, b"X , Y : A , Z : c\0");
     }
 
     #[test]
     fn test_tfx_xprod_type() {
         check_size::<XprodType>();
-        parse::<XprodType>(b"A * c\0");
-        parse::<XprodType>(b"A * B * c\0");
+        parse_snapshot!(XprodType, b"A * c\0");
+        parse_snapshot!(XprodType, b"A * B * c\0");
     }
 
     #[test]
     fn test_tfx_unitary_type() {
         check_size::<UnitaryType>();
-        parse::<UnitaryType>(b"A\0");
-        parse::<UnitaryType>(b"( A * B )\0");
-        parse::<UnitaryType>(b"( ( A * c ) * ( B * d ) )\0");
+        parse_snapshot!(UnitaryType, b"A\0");
+        parse_snapshot!(UnitaryType, b"( A * B )\0");
+        parse_snapshot!(UnitaryType, b"( ( A * c ) * ( B * d ) )\0");
     }
 
     #[test]
     fn test_tfx_mapping_type() {
         check_size::<MappingType>();
-        parse::<MappingType>(b"A > B\0");
-        parse::<MappingType>(b"( A * c ) > B\0");
+        parse_snapshot!(MappingType, b"A > B\0");
+        parse_snapshot!(MappingType, b"( A * c ) > B\0");
     }
 
     #[test]
     fn test_tfx_quantified_type() {
         check_size::<QuantifiedType>();
-        parse::<QuantifiedType>(b"!> [ A : $tType , B ] : A\0");
+        parse_snapshot!(QuantifiedType, b"!> [ A : $tType , B ] : A\0");
     }
 
     #[test]
     fn test_tfx_monotype() {
         check_size::<Monotype>();
-        parse::<Monotype>(b"A\0");
-        parse::<Monotype>(b"( A > A )\0");
-        parse::<Monotype>(b"!>[A]: A\0");
+        parse_snapshot!(Monotype, b"A\0");
+        parse_snapshot!(Monotype, b"( A > A )\0");
+        parse_snapshot!(Monotype, b"!>[A]: A\0");
     }
 
     #[test]
     fn test_tfx_non_atomic_type() {
         check_size::<NonAtomicType>();
-        parse::<NonAtomicType>(b"A > A\0");
-        parse::<NonAtomicType>(b"!>[A]: A\0");
-        parse::<NonAtomicType>(b"( A > A )\0");
+        parse_snapshot!(NonAtomicType, b"A > A\0");
+        parse_snapshot!(NonAtomicType, b"!>[A]: A\0");
+        parse_snapshot!(NonAtomicType, b"( A > A )\0");
     }
 
     #[test]
     fn test_tfx_top_level_type() {
         check_size::<TopLevelType>();
-        parse::<TopLevelType>(b"A\0");
-        parse::<TopLevelType>(b"A > A\0");
+        parse_snapshot!(TopLevelType, b"A\0");
+        parse_snapshot!(TopLevelType, b"A > A\0");
     }
 
     #[test]
     fn test_tfx_atom_typing() {
         check_size::<AtomTyping>();
-        parse::<AtomTyping>(b"c : A\0");
-        parse::<AtomTyping>(b"( c : A )\0");
+        parse_snapshot!(AtomTyping, b"c : A\0");
+        parse_snapshot!(AtomTyping, b"( c : A )\0");
     }
 
     #[test]
     fn test_tfx_term() {
         check_size::<Term>();
-        parse::<Term>(b"$true\0");
-        parse::<Term>(b"123\0");
+        parse_snapshot!(Term, b"$true\0");
+        parse_snapshot!(Term, b"123\0");
     }
 
     #[test]
     fn test_tfx_unitary_term() {
         check_size::<UnitaryTerm>();
-        parse::<UnitaryTerm>(b"p\0");
-        parse::<UnitaryTerm>(b"123\0");
-        parse::<UnitaryTerm>(b"X\0");
-        parse::<UnitaryTerm>(b"( $true )\0");
+        parse_snapshot!(UnitaryTerm, b"p\0");
+        parse_snapshot!(UnitaryTerm, b"123\0");
+        parse_snapshot!(UnitaryTerm, b"X\0");
+        parse_snapshot!(UnitaryTerm, b"( $true )\0");
     }
 
     #[test]
     fn test_tfx_arguments() {
         check_size::<Arguments>();
-        parse::<Arguments>(b"$true\0");
-        parse::<Arguments>(b"$true , $true\0");
+        parse_snapshot!(Arguments, b"$true\0");
+        parse_snapshot!(Arguments, b"$true , $true\0");
     }
 
     #[test]
     fn test_tfx_system_atomic() {
         check_size::<SystemAtomic>();
-        parse::<SystemAtomic>(b"$$system\0");
-        parse::<SystemAtomic>(b"$$system ( $true )\0");
+        parse_snapshot!(SystemAtomic, b"$$system\0");
+        parse_snapshot!(SystemAtomic, b"$$system ( $true )\0");
     }
 
     #[test]
     fn test_tfx_plain_atomic() {
         check_size::<PlainAtomic>();
-        parse::<PlainAtomic>(b"c\0");
-        parse::<PlainAtomic>(b"f ( $true )\0");
+        parse_snapshot!(PlainAtomic, b"c\0");
+        parse_snapshot!(PlainAtomic, b"f ( $true )\0");
     }
 
     #[test]
     fn test_tfx_defined_plain() {
         check_size::<DefinedPlain>();
-        parse::<DefinedPlain>(b"$defined\0");
-        parse::<DefinedPlain>(b"$defined ( $true )\0");
+        parse_snapshot!(DefinedPlain, b"$defined\0");
+        parse_snapshot!(DefinedPlain, b"$defined ( $true )\0");
     }
 
     #[test]
     fn test_tfx_defined_atomic() {
         check_size::<DefinedAtomic>();
-        parse::<DefinedAtomic>(b"$defined\0");
+        parse_snapshot!(DefinedAtomic, b"$defined\0");
     }
 
     #[test]
     fn test_tfx_atomic_formula() {
         check_size::<AtomicFormula>();
-        parse::<AtomicFormula>(b"p\0");
-        parse::<AtomicFormula>(b"$defined\0");
-        parse::<AtomicFormula>(b"$$system\0");
+        parse_snapshot!(AtomicFormula, b"p\0");
+        parse_snapshot!(AtomicFormula, b"$defined\0");
+        parse_snapshot!(AtomicFormula, b"$$system\0");
     }
 
     #[test]
     fn test_tfx_defined_infix() {
         check_size::<DefinedInfix>();
-        parse::<DefinedInfix>(b"X = Y\0");
+        parse_snapshot!(DefinedInfix, b"X = Y\0");
     }
 
     #[test]
     fn test_tfx_infix_unary() {
         check_size::<InfixUnary>();
-        parse::<InfixUnary>(b"X != Y\0");
+        parse_snapshot!(InfixUnary, b"X != Y\0");
     }
 
     #[test]
     fn test_tfx_prefix_unary() {
         check_size::<PrefixUnary>();
-        parse::<PrefixUnary>(b"~ $true\0");
+        parse_snapshot!(PrefixUnary, b"~ $true\0");
     }
 
     #[test]
     fn test_tfx_unary_formula() {
         check_size::<UnaryFormula>();
-        parse::<UnaryFormula>(b"X != Y\0");
-        parse::<UnaryFormula>(b"~ $true\0");
+        parse_snapshot!(UnaryFormula, b"X != Y\0");
+        parse_snapshot!(UnaryFormula, b"~ $true\0");
     }
 
     #[test]
     fn test_tfx_preunit_formula() {
         check_size::<PreunitFormula>();
-        parse::<PreunitFormula>(b"$true\0");
-        parse::<PreunitFormula>(b"~ $true\0");
+        parse_snapshot!(PreunitFormula, b"$true\0");
+        parse_snapshot!(PreunitFormula, b"~ $true\0");
     }
 
     #[test]
     fn test_tfx_quantified_formula() {
         check_size::<QuantifiedFormula>();
-        parse::<QuantifiedFormula>(b"! [ X : A ] : $true\0");
+        parse_snapshot!(QuantifiedFormula, b"! [ X : A ] : $true\0");
     }
 
     #[test]
     fn test_tfx_unitary_formula() {
         check_size::<UnitaryFormula>();
-        parse::<UnitaryFormula>(b"![X : A]: $true\0");
-        parse::<UnitaryFormula>(b"$true\0");
-        parse::<UnitaryFormula>(b"X\0");
-        parse::<UnitaryFormula>(b"( $true )\0");
+        parse_snapshot!(UnitaryFormula, b"![X : A]: $true\0");
+        parse_snapshot!(UnitaryFormula, b"$true\0");
+        parse_snapshot!(UnitaryFormula, b"X\0");
+        parse_snapshot!(UnitaryFormula, b"( $true )\0");
     }
 
     #[test]
     fn test_tfx_unit_formula() {
         check_size::<UnitFormula>();
-        parse::<UnitFormula>(b"$true\0");
-        parse::<UnitFormula>(b"~$true\0");
-        parse::<UnitFormula>(b"X = Y\0");
+        parse_snapshot!(UnitFormula, b"$true\0");
+        parse_snapshot!(UnitFormula, b"~$true\0");
+        parse_snapshot!(UnitFormula, b"X = Y\0");
     }
 
     #[test]
     fn test_tfx_binary_nonassoc() {
         check_size::<BinaryNonassoc>();
-        parse::<BinaryNonassoc>(b"p => q\0");
+        parse_snapshot!(BinaryNonassoc, b"p => q\0");
     }
 
     #[test]
     fn test_tfx_or_formula() {
         check_size::<OrFormula>();
-        parse::<OrFormula>(b"p | q | r\0");
+        parse_snapshot!(OrFormula, b"p | q | r\0");
     }
 
     #[test]
     fn test_tfx_and_formula() {
         check_size::<AndFormula>();
-        parse::<AndFormula>(b"p & q\0");
+        parse_snapshot!(AndFormula, b"p & q\0");
     }
 
     #[test]
     fn test_tfx_binary_assoc() {
         check_size::<BinaryAssoc>();
-        parse::<BinaryAssoc>(b"p | q | r\0");
-        parse::<BinaryAssoc>(b"p & q\0");
+        parse_snapshot!(BinaryAssoc, b"p | q | r\0");
+        parse_snapshot!(BinaryAssoc, b"p & q\0");
     }
 
     #[test]
     fn test_tfx_binary_formula() {
         check_size::<BinaryFormula>();
-        parse::<BinaryFormula>(b"p => q\0");
-        parse::<BinaryFormula>(b"p | q | r\0");
+        parse_snapshot!(BinaryFormula, b"p => q\0");
+        parse_snapshot!(BinaryFormula, b"p | q | r\0");
     }
 
     #[test]
     fn test_tfx_logic_formula() {
         check_size::<LogicFormula>();
-        parse::<LogicFormula>(b"$true\0");
-        parse::<LogicFormula>(b"~ p\0");
-        parse::<LogicFormula>(b"p => q\0");
-        parse::<LogicFormula>(b"X = Y\0");
+        parse_snapshot!(LogicFormula, b"$true\0");
+        parse_snapshot!(LogicFormula, b"~ p\0");
+        parse_snapshot!(LogicFormula, b"p => q\0");
+        parse_snapshot!(LogicFormula, b"X = Y\0");
     }
 
     #[test]
     fn test_tfx_formula() {
         check_size::<Formula>();
-        parse::<Formula>(b"$true\0");
-        parse::<Formula>(b"c : A\0");
+        parse_snapshot!(Formula, b"$true\0");
+        parse_snapshot!(Formula, b"c : A\0");
     }
 }

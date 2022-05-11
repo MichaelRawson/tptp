@@ -1,0 +1,9 @@
+---
+source: src/top.rs
+expression: parsed
+---
+FormulaRole(
+    LowerWord(
+        "conjecture",
+    ),
+)

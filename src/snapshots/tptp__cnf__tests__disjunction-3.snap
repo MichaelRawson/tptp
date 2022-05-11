@@ -1,0 +1,42 @@
+---
+source: src/cnf.rs
+expression: parsed
+---
+Disjunction(
+    [
+        Atomic(
+            Plain(
+                PlainAtomicFormula(
+                    Constant(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "p",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        NegatedAtomic(
+            Plain(
+                PlainAtomicFormula(
+                    Constant(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "q",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

@@ -1,6 +1,0 @@
----
-source: src/tests.rs
-expression: parsed
-
----
-f(X)!=c

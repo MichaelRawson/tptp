@@ -1,0 +1,22 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+MappingType {
+    domain: Atomic(
+        Variable(
+            Variable(
+                UpperWord(
+                    "A",
+                ),
+            ),
+        ),
+    ),
+    range: Variable(
+        Variable(
+            UpperWord(
+                "B",
+            ),
+        ),
+    ),
+}

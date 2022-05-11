@@ -1,0 +1,13 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+Defined(
+    Number(
+        Integer(
+            Integer(
+                "-123",
+            ),
+        ),
+    ),
+)

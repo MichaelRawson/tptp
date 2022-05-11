@@ -19,7 +19,7 @@ default-features = false
 features = ["display"]
 
 [dependencies.nom]
-version = "7"
+version = "7.1"
 default-features = false
 features = ["alloc"]
 
@@ -29,7 +29,7 @@ features = ["derive"]
 optional = true
 
 [dev-dependencies]
-insta = "1"
+insta = "1.14"
 
 [profile.release]
 lto = true

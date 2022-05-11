@@ -1,0 +1,48 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+Function(
+    Functor(
+        Lower(
+            LowerWord(
+                "f",
+            ),
+        ),
+    ),
+    Arguments(
+        [
+            Variable(
+                Variable(
+                    UpperWord(
+                        "X",
+                    ),
+                ),
+            ),
+            Function(
+                Plain(
+                    Function(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "g",
+                                ),
+                            ),
+                        ),
+                        Arguments(
+                            [
+                                Variable(
+                                    Variable(
+                                        UpperWord(
+                                            "Y",
+                                        ),
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

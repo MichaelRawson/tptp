@@ -1,0 +1,5 @@
+---
+source: src/cnf.rs
+expression: parsed
+---
+(p)

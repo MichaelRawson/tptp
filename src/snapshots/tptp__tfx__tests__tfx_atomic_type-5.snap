@@ -1,0 +1,11 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Variable(
+    Variable(
+        UpperWord(
+            "TypeVariable",
+        ),
+    ),
+)

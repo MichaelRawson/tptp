@@ -1,0 +1,25 @@
+---
+source: src/top.rs
+expression: parsed
+---
+Tfx(
+    Logic(
+        Unitary(
+            Atomic(
+                Plain(
+                    Constant(
+                        Constant(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "p",
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

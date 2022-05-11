@@ -1,0 +1,19 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Atomic(
+    Plain(
+        Constant(
+            Constant(
+                Functor(
+                    Lower(
+                        LowerWord(
+                            "p",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

@@ -1,6 +1,0 @@
----
-source: src/tests.rs
-expression: parsed
-
----
-cnf(c_0_137,negated_conjecture,$false,inference(cn,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[inference(rw,[status(thm)],[c_0_134,c_0_95]),c_0_97]),c_0_99]),c_0_101]),c_0_103]),c_0_105]),c_0_107]),c_0_109]),c_0_111]),c_0_113]),c_0_115]),c_0_117]),c_0_119]),c_0_121]),c_0_123]),c_0_125]),c_0_127]),c_0_129]),c_0_131]),c_0_133]),c_0_135])])).

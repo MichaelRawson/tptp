@@ -1,0 +1,13 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Atomic(
+    Variable(
+        Variable(
+            UpperWord(
+                "A",
+            ),
+        ),
+    ),
+)

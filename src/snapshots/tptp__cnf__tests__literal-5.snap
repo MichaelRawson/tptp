@@ -1,0 +1,54 @@
+---
+source: src/cnf.rs
+expression: parsed
+---
+Atomic(
+    Defined(
+        Infix(
+            DefinedInfixFormula {
+                left: Function(
+                    Plain(
+                        Function(
+                            Functor(
+                                Lower(
+                                    LowerWord(
+                                        "f",
+                                    ),
+                                ),
+                            ),
+                            Arguments(
+                                [
+                                    Variable(
+                                        Variable(
+                                            UpperWord(
+                                                "X",
+                                            ),
+                                        ),
+                                    ),
+                                ],
+                            ),
+                        ),
+                    ),
+                ),
+                op: DefinedInfixPred(
+                    InfixEquality,
+                ),
+                right: Function(
+                    Plain(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "c",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            },
+        ),
+    ),
+)

@@ -1,0 +1,44 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+And(
+    AndFormula(
+        [
+            Unitary(
+                Atomic(
+                    Plain(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "p",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            Unitary(
+                Atomic(
+                    Plain(
+                        Constant(
+                            Constant(
+                                Functor(
+                                    Lower(
+                                        LowerWord(
+                                            "q",
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

@@ -1,0 +1,21 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Defined(
+    DefinedAtomic(
+        Constant(
+            DefinedConstant(
+                DefinedFunctor(
+                    AtomicDefinedWord(
+                        DollarWord(
+                            LowerWord(
+                                "defined",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

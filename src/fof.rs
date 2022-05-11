@@ -790,204 +790,205 @@ mod tests {
     #[test]
     fn test_fof_arguments() {
         check_size::<Arguments>();
-        parse::<Arguments>(b"c\0");
-        parse::<Arguments>(b"X\0");
-        parse::<Arguments>(b"X, f ( X )\0");
+        parse_snapshot!(Arguments, b"c\0");
+        parse_snapshot!(Arguments, b"X\0");
+        parse_snapshot!(Arguments, b"X, f ( X )\0");
     }
 
     #[test]
     fn test_fof_plain_term() {
         check_size::<PlainTerm>();
-        parse::<PlainTerm>(b"c\0");
-        parse::<PlainTerm>(b"f ( X )\0");
-        parse::<PlainTerm>(b"f ( X, g ( Y ) )\0");
+        parse_snapshot!(PlainTerm, b"c\0");
+        parse_snapshot!(PlainTerm, b"f ( X )\0");
+        parse_snapshot!(PlainTerm, b"f ( X, g ( Y ) )\0");
     }
 
     #[test]
     fn test_fof_system_term() {
         check_size::<SystemTerm>();
-        parse::<SystemTerm>(b"$$c\0");
-        parse::<SystemTerm>(b"$$f ( X )\0");
-        parse::<SystemTerm>(b"$$f ( X, g ( Y ) )\0");
+        parse_snapshot!(SystemTerm, b"$$c\0");
+        parse_snapshot!(SystemTerm, b"$$f ( X )\0");
+        parse_snapshot!(SystemTerm, b"$$f ( X, g ( Y ) )\0");
     }
 
     #[test]
     fn test_fof_defined_plain_term() {
         check_size::<DefinedPlainTerm>();
-        parse::<DefinedPlainTerm>(b"$c\0");
-        parse::<DefinedPlainTerm>(b"$f ( X )\0");
+        parse_snapshot!(DefinedPlainTerm, b"$c\0");
+        parse_snapshot!(DefinedPlainTerm, b"$f ( X )\0");
     }
 
     #[test]
     fn test_fof_defined_atomic_term() {
         check_size::<DefinedAtomicTerm>();
-        parse::<DefinedAtomicTerm>(b"$defined_atomic_term\0");
+        parse_snapshot!(DefinedAtomicTerm, b"$defined_atomic_term\0");
     }
 
     #[test]
     fn test_fof_defined_term() {
-        check_size::<super::DefinedTerm>();
-        parse::<super::DefinedTerm>(b"$defined_term\0");
-        parse::<super::DefinedTerm>(b"-123\0");
+        use super::DefinedTerm;
+        check_size::<DefinedTerm>();
+        parse_snapshot!(DefinedTerm, b"$defined_term\0");
+        parse_snapshot!(DefinedTerm, b"-123\0");
     }
 
     #[test]
     fn test_fof_function_term() {
         check_size::<FunctionTerm>();
-        parse::<FunctionTerm>(b"f(X)\0");
-        parse::<FunctionTerm>(b"$defined\0");
-        parse::<FunctionTerm>(b"$$system\0");
+        parse_snapshot!(FunctionTerm, b"f(X)\0");
+        parse_snapshot!(FunctionTerm, b"$defined\0");
+        parse_snapshot!(FunctionTerm, b"$$system\0");
     }
 
     #[test]
     fn test_fof_term() {
         check_size::<Term>();
-        parse::<Term>(b"f(X)\0");
-        parse::<Term>(b"X\0");
+        parse_snapshot!(Term, b"f(X)\0");
+        parse_snapshot!(Term, b"X\0");
     }
 
     #[test]
     fn test_fof_plain_atomic_formula() {
         check_size::<PlainAtomicFormula>();
-        parse::<PlainAtomicFormula>(b"f ( X, g ( Y ) )\0");
+        parse_snapshot!(PlainAtomicFormula, b"f ( X, g ( Y ) )\0");
     }
 
     #[test]
     fn test_fof_defined_plain_formula() {
         check_size::<DefinedPlainFormula>();
-        parse::<DefinedPlainFormula>(b"$defined_plain_formula\0");
+        parse_snapshot!(DefinedPlainFormula, b"$defined_plain_formula\0");
     }
 
     #[test]
     fn test_fof_defined_infix_formula() {
         check_size::<DefinedInfixFormula>();
-        parse::<DefinedInfixFormula>(b"f(X) = c\0");
+        parse_snapshot!(DefinedInfixFormula, b"f(X) = c\0");
     }
 
     #[test]
     fn test_fof_defined_atomic_formula() {
         check_size::<DefinedAtomicFormula>();
-        parse::<DefinedAtomicFormula>(b"$true\0");
-        parse::<DefinedAtomicFormula>(b"$false\0");
-        parse::<DefinedAtomicFormula>(b"f(X) = c\0");
+        parse_snapshot!(DefinedAtomicFormula, b"$true\0");
+        parse_snapshot!(DefinedAtomicFormula, b"$false\0");
+        parse_snapshot!(DefinedAtomicFormula, b"f(X) = c\0");
     }
 
     #[test]
     fn test_fof_system_atomic_formula() {
         check_size::<SystemAtomicFormula>();
-        parse::<SystemAtomicFormula>(b"$$system\0");
+        parse_snapshot!(SystemAtomicFormula, b"$$system\0");
     }
 
     #[test]
     fn test_fof_atomic_formula() {
         check_size::<AtomicFormula>();
-        parse::<AtomicFormula>(b"$true\0");
-        parse::<AtomicFormula>(b"f(X) = Y\0");
-        parse::<AtomicFormula>(b"p(X)\0");
-        parse::<AtomicFormula>(b"$$system\0");
+        parse_snapshot!(AtomicFormula, b"$true\0");
+        parse_snapshot!(AtomicFormula, b"f(X) = Y\0");
+        parse_snapshot!(AtomicFormula, b"p(X)\0");
+        parse_snapshot!(AtomicFormula, b"$$system\0");
     }
 
     #[test]
     fn test_fof_variable_list() {
         check_size::<VariableList>();
-        parse::<VariableList>(b"X\0");
-        parse::<VariableList>(b"X , Y\0");
-        parse::<VariableList>(b"X , Y , Z\0");
+        parse_snapshot!(VariableList, b"X\0");
+        parse_snapshot!(VariableList, b"X , Y\0");
+        parse_snapshot!(VariableList, b"X , Y , Z\0");
     }
 
     #[test]
     fn test_fof_quantifier() {
         check_size::<Quantifier>();
-        parse::<Quantifier>(b"!\0");
-        parse::<Quantifier>(b"?\0");
+        parse_snapshot!(Quantifier, b"!\0");
+        parse_snapshot!(Quantifier, b"?\0");
     }
 
     #[test]
     fn test_fof_quantified_formula() {
         check_size::<QuantifiedFormula>();
-        parse::<QuantifiedFormula>(b"! [ X ] : $true\0");
-        parse::<QuantifiedFormula>(b"? [ X , Y , Z ] : $true\0");
+        parse_snapshot!(QuantifiedFormula, b"! [ X ] : $true\0");
+        parse_snapshot!(QuantifiedFormula, b"? [ X , Y , Z ] : $true\0");
     }
 
     #[test]
     fn test_fof_infix_unary() {
         check_size::<InfixUnary>();
-        parse::<InfixUnary>(b"f(X) != c\0");
+        parse_snapshot!(InfixUnary, b"f(X) != c\0");
     }
 
     #[test]
     fn test_fof_unary_formula() {
         check_size::<UnaryFormula>();
-        parse::<UnaryFormula>(b"~ $true\0");
-        parse::<UnaryFormula>(b"f(X) != c\0");
+        parse_snapshot!(UnaryFormula, b"~ $true\0");
+        parse_snapshot!(UnaryFormula, b"f(X) != c\0");
     }
 
     #[test]
     fn test_fof_unitary_formula() {
         check_size::<UnitaryFormula>();
-        parse::<UnitaryFormula>(b"( $true )\0");
-        parse::<UnitaryFormula>(b"$true\0");
-        parse::<UnitaryFormula>(b"![X]: $true\0");
+        parse_snapshot!(UnitaryFormula, b"( $true )\0");
+        parse_snapshot!(UnitaryFormula, b"$true\0");
+        parse_snapshot!(UnitaryFormula, b"![X]: $true\0");
     }
 
     #[test]
     fn test_fof_unit_formula() {
         check_size::<UnitFormula>();
-        parse::<UnitFormula>(b"($true)\0");
-        parse::<UnitFormula>(b"~$true\0");
+        parse_snapshot!(UnitFormula, b"($true)\0");
+        parse_snapshot!(UnitFormula, b"~$true\0");
     }
 
     #[test]
     fn test_fof_binary_nonassoc() {
         check_size::<BinaryNonassoc>();
-        parse::<BinaryNonassoc>(b"p => q\0");
-        parse::<BinaryNonassoc>(b"p ~| q\0");
+        parse_snapshot!(BinaryNonassoc, b"p => q\0");
+        parse_snapshot!(BinaryNonassoc, b"p ~| q\0");
     }
 
     #[test]
     fn test_fof_or_formula() {
         check_size::<OrFormula>();
-        parse::<OrFormula>(b"p | q | r\0");
+        parse_snapshot!(OrFormula, b"p | q | r\0");
     }
 
     #[test]
     fn test_fof_and_formula() {
         check_size::<AndFormula>();
-        parse::<AndFormula>(b"p & q\0");
+        parse_snapshot!(AndFormula, b"p & q\0");
     }
 
     #[test]
     fn test_fof_binary_assoc() {
         check_size::<BinaryAssoc>();
-        parse::<BinaryAssoc>(b"p | q | r\0");
-        parse::<BinaryAssoc>(b"p & q\0");
+        parse_snapshot!(BinaryAssoc, b"p | q | r\0");
+        parse_snapshot!(BinaryAssoc, b"p & q\0");
     }
 
     #[test]
     fn test_fof_binary_formula() {
         check_size::<BinaryFormula>();
-        parse::<BinaryFormula>(b"p => q\0");
-        parse::<BinaryFormula>(b"p | q | r\0");
+        parse_snapshot!(BinaryFormula, b"p => q\0");
+        parse_snapshot!(BinaryFormula, b"p | q | r\0");
     }
 
     #[test]
     fn test_fof_logic_formula() {
         check_size::<LogicFormula>();
-        parse::<LogicFormula>(b"~p\0");
-        parse::<LogicFormula>(b"p => q\0");
-        parse::<LogicFormula>(b"p & q\0");
-        parse::<LogicFormula>(b"p | q | r\0");
-        parse::<LogicFormula>(b"p\0");
-        parse::<LogicFormula>(b"~p => q\0");
+        parse_snapshot!(LogicFormula, b"~p\0");
+        parse_snapshot!(LogicFormula, b"p => q\0");
+        parse_snapshot!(LogicFormula, b"p & q\0");
+        parse_snapshot!(LogicFormula, b"p | q | r\0");
+        parse_snapshot!(LogicFormula, b"p\0");
+        parse_snapshot!(LogicFormula, b"~p => q\0");
     }
 
     #[test]
     fn test_fof_formula() {
         check_size::<Formula>();
-        parse::<Formula>(b"p\0");
-        parse::<Formula>(b"~~p\0");
-        parse::<Formula>(b"(p)\0");
-        parse::<Formula>(b"$true|$false\0");
-        parse::<Formula>(b"(![X,Y,Z]:?[Q]:Q!=p(A))&p&(q=>r)\0");
+        parse_snapshot!(Formula, b"p\0");
+        parse_snapshot!(Formula, b"~~p\0");
+        parse_snapshot!(Formula, b"(p)\0");
+        parse_snapshot!(Formula, b"$true|$false\0");
+        parse_snapshot!(Formula, b"(![X,Y,Z]:?[Q]:Q!=p(A))&p&(q=>r)\0");
     }
 }

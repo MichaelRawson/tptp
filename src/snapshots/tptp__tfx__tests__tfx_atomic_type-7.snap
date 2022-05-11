@@ -1,0 +1,31 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Function(
+    TypeFunctor(
+        Lower(
+            LowerWord(
+                "type_function",
+            ),
+        ),
+    ),
+    TypeArguments(
+        [
+            Variable(
+                Variable(
+                    UpperWord(
+                        "A",
+                    ),
+                ),
+            ),
+            Variable(
+                Variable(
+                    UpperWord(
+                        "B",
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

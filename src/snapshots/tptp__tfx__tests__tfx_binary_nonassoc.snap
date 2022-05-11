@@ -1,0 +1,41 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+BinaryNonassoc {
+    left: Unitary(
+        Atomic(
+            Plain(
+                Constant(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "p",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+    op: LRImplies,
+    right: Unitary(
+        Atomic(
+            Plain(
+                Constant(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "q",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+}

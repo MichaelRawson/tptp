@@ -1,0 +1,49 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+QuantifiedFormula {
+    quantifier: Exists,
+    bound: VariableList(
+        [
+            Variable(
+                UpperWord(
+                    "X",
+                ),
+            ),
+            Variable(
+                UpperWord(
+                    "Y",
+                ),
+            ),
+            Variable(
+                UpperWord(
+                    "Z",
+                ),
+            ),
+        ],
+    ),
+    formula: Unitary(
+        Atomic(
+            Defined(
+                Plain(
+                    DefinedPlainFormula(
+                        Constant(
+                            DefinedConstant(
+                                DefinedFunctor(
+                                    AtomicDefinedWord(
+                                        DollarWord(
+                                            LowerWord(
+                                                "true",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+}

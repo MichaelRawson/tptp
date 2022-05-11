@@ -1,0 +1,28 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Parenthesised(
+    Typing(
+        Constant(
+            Constant(
+                Functor(
+                    Lower(
+                        LowerWord(
+                            "c",
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        Atomic(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "A",
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

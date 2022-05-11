@@ -1,0 +1,26 @@
+---
+source: src/top.rs
+expression: parsed
+---
+GeneralTerms(
+    [
+        Data(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "X",
+                    ),
+                ),
+            ),
+        ),
+        Data(
+            Variable(
+                Variable(
+                    UpperWord(
+                        "Y",
+                    ),
+                ),
+            ),
+        ),
+    ],
+)

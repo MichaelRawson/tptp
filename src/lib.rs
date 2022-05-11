@@ -28,7 +28,7 @@
 //! If you need them, you can use nom's facilities such as error handling or streaming.
 //!
 //! ## Parsers as Functions
-//! All parsers are functions from byte slices to `Result<T, E>` type, representing either parsed syntax `T` or a nom error `E`.
+//! All parsers are functions from byte slices to a `Result<T, E>` type, representing either parsed syntax `T` or a nom error `E`.
 //! Parsers are zero-copy, which typically means `T` will borrow from the input slice.
 //! Parsers are invoked as `T::parse` via the `Parse` trait.
 //!
@@ -79,6 +79,10 @@ pub mod top;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+#[macro_use]
+extern crate std;
+
 /// visitor pattern
 pub mod visitor;
 

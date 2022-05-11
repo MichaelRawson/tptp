@@ -1,0 +1,26 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+Function(
+    SystemFunctor(
+        AtomicSystemWord(
+            DollarDollarWord(
+                LowerWord(
+                    "f",
+                ),
+            ),
+        ),
+    ),
+    Arguments(
+        [
+            Variable(
+                Variable(
+                    UpperWord(
+                        "X",
+                    ),
+                ),
+            ),
+        ],
+    ),
+)

@@ -1,0 +1,46 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+InfixUnary {
+    left: Function(
+        Plain(
+            Function(
+                Functor(
+                    Lower(
+                        LowerWord(
+                            "f",
+                        ),
+                    ),
+                ),
+                Arguments(
+                    [
+                        Variable(
+                            Variable(
+                                UpperWord(
+                                    "X",
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    ),
+    op: InfixInequality,
+    right: Function(
+        Plain(
+            Constant(
+                Constant(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "c",
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+}

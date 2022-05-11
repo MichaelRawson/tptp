@@ -1,0 +1,21 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+InfixUnary {
+    left: Variable(
+        Variable(
+            UpperWord(
+                "X",
+            ),
+        ),
+    ),
+    op: InfixInequality,
+    right: Variable(
+        Variable(
+            UpperWord(
+                "Y",
+            ),
+        ),
+    ),
+}

@@ -1,0 +1,5 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+(p)

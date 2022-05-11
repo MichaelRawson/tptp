@@ -1,0 +1,50 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Quantified(
+    QuantifiedFormula {
+        quantifier: Forall,
+        bound: VariableList(
+            [
+                Typed(
+                    TypedVariable {
+                        variable: Variable(
+                            UpperWord(
+                                "X",
+                            ),
+                        ),
+                        typ: Variable(
+                            Variable(
+                                UpperWord(
+                                    "A",
+                                ),
+                            ),
+                        ),
+                    },
+                ),
+            ],
+        ),
+        formula: Unitary(
+            Atomic(
+                Defined(
+                    DefinedAtomic(
+                        Constant(
+                            DefinedConstant(
+                                DefinedFunctor(
+                                    AtomicDefinedWord(
+                                        DollarWord(
+                                            LowerWord(
+                                                "true",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    },
+)

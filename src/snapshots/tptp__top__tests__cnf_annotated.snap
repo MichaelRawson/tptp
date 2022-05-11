@@ -1,0 +1,50 @@
+---
+source: src/top.rs
+expression: parsed
+---
+CnfAnnotated(
+    Annotated {
+        name: AtomicWord(
+            Lower(
+                LowerWord(
+                    "test",
+                ),
+            ),
+        ),
+        role: FormulaRole(
+            LowerWord(
+                "axiom",
+            ),
+        ),
+        formula: Disjunction(
+            Disjunction(
+                [
+                    Atomic(
+                        Defined(
+                            Plain(
+                                DefinedPlainFormula(
+                                    Constant(
+                                        DefinedConstant(
+                                            DefinedFunctor(
+                                                AtomicDefinedWord(
+                                                    DollarWord(
+                                                        LowerWord(
+                                                            "true",
+                                                        ),
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ],
+            ),
+        ),
+        annotations: Annotations(
+            None,
+        ),
+    },
+)

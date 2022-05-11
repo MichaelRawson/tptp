@@ -1,0 +1,39 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+QuantifiedFormula {
+    quantifier: Forall,
+    bound: VariableList(
+        [
+            Variable(
+                UpperWord(
+                    "X",
+                ),
+            ),
+        ],
+    ),
+    formula: Unitary(
+        Atomic(
+            Defined(
+                Plain(
+                    DefinedPlainFormula(
+                        Constant(
+                            DefinedConstant(
+                                DefinedFunctor(
+                                    AtomicDefinedWord(
+                                        DollarWord(
+                                            LowerWord(
+                                                "true",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    ),
+}

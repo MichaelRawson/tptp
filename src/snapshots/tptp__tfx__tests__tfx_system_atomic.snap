@@ -1,0 +1,17 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Constant(
+    SystemConstant(
+        SystemFunctor(
+            AtomicSystemWord(
+                DollarDollarWord(
+                    LowerWord(
+                        "system",
+                    ),
+                ),
+            ),
+        ),
+    ),
+)

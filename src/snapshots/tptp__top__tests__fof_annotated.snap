@@ -1,0 +1,48 @@
+---
+source: src/top.rs
+expression: parsed
+---
+FofAnnotated(
+    Annotated {
+        name: AtomicWord(
+            Lower(
+                LowerWord(
+                    "test",
+                ),
+            ),
+        ),
+        role: FormulaRole(
+            LowerWord(
+                "axiom",
+            ),
+        ),
+        formula: Formula(
+            Unitary(
+                Atomic(
+                    Defined(
+                        Plain(
+                            DefinedPlainFormula(
+                                Constant(
+                                    DefinedConstant(
+                                        DefinedFunctor(
+                                            AtomicDefinedWord(
+                                                DollarWord(
+                                                    LowerWord(
+                                                        "true",
+                                                    ),
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+        annotations: Annotations(
+            None,
+        ),
+    },
+)

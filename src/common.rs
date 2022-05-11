@@ -613,216 +613,216 @@ mod tests {
     #[test]
     fn test_lower_word() {
         check_size::<LowerWord>();
-        parse::<LowerWord>(b"x\0");
-        parse::<LowerWord>(b"aA123\0");
+        parse_snapshot!(LowerWord, b"x\0");
+        parse_snapshot!(LowerWord, b"aA123\0");
     }
 
     #[test]
     fn test_upper_word() {
         check_size::<UpperWord>();
-        parse::<UpperWord>(b"X\0");
-        parse::<UpperWord>(b"Aa123\0");
+        parse_snapshot!(UpperWord, b"X\0");
+        parse_snapshot!(UpperWord, b"Aa123\0");
     }
 
     #[test]
     fn test_single_quoted() {
         check_size::<SingleQuoted>();
-        parse::<SingleQuoted>(b"'single quoted'\0");
-        parse::<SingleQuoted>(b"'\\'\\\\'\0");
+        parse_snapshot!(SingleQuoted, b"'single quoted'\0");
+        parse_snapshot!(SingleQuoted, b"'\\'\\\\'\0");
     }
 
     #[test]
     fn test_dollar_word() {
         check_size::<DollarWord>();
-        parse::<DollarWord>(b"$dollar\0");
+        parse_snapshot!(DollarWord, b"$dollar\0");
     }
 
     #[test]
     fn test_dollar_dollar_word() {
         check_size::<DollarDollarWord>();
-        parse::<DollarDollarWord>(b"$$dollar\0");
+        parse_snapshot!(DollarDollarWord, b"$$dollar\0");
     }
 
     #[test]
     fn test_distinct_object() {
         check_size::<DistinctObject>();
-        parse::<DistinctObject>(b"\"distinct object\"\0");
-        parse::<DistinctObject>(b"\"\\\"\\\\\"\0");
+        parse_snapshot!(DistinctObject, b"\"distinct object\"\0");
+        parse_snapshot!(DistinctObject, b"\"\\\"\\\\\"\0");
     }
 
     #[test]
     fn test_atomic_word() {
         check_size::<AtomicWord>();
-        parse::<AtomicWord>(b"x\0");
-        parse::<AtomicWord>(b"'single quoted'\0");
+        parse_snapshot!(AtomicWord, b"x\0");
+        parse_snapshot!(AtomicWord, b"'single quoted'\0");
     }
 
     #[test]
     fn test_integer() {
         check_size::<Integer>();
-        parse::<Integer>(b"0\0");
-        parse::<Integer>(b"123\0");
-        parse::<Integer>(b"-123\0");
+        parse_snapshot!(Integer, b"0\0");
+        parse_snapshot!(Integer, b"123\0");
+        parse_snapshot!(Integer, b"-123\0");
     }
 
     #[test]
     fn test_rational() {
         check_size::<Rational>();
-        parse::<Rational>(b"0/1\0");
-        parse::<Rational>(b"123/456\0");
-        parse::<Rational>(b"-123/456\0");
+        parse_snapshot!(Rational, b"0/1\0");
+        parse_snapshot!(Rational, b"123/456\0");
+        parse_snapshot!(Rational, b"-123/456\0");
     }
 
     #[test]
     fn test_real() {
         check_size::<Real>();
-        parse::<Real>(b"0.0\0");
-        parse::<Real>(b"1E0\0");
-        parse::<Real>(b"-1.23E-456\0");
-        parse::<Real>(b"1e-06\0");
+        parse_snapshot!(Real, b"0.0\0");
+        parse_snapshot!(Real, b"1E0\0");
+        parse_snapshot!(Real, b"-1.23E-456\0");
+        parse_snapshot!(Real, b"1e-06\0");
     }
 
     #[test]
     fn test_number() {
         check_size::<Number>();
-        parse::<Number>(b"-123\0");
-        parse::<Number>(b"-123/456\0");
-        parse::<Number>(b"-1.23E-456\0");
+        parse_snapshot!(Number, b"-123\0");
+        parse_snapshot!(Number, b"-123/456\0");
+        parse_snapshot!(Number, b"-1.23E-456\0");
     }
 
     #[test]
     fn test_name() {
         check_size::<Name>();
-        parse::<Name>(b"lower_word2\0");
-        parse::<Name>(b"'single quoted'\0");
-        parse::<Name>(b"123\0");
+        parse_snapshot!(Name, b"lower_word2\0");
+        parse_snapshot!(Name, b"'single quoted'\0");
+        parse_snapshot!(Name, b"123\0");
     }
 
     #[test]
     fn test_variable() {
         check_size::<Variable>();
-        parse::<Variable>(b"X\0");
+        parse_snapshot!(Variable, b"X\0");
     }
 
     #[test]
     fn test_atomic_system_word() {
         check_size::<AtomicSystemWord>();
-        parse::<AtomicSystemWord>(b"$$atomic\0");
+        parse_snapshot!(AtomicSystemWord, b"$$atomic\0");
     }
 
     #[test]
     fn test_atomic_defined_word() {
         check_size::<AtomicDefinedWord>();
-        parse::<AtomicDefinedWord>(b"$atomic\0");
+        parse_snapshot!(AtomicDefinedWord, b"$atomic\0");
     }
 
     #[test]
     fn test_system_functor() {
         check_size::<SystemFunctor>();
-        parse::<SystemFunctor>(b"$$system_functor\0");
+        parse_snapshot!(SystemFunctor, b"$$system_functor\0");
     }
 
     #[test]
     fn test_system_constant() {
         check_size::<SystemConstant>();
-        parse::<SystemConstant>(b"$$system_constant\0");
+        parse_snapshot!(SystemConstant, b"$$system_constant\0");
     }
 
     #[test]
     fn test_defined_functor() {
         check_size::<DefinedFunctor>();
-        parse::<DefinedFunctor>(b"$defined_functor\0");
+        parse_snapshot!(DefinedFunctor, b"$defined_functor\0");
     }
 
     #[test]
     fn test_defined_type() {
         check_size::<DefinedType>();
-        parse::<DefinedType>(b"$defined_type\0");
+        parse_snapshot!(DefinedType, b"$defined_type\0");
     }
 
     #[test]
     fn test_defined_constant() {
         check_size::<DefinedConstant>();
-        parse::<DefinedConstant>(b"$defined_constant\0");
+        parse_snapshot!(DefinedConstant, b"$defined_constant\0");
     }
 
     #[test]
     fn test_functor() {
         check_size::<Functor>();
-        parse::<Functor>(b"functor\0");
+        parse_snapshot!(Functor, b"functor\0");
     }
 
     #[test]
     fn test_type_functor() {
         check_size::<TypeFunctor>();
-        parse::<TypeFunctor>(b"type_functor\0");
+        parse_snapshot!(TypeFunctor, b"type_functor\0");
     }
 
     #[test]
     fn test_constant() {
         check_size::<Constant>();
-        parse::<Constant>(b"constant\0");
+        parse_snapshot!(Constant, b"constant\0");
     }
 
     #[test]
     fn test_type_constant() {
         check_size::<TypeConstant>();
-        parse::<TypeConstant>(b"type_constant\0");
+        parse_snapshot!(TypeConstant, b"type_constant\0");
     }
 
     #[test]
     fn test_defined_term() {
         check_size::<DefinedTerm>();
-        parse::<DefinedTerm>(b"-123\0");
-        parse::<DefinedTerm>(b"\"distinct object\"\0");
+        parse_snapshot!(DefinedTerm, b"-123\0");
+        parse_snapshot!(DefinedTerm, b"\"distinct object\"\0");
     }
 
     #[test]
     fn test_untyped_atom() {
         check_size::<UntypedAtom>();
-        parse::<UntypedAtom>(b"constant\0");
-        parse::<UntypedAtom>(b"$$system_constant\0");
+        parse_snapshot!(UntypedAtom, b"constant\0");
+        parse_snapshot!(UntypedAtom, b"$$system_constant\0");
     }
 
     #[test]
     fn test_infix_equality() {
         check_size::<InfixEquality>();
-        parse::<InfixEquality>(b"=\0");
+        parse_snapshot!(InfixEquality, b"=\0");
     }
 
     #[test]
     fn test_infix_inequality() {
         check_size::<InfixInequality>();
-        parse::<InfixInequality>(b"!=\0");
+        parse_snapshot!(InfixInequality, b"!=\0");
     }
 
     #[test]
     fn test_unary_connective() {
         check_size::<UnaryConnective>();
-        parse::<UnaryConnective>(b"~\0");
+        parse_snapshot!(UnaryConnective, b"~\0");
     }
 
     #[test]
     fn test_nonassoc_connective() {
         check_size::<NonassocConnective>();
-        parse::<NonassocConnective>(b"<=\0");
-        parse::<NonassocConnective>(b"<=>\0");
-        parse::<NonassocConnective>(b"=>\0");
-        parse::<NonassocConnective>(b"<~>\0");
-        parse::<NonassocConnective>(b"~&\0");
-        parse::<NonassocConnective>(b"~|\0");
+        parse_snapshot!(NonassocConnective, b"<=\0");
+        parse_snapshot!(NonassocConnective, b"<=>\0");
+        parse_snapshot!(NonassocConnective, b"=>\0");
+        parse_snapshot!(NonassocConnective, b"<~>\0");
+        parse_snapshot!(NonassocConnective, b"~&\0");
+        parse_snapshot!(NonassocConnective, b"~|\0");
     }
 
     #[test]
     fn test_assoc_connective() {
         check_size::<AssocConnective>();
-        parse::<AssocConnective>(b"&\0");
-        parse::<AssocConnective>(b"|\0");
+        parse_snapshot!(AssocConnective, b"&\0");
+        parse_snapshot!(AssocConnective, b"|\0");
     }
 
     #[test]
     fn test_defined_infix_pred() {
         check_size::<DefinedInfixPred>();
-        parse::<DefinedInfixPred>(b"=\0");
+        parse_snapshot!(DefinedInfixPred, b"=\0");
     }
 }

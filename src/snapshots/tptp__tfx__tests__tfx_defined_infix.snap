@@ -1,0 +1,23 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+DefinedInfix {
+    left: Variable(
+        Variable(
+            UpperWord(
+                "X",
+            ),
+        ),
+    ),
+    op: DefinedInfixPred(
+        InfixEquality,
+    ),
+    right: Variable(
+        Variable(
+            UpperWord(
+                "Y",
+            ),
+        ),
+    ),
+}

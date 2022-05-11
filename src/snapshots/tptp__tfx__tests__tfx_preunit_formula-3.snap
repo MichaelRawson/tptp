@@ -1,0 +1,30 @@
+---
+source: src/tfx.rs
+expression: parsed
+---
+Prefix(
+    PrefixUnary {
+        op: UnaryConnective,
+        formula: Unitary(
+            Atomic(
+                Defined(
+                    DefinedAtomic(
+                        Constant(
+                            DefinedConstant(
+                                DefinedFunctor(
+                                    AtomicDefinedWord(
+                                        DollarWord(
+                                            LowerWord(
+                                                "true",
+                                            ),
+                                        ),
+                                    ),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    },
+)

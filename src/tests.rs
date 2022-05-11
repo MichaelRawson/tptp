@@ -1,10 +1,6 @@
-use alloc::fmt;
-use alloc::format;
-use insta::{assert_debug_snapshot, assert_display_snapshot};
+use crate::Result;
 
-use crate::{Parse, Result};
-
-fn check_parse<'a, P, T: 'a>(parser: P, input: &'a [u8]) -> T
+pub(crate) fn check_parse<'a, P, T: 'a>(parser: P, input: &'a [u8]) -> T
 where
     P: FnOnce(&'a [u8]) -> Result<T, ()>,
 {
@@ -22,14 +18,15 @@ where
     check_parse(parser, input);
 }
 
-pub(crate) fn parse<'a, T: 'a>(input: &'a [u8])
-where
-    T: Parse<'a, ()> + fmt::Debug + fmt::Display,
-{
-    let parsed = check_parse(T::parse, input);
-    assert_debug_snapshot!(parsed);
-    assert_display_snapshot!(parsed);
+macro_rules! parse_snapshot {
+    ($T: ident, $input: expr) => {
+        let parsed = crate::tests::check_parse($T::parse, $input);
+        insta::assert_debug_snapshot!(parsed);
+        insta::assert_display_snapshot!(parsed);
+    };
 }
+
+pub(crate) use parse_snapshot;
 
 pub(crate) fn check_size<T>() {
     assert!(core::mem::size_of::<T>() <= 64);

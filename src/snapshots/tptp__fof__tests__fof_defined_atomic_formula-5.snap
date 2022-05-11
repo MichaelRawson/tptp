@@ -1,0 +1,50 @@
+---
+source: src/fof.rs
+expression: parsed
+---
+Infix(
+    DefinedInfixFormula {
+        left: Function(
+            Plain(
+                Function(
+                    Functor(
+                        Lower(
+                            LowerWord(
+                                "f",
+                            ),
+                        ),
+                    ),
+                    Arguments(
+                        [
+                            Variable(
+                                Variable(
+                                    UpperWord(
+                                        "X",
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+            ),
+        ),
+        op: DefinedInfixPred(
+            InfixEquality,
+        ),
+        right: Function(
+            Plain(
+                Constant(
+                    Constant(
+                        Functor(
+                            Lower(
+                                LowerWord(
+                                    "c",
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    },
+)
